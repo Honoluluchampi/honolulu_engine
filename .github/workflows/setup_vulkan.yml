@@ -11,7 +11,6 @@ env:
 
 jobs:
   setup-macos-with-latest:
-    if: ${{ contains(github.event.inputs.extra_tests, 'default') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
