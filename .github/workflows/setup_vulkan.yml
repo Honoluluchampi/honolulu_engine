@@ -1,7 +1,7 @@
 name: build_and_test
 on:
-  #push:
-    #branches: [ "main" ]
+  push:
+    branches: [ "actions" ]
   pull_request:
     branches: [ "main" ]
 
@@ -10,13 +10,22 @@ env:
   VULKAN_VERSION: 1.3.204.0
 
 jobs:
-  build_and_run:
-    runs_on: macos-latest
+  setup-macos-with-latest:
+    if: ${{ contains(github.event.inputs.extra_tests, 'default') }}
+    runs-on: macos-latest
     steps:
-      -uses: actions/checkout@v3
-      -uses: ./.github/actions
+      - uses: actions/checkout@v2
+      - uses: humbletim/setup-vulkan-sdk@1.2.0
         with:
-          vulkan_version: ${VULKAN_VERSION}
-          vulkan_components: Vulkan-Headers, Vulkan-Loader, Glslang
-      -name: install vulkan
-        run: 
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
+          vulkan-use-cache: true
+      - name: Test Vulkan SDK Install
+        run: |
+          echo "Vulkan SDK Version=='$VULKAN_SDK_VERSION'"
+          echo "VULKAN_SDK=='$VULKAN_SDK'"
+          test -n "$VULKAN_SDK_VERSION"
+          cmake -B tests/build -S tests -DCMAKE_BUILD_TYPE=Release -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE=.
+          cmake --build tests/build --config release -- -j2
+          glslangValidator --version
+          PATH=$PATH:$VULKAN_SDK/bin ./tests/build/test_vulkan
