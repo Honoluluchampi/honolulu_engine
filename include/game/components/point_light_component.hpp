@@ -3,6 +3,9 @@
 // hnll
 #include <game/components/renderable_component.hpp>
 
+// lib
+#include <eigen3/Eigen/Dense>
+
 namespace hnll {
 namespace game {
 
@@ -15,22 +18,22 @@ class point_light_component : public renderable_component
     point_light_component() : renderable_component(render_type::POINT_LIGHT) {}
     ~point_light_component(){}
     static s_ptr<point_light_component> create_point_light
-      (float intensity = 10.f, float radius = 0.1f, glm::vec3 color = glm::vec3(1.f));
+      (float intensity = 10.f, float radius = 0.1f, Eigen::Vector3d color = Eigen::Vector3d::Identity());
 
     // getter
     point_light_info get_light_info() { return light_info_; }
-    glm::vec3 get_color() { return color_; }
+    Eigen::Vector3d get_color() { return color_; }
 
     // setter
-    void set_color(const glm::vec3& color) { color_ = color; }
+    void set_color(const Eigen::Vector3d& color) { color_ = color; }
     void set_light_info(const point_light_info& info) { light_info_ = info; }
-    void set_radius(float radius) { this->set_scale(glm::vec3(radius, radius, radius)); }
+    void set_radius(float radius) { this->set_scale(Eigen::Vector3d(radius, radius, radius)); }
   
   private:
     point_light_component(const point_light_component&) = delete;
     point_light_component& operator=(const point_light_component&) = delete;
     point_light_info light_info_{};
-    glm::vec3 color_{};
+    Eigen::Vector3d color_{};
 };
 
 } // namespace game

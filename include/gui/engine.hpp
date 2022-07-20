@@ -39,7 +39,7 @@ public:
   void begin_imgui();
   void render();
   void frame_render();
-  void update(glm::vec3& translation);
+  void update(Eigen::Vector3d& translation);
 
   const u_ptr<renderer>& renderer_up() const { return renderer_up_; }
   gui::renderer* renderer_p() const { return renderer_up_.get(); }

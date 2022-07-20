@@ -18,8 +18,8 @@ namespace graphics {
 
 struct point_light_push_constant
 {
-  glm::vec4 position{};
-  glm::vec4 color{};
+  Eigen::Vector4d position{};
+  Eigen::Vector4d color{};
   float radius;
 };
 
@@ -96,9 +96,17 @@ void point_light_rendering_system::render(frame_info frame_info)
     auto light_comp = dynamic_cast<hnll::game::point_light_component*>(kv.second.get());
 
     point_light_push_constant push{};
-    push.position = glm::vec4(light_comp->get_transform().translation, 1.f);
-    push.color = glm::vec4(light_comp->get_color(), light_comp->get_light_info().light_intensity);
-    push.radius = light_comp->get_transform().scale.x;
+    push.position = Eigen::Vector4d{
+      light_comp->get_transform().translation.x(),
+      light_comp->get_transform().translation.y(),
+      light_comp->get_transform().translation.z(),
+      1.f};
+    push.color = Eigen::Vector4d(
+      light_comp->get_color().x(),
+      light_comp->get_color().y(),
+      light_comp->get_color().z(),
+      light_comp->get_light_info().light_intensity);
+    push.radius = light_comp->get_transform().scale.x();
 
     vkCmdPushConstants(
       frame_info.command_buffer,

@@ -2,9 +2,7 @@
 #include <game/engine.hpp>
 
 // lib
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include <eigen3/Eigen/Dense>
 
 // #include <X11/extensions/XTest.h>
 
@@ -55,14 +53,14 @@ void keyboard_movement_component::process_rotate_input(GLFWgamepadstate& state, 
   float rota_y = -state.axes[pads.rota_y]
               + (glfwGetKey(window_, keys.look_right) == GLFW_PRESS)
               - (glfwGetKey(window_, keys.look_left) == GLFW_PRESS);
-  glm::vec3 rotate = {rota_x, rota_y, 0.f};
+  Eigen::Vector3d rotate = {rota_x, rota_y, 0.f};
   // add to the current rotate matrix
-  if (glm::dot(rotate, rotate) > ROTATE_THRESH) //std::numeric_limits<float>::epsilon())
-    transform_.rotation += LOOK_SPEED * dt * glm::normalize(rotate);
+  if (rotate.dot(rotate) > ROTATE_THRESH) //std::numeric_limits<float>::epsilon())
+    transform_.rotation += LOOK_SPEED * dt * rotate.normalized();
 
   // limit pitch values between about +/- 58ish degrees
-  transform_.rotation.x = glm::clamp(transform_.rotation.x, -1.5f, 1.5f);
-  transform_.rotation.y = glm::mod(transform_.rotation.y, glm::two_pi<float>());
+  transform_.rotation.x() = std::min(std::max(transform_.rotation.x(), -1.5), 1.5);
+  transform_.rotation.y() = std::fmod(transform_.rotation.y(), 2.f * M_PI);
 }
 
 void keyboard_movement_component::process_move_input(GLFWgamepadstate& state, float dt)
@@ -73,12 +71,12 @@ void keyboard_movement_component::process_move_input(GLFWgamepadstate& state, fl
   float move_y = -(state.axes[pads.move_y] - up_error_);
   float moveZ = state.buttons[pads.dp_up] - state.buttons[pads.dp_down];
 
-  float yaw = transform_.rotation.y;
-  const glm::vec3 forward_direction{sin(yaw), 0.f, cos(yaw)};
-  const glm::vec3 right_direction{forward_direction.z, 0.f, -forward_direction.x};
-  const glm::vec3 up_direction{0.f, -1.f, 0.f};
+  float yaw = transform_.rotation.y();
+  const Eigen::Vector3d forward_direction{sin(yaw), 0.f, cos(yaw)};
+  const Eigen::Vector3d right_direction{forward_direction.z(), 0.f, -forward_direction.x()};
+  const Eigen::Vector3d up_direction{0.f, -1.f, 0.f};
 
-  glm::vec3 move_direction{0.f};
+  Eigen::Vector3d move_direction{0.f, 0.f, 0.f};
   float forward = move_y * (state.buttons[pads.left_bumper] == GLFW_PRESS)
     + (glfwGetKey(window_, keys.move_forward) == GLFW_PRESS)
     - (glfwGetKey(window_, keys.move_backward) == GLFW_PRESS);
@@ -90,8 +88,8 @@ void keyboard_movement_component::process_move_input(GLFWgamepadstate& state, fl
   
   move_direction += hnll::utils::sclXvec(forward, forward_direction) + hnll::utils::sclXvec(right, right_direction) + hnll::utils::sclXvec(up, up_direction);
 
-  if (glm::dot(move_direction, move_direction) > std::numeric_limits<float>::epsilon())
-    transform_.translation += MOVE_SPEED * dt * glm::normalize(move_direction);
+  if (move_direction.dot(move_direction) > std::numeric_limits<float>::epsilon())
+    transform_.translation += MOVE_SPEED * dt * move_direction.normalized();
 
   // cursor move
   double xpos, ypos;
@@ -136,7 +134,7 @@ void keyboard_movement_component::adjust_axis_errors()
 void keyboard_movement_component::set_default_mapping()
 {
   // axis
-  auto leftXfunc = [](float val){return glm::vec3(0.f, 0.f, 0.f); };
+  auto leftXfunc = [](float val){return Eigen::Vector3d(0.f, 0.f, 0.f); };
 }
 
 } // namespace game

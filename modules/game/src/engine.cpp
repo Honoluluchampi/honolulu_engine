@@ -172,10 +172,10 @@ void engine::load_data()
     auto& smooth_vase_mesh_model = mesh_model_map_["bone"];
     auto smooth_vase_model_comp = std::make_shared<mesh_component>(smooth_vase_mesh_model);
     smooth_vase->set_renderable_component(smooth_vase_model_comp);
-    smooth_vase_model_comp->set_translation(glm::vec3{-0.5f, 0.5f, 0.f});
-    smooth_vase_model_comp->set_scale(glm::vec3{3.f, 1.5f, 3.f});
+    smooth_vase_model_comp->set_translation(Eigen::Vector3d{0, 0, 0.f});
+    smooth_vase_model_comp->set_scale(Eigen::Vector3d{0, 0, 0});
 
-      std::vector<glm::vec3> light_colors{
+      std::vector<Eigen::Vector3d> light_colors{
           {1.f, .1f, .1f},
           {.1f, .1f, 1.f},
           {.1f, 1.f, .1f},
@@ -186,12 +186,12 @@ void engine::load_data()
 
       for (int i = 0; i < light_colors.size(); i++) {
         auto light_actor = actor::create();
-        auto light_comp = point_light_component::create_point_light(1.0f, 0.f, light_colors[i]);
-        auto light_rotation = glm::rotate(
-            glm::mat4(1),
-            (i * glm::two_pi<float>()) / light_colors.size(),
-            {0.f, -1.0f, 0.f}); // axiz
-        light_comp->set_translation(glm::vec3(light_rotation * glm::vec4(-1.f, -1.f, -1.f, 1.f)));
+        auto light_comp = point_light_component::create_point_light(1.0f, 5.f, light_colors[i]);
+        auto light_rotation = Eigen::AngleAxisd(
+            (i * 2.f * M_PI) / light_colors.size(),
+            Eigen::Vector3d{0.f, -1.0f, 0.f}); // axiz
+//      // light_comp->set_translation(Eigen::Vector3d(light_rotation * Eigen::Vector3d(-1.f, -1.f, -1.f)));
+        light_comp->set_translation(Eigen::Vector3d{0.f, -3.f, 0.f});
         add_point_light(light_actor, light_comp);
       }
 
@@ -232,8 +232,8 @@ void engine::load_actor()
   auto& smooth_vase_mesh_model = mesh_model_map_["smooth_vase"];
   auto smooth_vase_model_comp = std::make_shared<mesh_component>(smooth_vase_mesh_model);
   smooth_vase->set_renderable_component(smooth_vase_model_comp);
-  smooth_vase_model_comp->set_translation(glm::vec3{-0.5f, 0.5f, 0.f});
-  smooth_vase_model_comp->set_scale(glm::vec3{3.f, 1.5f, 3.f});
+  smooth_vase_model_comp->set_translation(Eigen::Vector3d{-0.5f, 0.5f, 0.f});
+  smooth_vase_model_comp->set_scale(Eigen::Vector3d{3.f, 1.5f, 3.f});
   
   // temporary
   hieModelID_ = smooth_vase->get_id();
@@ -242,15 +242,15 @@ void engine::load_actor()
   auto& flat_vase_mesh_model = mesh_model_map_["flat_vase"];
   auto flat_vase_model_comp = std::make_shared<mesh_component>(flat_vase_mesh_model);
   flat_vase->set_renderable_component(flat_vase_model_comp);
-  flat_vase_model_comp->set_translation(glm::vec3{0.5f, 0.5f, 0.f});
-  flat_vase_model_comp->set_scale(glm::vec3{3.f, 1.5f, 3.f});
+  flat_vase_model_comp->set_translation(Eigen::Vector3d{0.5f, 0.5f, 0.f});
+  flat_vase_model_comp->set_scale(Eigen::Vector3d{3.f, 1.5f, 3.f});
   
   auto floor = actor::create();
   auto& floor_mesh_comp = mesh_model_map_["quad"];
   auto floor_model_comp = std::make_shared<mesh_component>(floor_mesh_comp);
   floor->set_renderable_component(floor_model_comp);
-  floor_model_comp->set_translation(glm::vec3{0.f, 0.5f, 0.f});
-  floor_model_comp->set_scale(glm::vec3{3.f, 1.5f, 3.f});
+  floor_model_comp->set_translation(Eigen::Vector3d{0.f, 0.5f, 0.f});
+  floor_model_comp->set_scale(Eigen::Vector3d{3.f, 1.5f, 3.f});
 
 
 }

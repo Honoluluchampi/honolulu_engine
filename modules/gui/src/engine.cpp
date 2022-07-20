@@ -79,12 +79,12 @@ void engine::begin_imgui()
 }
 
 // TODO : delete gui demo
-void engine::update(glm::vec3& translation)
+void engine::update(Eigen::Vector3d& translation)
 {
   // configure position of vase
-  translation.x = vec_[0];
-  translation.y = vec_[1];
-  translation.z = vec_[2];
+  translation.x() = vec_[0];
+  translation.y() = vec_[1];
+  translation.z() = vec_[2];
 }
 
 void engine::render()

@@ -19,9 +19,9 @@ namespace graphics {
 // should be compatible with a shader
 struct mesh_push_constant
 {
-  glm::mat4 model_matrix{1.0f};
+  glm::mat4 model_matrix {1.f};
   // to align data offsets with shader
-  glm::mat4 normal_matrix{1.0f};
+  glm::mat4 normal_matrix {1.f};
 };
 
 mesh_rendering_system::mesh_rendering_system
@@ -95,9 +95,41 @@ void mesh_rendering_system::render(frame_info frame_info)
     if (obj->get_model_sp() == nullptr) continue;
     mesh_push_constant push{};
     // camera projection
-    push.model_matrix = obj->get_transform().mat4();
+    auto mat4 = obj->get_transform().mat4();
+    push.model_matrix[0][0] = mat4(0, 0);
+    push.model_matrix[0][1] = mat4(0, 1);
+    push.model_matrix[0][2] = mat4(0, 2);
+    push.model_matrix[0][3] = mat4(0, 3);
+    push.model_matrix[1][0] = mat4(1, 0);
+    push.model_matrix[1][1] = mat4(1, 1);
+    push.model_matrix[1][2] = mat4(1, 2);
+    push.model_matrix[1][3] = mat4(1, 3);
+    push.model_matrix[2][0] = mat4(2, 0);
+    push.model_matrix[2][1] = mat4(2, 1);
+    push.model_matrix[2][2] = mat4(2, 2);
+    push.model_matrix[2][3] = mat4(2, 3);
+    push.model_matrix[3][0] = mat4(3, 0);
+    push.model_matrix[3][1] = mat4(3, 1);
+    push.model_matrix[3][2] = mat4(3, 2);
+    push.model_matrix[3][3] = mat4(3, 3);
     // automatically converse mat3(normal_matrix) to mat4 for shader data alignment
-    push.normal_matrix = obj->get_transform().normal_matrix();
+    auto normal_mat4 = obj->get_transform().normal_matrix();
+    push.normal_matrix[0][0] = normal_mat4(0, 0);
+    push.normal_matrix[0][1] = normal_mat4(0, 1);
+    push.normal_matrix[0][2] = normal_mat4(0, 2);
+    push.normal_matrix[0][3] = normal_mat4(0, 3);
+    push.normal_matrix[1][0] = normal_mat4(1, 0);
+    push.normal_matrix[1][1] = normal_mat4(1, 1);
+    push.normal_matrix[1][2] = normal_mat4(1, 2);
+    push.normal_matrix[1][3] = normal_mat4(1, 3);
+    push.normal_matrix[2][0] = normal_mat4(2, 0);
+    push.normal_matrix[2][1] = normal_mat4(2, 1);
+    push.normal_matrix[2][2] = normal_mat4(2, 2);
+    push.normal_matrix[2][3] = normal_mat4(2, 3);
+    push.normal_matrix[3][0] = normal_mat4(3, 0);
+    push.normal_matrix[3][1] = normal_mat4(3, 1);
+    push.normal_matrix[3][2] = normal_mat4(3, 2);
+    push.normal_matrix[3][3] = normal_mat4(3, 3);
 
     vkCmdPushConstants(
         frame_info.command_buffer,

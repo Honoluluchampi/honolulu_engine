@@ -27,6 +27,7 @@ class mesh_component : public renderable_component
     void set_mesh_model(S&& model) { model_sp_ = std::forward<S>(model); }
         
   private:
+    void update_component(float dt) override { std::cout << this->transform_sp_->translation.x() << std::endl; }
     // hnll::graphics::mesh_model can be shared all over a game
     s_ptr<hnll::graphics::mesh_model> model_sp_ = nullptr;
 };

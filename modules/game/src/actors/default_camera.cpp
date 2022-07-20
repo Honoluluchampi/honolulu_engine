@@ -9,7 +9,7 @@ default_camera::default_camera(hnll::graphics::engine& hve) : actor()
 {
   viewer_comp_sp_ = std::make_shared<viewer_component>(transform_, hve.get_renderer());
   // set initial position
-  transform_.translation.z = -2.5f;
+  transform_.translation.z() = -2.5f;
   
   auto key_comp = std::make_shared<keyboard_movement_component>(hve.get_glfw_window(), transform_);
   

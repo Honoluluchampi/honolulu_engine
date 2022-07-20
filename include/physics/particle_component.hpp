@@ -4,8 +4,11 @@
 #include <utils/utils.hpp>
 #include <game/component.hpp>
 
-//std
+// std
 #include <functional>
+
+// lib
+#include <eigen3/Eigen/Dense>
 
 namespace hnll {
 
@@ -29,7 +32,7 @@ class particle_component :public hnll::game::component
     bool is_gravity_enabled() const { return is_gravity_enabled_; }
 
     // setter
-    bool set_gravity_state(bool state, double value = 9.8f)
+    void set_gravity_state(bool state, double value = 9.8f)
     { if (state) gravity_value_ = value; is_gravity_enabled_ = state; }
 
   private:
@@ -37,8 +40,8 @@ class particle_component :public hnll::game::component
     void update_component(float dt) override;
     // TODO : consider to delete s_ptr<transform>
     s_ptr<hnll::utils::transform> transform_sp_;
-    glm::vec3& position_;
-    glm::vec3 velocity_;
+    Eigen::Vector3d& position_;
+    Eigen::Vector3d velocity_;
     double mass_;
     std::function<void(float dt)> dx_dt_;
     float radius_ = 1.f;

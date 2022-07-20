@@ -5,6 +5,7 @@
 
 // libs
 #include <vulkan/vulkan.h>
+#include <eigen3/Eigen/Dense>
 
 namespace hnll {
 namespace graphics {
@@ -14,18 +15,18 @@ namespace graphics {
 
 struct point_light
 {
-  glm::vec4 position{}; // ignore w
-  glm::vec4 color{}; // w is intensity
+  Eigen::Vector4d position{}; // ignore w
+  Eigen::Vector4d color{}; // w is intensity
 };
 
 // global uniform buffer object
 struct global_ubo
 {
   // check alignment rules
-  glm::mat4 projection{1.f};
-  glm::mat4 view{1.f};
+  Eigen::Matrix4d projection = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d view = Eigen::Matrix4d::Identity();
   // point light
-  glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .02f}; // w is light intensity
+  Eigen::Vector4d ambient_light_color{1.f, 1.f, 1.f, .02f}; // w is light intensity
   point_light point_lights[MAX_LIGHTS];
   int lights_count;
 };

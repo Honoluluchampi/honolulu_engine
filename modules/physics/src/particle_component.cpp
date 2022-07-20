@@ -17,7 +17,7 @@ particle_component::particle_component(s_ptr<hnll::utils::transform>&& transform
 {
   dx_dt_ = [this](float dt) {
     this->position_ += velocity_ * dt;
-    this->velocity_ += gravity_value_ * dt; // m * g * dt / m
+    this->velocity_.array() += gravity_value_ * dt; // m * g * dt / m
   };
 }
 
