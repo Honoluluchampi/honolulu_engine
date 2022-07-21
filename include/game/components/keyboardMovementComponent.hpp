@@ -20,7 +20,7 @@ class keyboard_movement_component : public component
     using key_id = int;
     using pad_id = int;
     using button_map = std::unordered_map<key_id, u_ptr<std::function<void()>>>;
-    using pad_map = std::unordered_map<pad_id, u_ptr<std::function<Eigen::Vector3d(float,float)>>>;
+    using pad_map = std::unordered_map<pad_id, u_ptr<std::function<Eigen::Vector3f(float,float)>>>;
     
     keyboard_movement_component(GLFWwindow* window, hnll::utils::transform& transform);
     
@@ -64,8 +64,8 @@ class keyboard_movement_component : public component
     void set_button_func(key_id key_id, std::function<void()> func)
     { button_map_.emplace(key_id, std::make_unique<std::function<void()>>(func)); }
     // dont use lambda's capture
-    void set_axis_func(pad_id axis_id, std::function<Eigen::Vector3d(float, float)> func)
-    { pad_map_.emplace(axis_id, std::make_unique<std::function<Eigen::Vector3d(float, float)>>(func)); }
+    void set_axis_func(pad_id axis_id, std::function<Eigen::Vector3f(float, float)> func)
+    { pad_map_.emplace(axis_id, std::make_unique<std::function<Eigen::Vector3f(float, float)>>(func)); }
 
     void remove_button_func(key_id key_id) { button_map_.erase(key_id); }
     void remove_axis_func(pad_id axis_id) { pad_map_.erase(axis_id); }

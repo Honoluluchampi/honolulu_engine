@@ -22,7 +22,7 @@ viewer_component::viewer_component(hnll::utils::transform& transform, hnll::grap
 void viewer_component::set_orthographics_projection(
     float left, float right, float top, float bottom, float near, float far) 
 {
-  projection_matrix_ = Eigen::Matrix4d::Identity();
+  projection_matrix_ = Eigen::Matrix4f::Identity();
   projection_matrix_(0, 0) = 2.f / (right - left);
   projection_matrix_(1, 1) = 2.f / (bottom - top);
   projection_matrix_(2, 2) = 1.f / (far - near);
@@ -35,7 +35,7 @@ void viewer_component::set_perspective_projection(float fovy, float aspect, floa
 {
   assert(std::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
   const float tan_half_fovy = tan(fovy / 2.f);
-  projection_matrix_ = Eigen::Matrix4d::Zero();
+  projection_matrix_ = Eigen::Matrix4f::Zero();
   projection_matrix_(0, 0) = 1.f / (aspect * tan_half_fovy);
   projection_matrix_(1, 1) = 1.f / (tan_half_fovy);
   projection_matrix_(2, 2) = far / (far - near);
@@ -43,13 +43,13 @@ void viewer_component::set_perspective_projection(float fovy, float aspect, floa
   projection_matrix_(3, 2) = -(far * near) / (far - near);
 }
 
-void viewer_component::set_veiw_direction(const Eigen::Vector3d& position, const Eigen::Vector3d& direction, const Eigen::Vector3d& up)
+void viewer_component::set_veiw_direction(const Eigen::Vector3f& position, const Eigen::Vector3f& direction, const Eigen::Vector3f& up)
 {
-  const Eigen::Vector3d w = direction.normalized();
-  const Eigen::Vector3d u = w.cross(up).normalized();
-  const Eigen::Vector3d v = w.cross(u);
+  const Eigen::Vector3f w = direction.normalized();
+  const Eigen::Vector3f u = w.cross(up).normalized();
+  const Eigen::Vector3f v = w.cross(u);
 
-  veiw_matrix_ = Eigen::Matrix4d::Identity();
+  veiw_matrix_ = Eigen::Matrix4f::Identity();
   veiw_matrix_(0, 0) = u.x();
   veiw_matrix_(1, 0) = u.y();
   veiw_matrix_(2, 0) = u.z();
@@ -64,7 +64,7 @@ void viewer_component::set_veiw_direction(const Eigen::Vector3d& position, const
   veiw_matrix_(3, 2) = -w.dot(position);
 }
 
-void viewer_component::set_view_target(const Eigen::Vector3d& position, const Eigen::Vector3d& target, const Eigen::Vector3d& up)
+void viewer_component::set_view_target(const Eigen::Vector3f& position, const Eigen::Vector3f& target, const Eigen::Vector3f& up)
 { set_veiw_direction(position, target - position, up); }
 
 void viewer_component::set_veiw_yxz() 
@@ -77,10 +77,10 @@ void viewer_component::set_veiw_yxz()
   const float s2 = std::sin(rotation.x());
   const float c1 = std::cos(rotation.y());
   const float s1 = std::sin(rotation.y());
-  const Eigen::Vector3d u{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
-  const Eigen::Vector3d v{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
-  const Eigen::Vector3d w{(c2 * s1), (-s2), (c1 * c2)};
-  veiw_matrix_ = Eigen::Matrix4d::Identity();
+  const Eigen::Vector3f u{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
+  const Eigen::Vector3f v{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
+  const Eigen::Vector3f w{(c2 * s1), (-s2), (c1 * c2)};
+  veiw_matrix_ = Eigen::Matrix4f::Identity();
   veiw_matrix_(0, 0) = u.x();
   veiw_matrix_(1, 0) = u.y();
   veiw_matrix_(2, 0) = u.z();
@@ -95,13 +95,13 @@ void viewer_component::set_veiw_yxz()
   veiw_matrix_(3, 2) = -w.dot(position);
 }
 
-Eigen::Matrix4d viewer_component::get_inverse_perspective_projection() const
+Eigen::Matrix4f viewer_component::get_inverse_perspective_projection() const
 {
   // TODO : calc this in a safe manner
   return projection_matrix_.inverse();
 }
 
-Eigen::Matrix4d viewer_component::get_inverse_view_yxz() const
+Eigen::Matrix4f viewer_component::get_inverse_view_yxz() const
 {
   auto position = -transform_.translation;
   auto rotation = -transform_.rotation;
@@ -111,10 +111,10 @@ Eigen::Matrix4d viewer_component::get_inverse_view_yxz() const
   const float s2 = std::sin(rotation.x());
   const float c1 = std::cos(rotation.y());
   const float s1 = std::sin(rotation.y());
-  const Eigen::Vector3d u{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
-  const Eigen::Vector3d v{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
-  const Eigen::Vector3d w{(c2 * s1), (-s2), (c1 * c2)};
-  Eigen::Matrix4d inv_view = Eigen::Matrix4d::Identity();
+  const Eigen::Vector3f u{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
+  const Eigen::Vector3f v{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
+  const Eigen::Vector3f w{(c2 * s1), (-s2), (c1 * c2)};
+  Eigen::Matrix4f inv_view = Eigen::Matrix4f::Identity();
   inv_view(0, 0) = u.x();
   inv_view(1, 0) = u.y();
   inv_view(2, 0) = u.z();

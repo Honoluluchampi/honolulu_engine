@@ -4,11 +4,11 @@
 namespace hnll {
 namespace utils {
 
-Eigen::Matrix4d transform::mat4()
+Eigen::Matrix4f transform::mat4()
 {
   const float c3 = std::cos(rotation.z()), s3 = std::sin(rotation.z()), c2 = std::cos(rotation.x()),
     s2 = std::sin(rotation.x()), c1 = std::cos(rotation.y()), s1 = std::sin(rotation.y());
-  Eigen::Matrix4d result;
+  Eigen::Matrix4f result;
   result <<
           scale.x() * (c1 * c3 + s1 * s2 * s3),
           scale.x() * (c2 * s3),
@@ -32,11 +32,11 @@ Eigen::Matrix4d transform::mat4()
   return result;
 }
 
-Eigen::Matrix4d transform::rotate_mat4()
+Eigen::Matrix4f transform::rotate_mat4()
 {
   const float c3 = std::cos(rotation.z()), s3 = std::sin(rotation.z()), c2 = std::cos(rotation.x()),
   s2 = std::sin(rotation.x()), c1 = std::cos(rotation.y()), s1 = std::sin(rotation.y());
-  Eigen::Matrix4d result;
+  Eigen::Matrix4f result;
   result <<
           scale.x() * (c1 * c3 + s1 * s2 * s3),
           scale.x() * (c2 * s3),
@@ -61,13 +61,13 @@ Eigen::Matrix4d transform::rotate_mat4()
 }
 
 // normal = R * S(-1)
-Eigen::Matrix4d transform::normal_matrix()
+Eigen::Matrix4f transform::normal_matrix()
 {
   const float c3 = std::cos(rotation.z()), s3 = std::sin(rotation.z()), c2 = std::cos(rotation.x()),
     s2 = std::sin(rotation.x()), c1 = std::cos(rotation.y()), s1 = std::sin(rotation.y());
 
-  const Eigen::Vector3d inv_scale = scale.cwiseInverse();
-  Eigen::Matrix4d result;
+  const Eigen::Vector3f inv_scale = scale.cwiseInverse();
+  Eigen::Matrix4f result;
   result <<
           inv_scale.x() * (c1 * c3 + s1 * s2 * s3),
           inv_scale.x() * (c2 * s3),

@@ -40,8 +40,8 @@ class particle_component :public hnll::game::component
     void update_component(float dt) override;
     // TODO : consider to delete s_ptr<transform>
     s_ptr<hnll::utils::transform> transform_sp_;
-    Eigen::Vector3d& position_;
-    Eigen::Vector3d velocity_;
+    Eigen::Vector3f& position_;
+    Eigen::Vector3f velocity_;
     double mass_;
     std::function<void(float dt)> dx_dt_;
     float radius_ = 1.f;

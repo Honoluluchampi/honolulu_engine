@@ -53,13 +53,13 @@ void keyboard_movement_component::process_rotate_input(GLFWgamepadstate& state, 
   float rota_y = -state.axes[pads.rota_y]
               + (glfwGetKey(window_, keys.look_right) == GLFW_PRESS)
               - (glfwGetKey(window_, keys.look_left) == GLFW_PRESS);
-  Eigen::Vector3d rotate = {rota_x, rota_y, 0.f};
+  Eigen::Vector3f rotate = {rota_x, rota_y, 0.f};
   // add to the current rotate matrix
   if (rotate.dot(rotate) > ROTATE_THRESH) //std::numeric_limits<float>::epsilon())
     transform_.rotation += LOOK_SPEED * dt * rotate.normalized();
 
   // limit pitch values between about +/- 58ish degrees
-  transform_.rotation.x() = std::min(std::max(transform_.rotation.x(), -1.5), 1.5);
+  transform_.rotation.x() = std::min(std::max(transform_.rotation.x(), -1.5f), 1.5f);
   transform_.rotation.y() = std::fmod(transform_.rotation.y(), 2.f * M_PI);
 }
 
@@ -72,11 +72,11 @@ void keyboard_movement_component::process_move_input(GLFWgamepadstate& state, fl
   float moveZ = state.buttons[pads.dp_up] - state.buttons[pads.dp_down];
 
   float yaw = transform_.rotation.y();
-  const Eigen::Vector3d forward_direction{sin(yaw), 0.f, cos(yaw)};
-  const Eigen::Vector3d right_direction{forward_direction.z(), 0.f, -forward_direction.x()};
-  const Eigen::Vector3d up_direction{0.f, -1.f, 0.f};
+  const Eigen::Vector3f forward_direction{sin(yaw), 0.f, cos(yaw)};
+  const Eigen::Vector3f right_direction{forward_direction.z(), 0.f, -forward_direction.x()};
+  const Eigen::Vector3f up_direction{0.f, -1.f, 0.f};
 
-  Eigen::Vector3d move_direction{0.f, 0.f, 0.f};
+  Eigen::Vector3f move_direction{0.f, 0.f, 0.f};
   float forward = move_y * (state.buttons[pads.left_bumper] == GLFW_PRESS)
     + (glfwGetKey(window_, keys.move_forward) == GLFW_PRESS)
     - (glfwGetKey(window_, keys.move_backward) == GLFW_PRESS);
@@ -134,7 +134,7 @@ void keyboard_movement_component::adjust_axis_errors()
 void keyboard_movement_component::set_default_mapping()
 {
   // axis
-  auto leftXfunc = [](float val){return Eigen::Vector3d(0.f, 0.f, 0.f); };
+  auto leftXfunc = [](float val){return Eigen::Vector3f(0.f, 0.f, 0.f); };
 }
 
 } // namespace game

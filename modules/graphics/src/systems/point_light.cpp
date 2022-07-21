@@ -2,13 +2,6 @@
 #include <graphics/systems/point_light.hpp>
 #include <game/components/point_light_component.hpp>
 
-// lib
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-// lib
-#include <glm/gtc/constants.hpp>
-
 //std
 #include <stdexcept>
 #include <array>
@@ -18,8 +11,8 @@ namespace graphics {
 
 struct point_light_push_constant
 {
-  Eigen::Vector4d position{};
-  Eigen::Vector4d color{};
+  Eigen::Vector4f position = Eigen::Vector4f::Identity();
+  Eigen::Vector4f color = Eigen::Vector4f::Identity();
   float radius;
 };
 
@@ -96,17 +89,9 @@ void point_light_rendering_system::render(frame_info frame_info)
     auto light_comp = dynamic_cast<hnll::game::point_light_component*>(kv.second.get());
 
     point_light_push_constant push{};
-    push.position = Eigen::Vector4d{
-      light_comp->get_transform().translation.x(),
-      light_comp->get_transform().translation.y(),
-      light_comp->get_transform().translation.z(),
-      1.f};
-    push.color = Eigen::Vector4d(
-      light_comp->get_color().x(),
-      light_comp->get_color().y(),
-      light_comp->get_color().z(),
-      light_comp->get_light_info().light_intensity);
-    push.radius = light_comp->get_transform().scale.x();
+    push.position << light_comp->get_transform().translation.cast<float>(), 1.f;
+    push.color << light_comp->get_color().cast<float>(), light_comp->get_light_info().light_intensity;
+    push.radius = static_cast<float>(light_comp->get_transform().scale.x());
 
     vkCmdPushConstants(
       frame_info.command_buffer,

@@ -79,7 +79,7 @@ void engine::begin_imgui()
 }
 
 // TODO : delete gui demo
-void engine::update(Eigen::Vector3d& translation)
+void engine::update(Eigen::Vector3f& translation)
 {
   // configure position of vase
   translation.x() = vec_[0];

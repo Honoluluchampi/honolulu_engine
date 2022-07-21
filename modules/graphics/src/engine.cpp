@@ -98,8 +98,8 @@ void engine::render(hnll::game::viewer_component& viewer_comp)
     };
 
     // update 
-    ubo_.projection = viewer_comp.get_projection();
-    ubo_.view = viewer_comp.get_view();
+    ubo_.projection = viewer_comp.get_projection().cast<float>();
+    ubo_.view = viewer_comp.get_view().cast<float>();
     ubo_buffers_[frame_index]->write_to_buffer(&ubo_);
     ubo_buffers_[frame_index]->flush();
 
