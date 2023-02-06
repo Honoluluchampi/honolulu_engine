@@ -11,7 +11,7 @@ namespace game {
 class engine
 {
   public:
-    engine(){}
+    engine();
     ~engine(){}
 
     void run();

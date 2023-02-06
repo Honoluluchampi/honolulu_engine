@@ -4,7 +4,8 @@
 // std
 #include <iostream>
 
-int main() {
+int main()
+{
   hnll::game::engine engine;
 
   try { engine.run(); }
