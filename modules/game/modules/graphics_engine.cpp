@@ -6,7 +6,7 @@ namespace hnll::game {
 
 graphics_engine::graphics_engine(const char* window_name)
 {
-  window_ = std::make_unique<graphics::window>(WIDTH, HEIGHT, window_name);
+  window_ = graphics::window::create(WIDTH, HEIGHT, window_name);
 
   init();
 }

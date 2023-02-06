@@ -1,5 +1,8 @@
 #pragma once
 
+// hnll
+#include <utils/common_alias.hpp>
+
 // lib
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -19,6 +22,9 @@ class window
     // delete copy ctor, assignment (to prevent GLFWwindow* from double deleted)
     window(const window &) = delete;
     window& operator= (const window &) = delete;
+
+    static u_ptr<window> create(const int w, const int h, const std::string& name)
+    { return std::make_unique<window>(w, h, name); }
 
     void create_window_surface(VkInstance instance, VkSurfaceKHR* surface);
 

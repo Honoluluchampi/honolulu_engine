@@ -1,10 +1,7 @@
 #pragma once
 
 // hnll
-#include <graphics/window.hpp>
 #include <utils/common_alias.hpp>
-//#include <game/components/renderable_component.hpp>
-//#include <utils/rendering_utils.hpp>
 
 // std
 #include <map>
@@ -46,8 +43,6 @@ class graphics_engine
     graphics_engine &operator= (const graphics_engine &) = delete;
 
     void render();
-
-    inline GLFWwindow* get_glfw_window() const { return window_->get_glfw_window(); }
 
     // getter
     bool should_close_window();
