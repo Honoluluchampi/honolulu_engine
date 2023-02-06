@@ -1,6 +1,14 @@
 // hnll
 #include <game/engine.hpp>
 
-int main() {
+// std
+#include <iostream>
 
+int main() {
+  hnll::game::engine engine;
+
+  try { engine.run(); }
+  catch (const std::exception& e) {
+    std::cerr << e.what() << std::endl;
+  }
 }
