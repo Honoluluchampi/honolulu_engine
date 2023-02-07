@@ -30,7 +30,7 @@ export IMGUI_DIR=$HNLL_ENGN/submodules/imgui
 # download tiny_obj_loader
 if [ ! -e $HNLL_ENGN/submodules/tiny_obj_loader/tiny_obj_loader.h ]; then
   mkdir -p $HNLL_ENGN/submodules/tiny_obj_loader
-  echo "download tiny obj loader"
+  echo "downloading tiny obj loader"
   curl -o $HNLL_ENGN/submodules/tiny_obj_loader/tiny_obj_loader.h https://raw.githubusercontent.com/tinyobjloader/tinyobjloader/master/tiny_obj_loader.h
 fi
 export TINY_OBJ_LOADER_DIR=$HNLL_ENGN/submodules/tiny_obj_loader
@@ -38,13 +38,23 @@ export TINY_OBJ_LOADER_DIR=$HNLL_ENGN/submodules/tiny_obj_loader
 # download tiny_gltf
 if [ ! -e $HNLL_ENGN/submodules/tiny_gltf/tiny_gltf.h ]; then
   mkdir -p $HNLL_ENGN/submodules/tiny_gltf
-  echo "download tiny gltf"
+  echo "downloading tiny gltf"
   curl -o $HNLL_ENGN/submodules/tiny_gltf/tiny_gltf.h       https://raw.githubusercontent.com/syoyo/tinygltf/release/tiny_gltf.h
   curl -o $HNLL_ENGN/submodules/tiny_gltf/stb_image.h       https://raw.githubusercontent.com/syoyo/tinygltf/release/stb_image.h
   curl -o $HNLL_ENGN/submodules/tiny_gltf/stb_image_write.h https://raw.githubusercontent.com/syoyo/tinygltf/release/stb_image_write.h
   curl -o $HNLL_ENGN/submodules/tiny_gltf/json.hpp          https://raw.githubusercontent.com/syoyo/tinygltf/release/json.hpp
 fi
 export TINY_GLTF_DIR=$HNLL_ENGN/submodules/tiny_gltf
+
+# download nv vulkan extensions
+if [ ! -e $HNLL_ENGN/submodules/extensions/nvvk_extensions.hpp ]; then
+  mkdir -p $HNLL_ENGN/submodules/extensions
+  echo "downloading nv vulkan extensions"
+  curl -o $HNLL_ENGN/submodules/extensions/extensions_vk.hpp https://raw.githubusercontent.com/nvpro-samples/nvpro_core/master/nvvk/extensions_vk.hpp
+  curl -o $HNLL_ENGN/submodules/extensions/extensions_vk.cpp https://raw.githubusercontent.com/nvpro-samples/nvpro_core/master/nvvk/extensions_vk.cpp
+  mkdir -p $HNLL_ENGN/submodules/extensions/nvh
+  touch $HNLL_ENGN/submodules/extensions/nvh/nvprint.hpp
+fi
 
 export MODEL_DIR=$HNLL_ENGN/models
 
