@@ -1,5 +1,6 @@
 set(SOURCES
     window.cpp
+    device.cpp
 )
 
 add_library(hnll_graphics STATIC ${SOURCES})
