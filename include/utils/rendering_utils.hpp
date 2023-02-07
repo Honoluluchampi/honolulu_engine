@@ -4,7 +4,6 @@
 #include <utils/common_alias.hpp>
 
 // lib
-#include <eigen3/Eigen/Dense>
 #include <vulkan/vulkan.h>
 
 #define MAX_LIGHTS 20

@@ -1,13 +1,18 @@
 // hnll
 #include <game/modules/graphics_engine.hpp>
 #include <graphics/window.hpp>
+#include <graphics/device.hpp>
+#include <utils/rendering_utils.hpp>
 
 namespace hnll::game {
 
-graphics_engine::graphics_engine(const char* window_name)
+u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
+{ return std::make_unique<graphics_engine>(window_name, rendering_type);}
+
+graphics_engine::graphics_engine(const std::string& window_name, utils::rendering_type rendering_type)
 {
   window_ = graphics::window::create(WIDTH, HEIGHT, window_name);
-
+  device_ = graphics::device::create(*window_, rendering_type);
   init();
 }
 

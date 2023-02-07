@@ -1,7 +1,7 @@
 // hnll
 #include <graphics/device.hpp>
 #include <utils/rendering_utils.hpp>
-#include <extensions/nvvk_extensions.hpp>
+#include <extensions/extensions_vk.hpp>
 
 // ray tracing
 #include <vulkan/vulkan_core.h>

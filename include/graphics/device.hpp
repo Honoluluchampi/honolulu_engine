@@ -52,6 +52,9 @@ class device
     device(device &&) = delete;
     device &operator=(device &&) = delete;
 
+    static u_ptr<device> create(window &window, utils::rendering_type type)
+    { return std::make_unique<device>(window, type); }
+
     // getter
     VkCommandPool        get_command_pool()         { return command_pool_; }
     VkInstance           get_instance()             { return instance_; }

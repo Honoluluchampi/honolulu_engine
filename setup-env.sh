@@ -52,6 +52,7 @@ if [ ! -e $HNLL_ENGN/submodules/extensions/nvvk_extensions.hpp ]; then
   echo "downloading nv vulkan extensions"
   curl -o $HNLL_ENGN/submodules/extensions/extensions_vk.hpp https://raw.githubusercontent.com/nvpro-samples/nvpro_core/master/nvvk/extensions_vk.hpp
   curl -o $HNLL_ENGN/submodules/extensions/extensions_vk.cpp https://raw.githubusercontent.com/nvpro-samples/nvpro_core/master/nvvk/extensions_vk.cpp
+  # dummy
   mkdir -p $HNLL_ENGN/submodules/extensions/nvh
   touch $HNLL_ENGN/submodules/extensions/nvh/nvprint.hpp
 fi

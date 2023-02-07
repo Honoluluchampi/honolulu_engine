@@ -19,6 +19,10 @@ namespace graphics {
   class buffer;
 }
 
+namespace utils {
+  enum class rendering_type;
+}
+
 namespace game {
 
 // forward declaration
@@ -33,11 +37,10 @@ class graphics_engine
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine(const char* window_name);
+    graphics_engine(const std::string& window_name, utils::rendering_type rendering_type);
     ~graphics_engine();
 
-    static u_ptr<graphics_engine> create(const char* window_name = "honolulu engine")
-    { return std::make_unique<graphics_engine>(window_name); }
+    static u_ptr<graphics_engine> create(const std::string& window_name, utils::rendering_type rendering_type);
 
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
@@ -51,7 +54,8 @@ class graphics_engine
     void init();
 
     // construct in impl
-    u_ptr<graphics::window>   window_;
+    u_ptr<graphics::window> window_;
+    u_ptr<graphics::device> device_;
 };
 
 }
