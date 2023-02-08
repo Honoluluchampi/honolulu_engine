@@ -24,6 +24,7 @@ function(include_common_dependencies target)
             $ENV{HNLL_ENGN}/include
             $ENV{HNLL_ENGN}/submodules
             $ENV{VULKAN_DIR}/include
+            $ENV{HNLL_ENGN}/submodules/imgui # for imgui impl
             )
     target_link_directories(${target} PUBLIC $ENV{VULKAN_DIR}/lib)
 endfunction()

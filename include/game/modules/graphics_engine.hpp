@@ -7,6 +7,9 @@
 #include <map>
 #include <vector>
 
+// lib
+#include <GLFW/glfw3.h>
+
 namespace hnll {
 
 namespace graphics {
@@ -48,7 +51,11 @@ class graphics_engine
     void render();
 
     // getter
-    bool should_close_window();
+    bool should_close_window() const;
+    GLFWwindow* get_glfw_window() const ;
+    graphics::window& get_window_r();
+    graphics::device& get_device_r();
+    graphics::renderer& get_renderer_r();
 
   private:
     void init();

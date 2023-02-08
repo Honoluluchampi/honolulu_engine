@@ -13,6 +13,14 @@ if [ ! -e $HNLL_ENGN/submodules/imgui/imgui.cpp ]; then
   curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.cpp https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_vulkan.cpp
   curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.cpp https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_glfw.cpp
   curl -o $HNLL_ENGN/submodules/imgui/roboto_regular.embed https://raw.githubusercontent.com/TheCherno/Walnut/master/Walnut/src/Walnut/ImGui/Roboto-Regular.embed
+  curl -o $HNLL_ENGN/submodules/imgui/imgui.h https://raw.githubusercontent.com/ocornut/imgui/master/imgui.h
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_internal.h https://raw.githubusercontent.com/ocornut/imgui/master/imgui_internal.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_rectpack.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_rectpack.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_textedit.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_textedit.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_truetype.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_truetype.h
+  curl -o $HNLL_ENGN/submodules/imgui/imconfig.h https://raw.githubusercontent.com/ocornut/imgui/master/imconfig.h
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.h https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_vulkan.h
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.h https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_glfw.h
 fi
 export IMGUI_DIR=$HNLL_ENGN/submodules/imgui
 
@@ -36,7 +44,7 @@ fi
 export TINY_GLTF_DIR=$HNLL_ENGN/submodules/tiny_gltf
 
 # download nv vulkan extensions
-if [ ! -e $HNLL_ENGN/submodules/extensions/nvvk_extensions.hpp ]; then
+if [ ! -e $HNLL_ENGN/submodules/extensions/extensions_vk.hpp ]; then
   mkdir -p $HNLL_ENGN/submodules/extensions
   echo "downloading nv vulkan extensions"
   curl -o $HNLL_ENGN/submodules/extensions/extensions_vk.hpp https://raw.githubusercontent.com/nvpro-samples/nvpro_core/master/nvvk/extensions_vk.hpp

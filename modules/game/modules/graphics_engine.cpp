@@ -44,6 +44,12 @@ void graphics_engine::render()
 }
 
 // getter
-bool graphics_engine::should_close_window() { return window_->should_be_closed(); }
+bool graphics_engine::should_close_window() const { return window_->should_be_closed(); }
+
+GLFWwindow* graphics_engine::get_glfw_window() const { return window_->get_glfw_window(); }
+
+graphics::window& graphics_engine::get_window_r() { return *window_; }
+graphics::device& graphics_engine::get_device_r() { return *device_; }
+graphics::renderer& graphics_engine::get_renderer_r() { return *renderer_; }
 
 } // namespace hnll::game
