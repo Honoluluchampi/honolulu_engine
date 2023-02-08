@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "-g3 -O0")
 
 set(SOURCES mesh_shader.cpp)
 add_executable(mesh_shader ${SOURCES})
+add_custom_target(setup_env COMMAND "bash" "setup-env.sh")
 target_include_directories(mesh_shader PUBLIC
     $ENV{HNLL_ENGN}/include
 )
