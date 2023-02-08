@@ -2,6 +2,7 @@ set(SOURCES
     window.cpp
     device.cpp
     renderer.cpp
+    swap_chain.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

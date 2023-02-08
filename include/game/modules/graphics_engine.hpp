@@ -56,6 +56,7 @@ class graphics_engine
     // construct in impl
     u_ptr<graphics::window> window_;
     u_ptr<graphics::device> device_;
+    u_ptr<graphics::renderer> renderer_;
 };
 
 }

@@ -27,7 +27,7 @@ void engine::update()
 
 void engine::render()
 {
-
+  //graphics_engine_->render();
 }
 
 } // namespace hnll::game

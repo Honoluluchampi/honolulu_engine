@@ -11,10 +11,6 @@ namespace hnll::graphics {
 
 class swap_chain;
 
-// define ~_RENDER_PASS_ID in renderer class
-// to specify indices of multiple render pass and frame buffer
-#define HVE_RENDER_PASS_ID 0
-
 class renderer
 {
   public:
@@ -24,6 +20,9 @@ class renderer
 
     renderer(const renderer &) = delete;
     renderer &operator= (const renderer &) = delete;
+
+    static u_ptr<renderer> create(window& window, device& device, bool recreate_from_scratch = true)
+    { return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
     // getter
     inline VkRenderPass get_swap_chain_render_pass(int render_pass_id) const;
@@ -55,7 +54,7 @@ class renderer
     inline void set_next_renderer(renderer* renderer)
     { next_renderer_ = renderer; }
 
-    const bool is_last_renderer() const
+    bool is_last_renderer() const
     { return !next_renderer_; }
 
     static bool swap_chain_recreated_;
