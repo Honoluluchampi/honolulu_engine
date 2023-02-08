@@ -9,6 +9,7 @@
 
 // lib
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 
 namespace hnll {
 
@@ -49,6 +50,8 @@ class graphics_engine
     graphics_engine &operator= (const graphics_engine &) = delete;
 
     void render();
+
+    void wait_idle();
 
     // getter
     bool should_close_window() const;

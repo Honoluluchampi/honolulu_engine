@@ -43,6 +43,8 @@ void graphics_engine::render()
   }
 }
 
+void graphics_engine::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
+
 // getter
 bool graphics_engine::should_close_window() const { return window_->should_be_closed(); }
 

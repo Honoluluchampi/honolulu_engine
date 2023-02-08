@@ -32,9 +32,12 @@ engine::~engine() {}
 void engine::run()
 {
   while (!graphics_engine_->should_close_window()) {
+    glfwPollEvents();
     update();
     render();
   }
+  graphics_engine_->wait_idle();
+
 }
 
 void engine::update()
