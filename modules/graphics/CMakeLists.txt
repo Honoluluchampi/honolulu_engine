@@ -1,6 +1,7 @@
 set(SOURCES
     window.cpp
     device.cpp
+    renderer.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 
