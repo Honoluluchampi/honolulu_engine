@@ -11,7 +11,7 @@ template<>
 grid_shading_system::shading_system(graphics::device& device, utils::shading_type type)
  : device_(device), shading_type_(type)
 {
-  pipeline_layout_ = create_pipeline_layout<no_push_constant>(
+  pipeline_layout_ = create_pipeline_layout_without_push(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{ get_global_desc_set_layout() }
   );
