@@ -19,6 +19,8 @@ class shading_system {
 
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
+    static u_ptr<shading_system<RC>> create(graphics::device& device);
+
     shading_system(const shading_system &) = delete;
     shading_system &operator=(const shading_system &) = delete;
     shading_system(shading_system &&) = default;
