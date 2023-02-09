@@ -1,5 +1,6 @@
 // hnll
 #include <game/shading_systems/grid_shading_system.hpp>
+#include <game/modules/graphics_engine.hpp>
 
 namespace hnll::game {
 
@@ -13,7 +14,7 @@ grid_shading_system::shading_system(graphics::device& device, utils::shading_typ
 {
   pipeline_layout_ = create_pipeline_layout_without_push(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-    std::vector<VkDescriptorSetLayout>{ get_global_desc_set_layout() }
+    std::vector<VkDescriptorSetLayout>{ graphics_engine::get_global_desc_set_layout() }
   );
 
   // delete redundant vertex attributes
@@ -23,7 +24,7 @@ grid_shading_system::shading_system(graphics::device& device, utils::shading_typ
 
   pipeline_ = create_pipeline(
     pipeline_layout_,
-    shading_system::get_default_render_pass(),
+    graphics_engine::get_default_render_pass(),
     "/modules/graphics/shader/spv/",
     { "grid_shader.vert.spv", "grid_shader.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },

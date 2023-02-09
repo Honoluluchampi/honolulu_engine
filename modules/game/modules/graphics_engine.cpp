@@ -8,7 +8,9 @@
 
 namespace hnll::game {
 
-shading_system_map graphics_engine::shading_systems_;
+shading_system_map    graphics_engine::shading_systems_;
+VkDescriptorSetLayout graphics_engine::global_desc_set_layout_;
+VkRenderPass          graphics_engine::default_render_pass_;
 
 u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
 { return std::make_unique<graphics_engine>(window_name, rendering_type);}
@@ -30,6 +32,7 @@ graphics_engine::~graphics_engine()
 // todo : separate into some functions
 void graphics_engine::init()
 {
+  setup_shading_system_config();
   setup_default_shading_systems();
 }
 
@@ -48,9 +51,16 @@ void graphics_engine::render()
 
 void graphics_engine::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
 
+void graphics_engine::setup_shading_system_config()
+{
+  default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);
+  // global_desc_set_layout_ = global_set_layout_->get_descriptor_set_layout();
+}
+
 void graphics_engine::setup_default_shading_systems()
 {
-
+  auto grid_shader = grid_shading_system::create(*device_);
+  add_shading_system(std::move(grid_shader));
 }
 
 // getter

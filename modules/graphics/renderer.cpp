@@ -233,10 +233,10 @@ void renderer::submit_command_buffers()
 
 // getter
 #ifdef IMGUI_DISABLED
-inline VkRenderPass renderer::get_swap_chain_render_pass() const
+VkRenderPass renderer::get_swap_chain_render_pass() const
 { return swap_chain_->get_render_pass(); }
 #else
-inline VkRenderPass renderer::get_swap_chain_render_pass(int render_pass_id) const
+VkRenderPass renderer::get_swap_chain_render_pass(int render_pass_id) const
 { return swap_chain_->get_render_pass(render_pass_id); }
 #endif
 

@@ -25,14 +25,14 @@ class renderer
     { return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
     // getter
-    inline VkRenderPass get_swap_chain_render_pass(int render_pass_id) const;
-
-    inline float get_aspect_ratio()         const;
+    VkRenderPass get_swap_chain_render_pass(int render_pass_id) const;
+    float        get_aspect_ratio()         const;
+    VkImage      get_image(int index) const;
+    VkImageView  get_view(int index)  const;
     inline bool is_frame_in_progress()      const { return is_frame_started_; }
     inline swap_chain& get_swap_chain()     const { return *swap_chain_; }
     inline VkCommandPool get_command_pool() const { return device_.get_command_pool(); }
-    inline VkImage       get_image(int index) const;
-    inline VkImageView   get_view(int index)  const;
+
     VkCommandBuffer get_current_command_buffer() const
     {
       // assert(is_frame_started_ && "Cannot get command buffer when frame not in progress");
