@@ -7,13 +7,11 @@
 
 namespace hnll {
 
-namespace graphics { class device; class pipeline; }
-
 namespace game {
 
 template<RenderableComponent RC>
 class shading_system {
-    using target_map = std::unordered_map<uint32_t, RC &>;
+    using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
     explicit shading_system(graphics::device &device, utils::shading_type type)
@@ -26,7 +24,7 @@ class shading_system {
     shading_system(shading_system &&) = default;
     shading_system &operator=(shading_system &&) = default;
 
-    void render(const utils::frame_info &frame_info) = 0;
+    void render(const utils::frame_info &frame_info) {}
 
     void add_render_target(rc_id id, RC& target) { targets_.emplace(id, target); }
     void remove_render_target(rc_id id) { targets_.erase(id); }

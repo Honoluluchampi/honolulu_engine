@@ -2,7 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
-#include <game/shading_template_config.hpp>
+#include <game/shading_systems/shading_system_variant.hpp>
 #include <game/shading_system.hpp>
 
 // std
