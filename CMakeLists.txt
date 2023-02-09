@@ -16,6 +16,7 @@ add_library(hnll_engine STATIC ${GAME_SOURCES})
 # add modules
 add_subdirectory(modules/graphics)
 add_subdirectory(modules/gui)
+add_subdirectory(modules/utils)
 
 include($ENV{HNLL_ENGN}/cmake_utils/include.cmake)
 include_common_dependencies(hnll_engine)
@@ -27,6 +28,7 @@ endif()
 target_link_libraries(hnll_engine PUBLIC
     hnll_graphics
     hnll_gui
+    hnll_utils
     libvulkan.so.1.3.224
     glfw
 )
