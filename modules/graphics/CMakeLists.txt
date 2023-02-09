@@ -3,6 +3,7 @@ set(SOURCES
     device.cpp
     renderer.cpp
     swap_chain.cpp
+    pipeline.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

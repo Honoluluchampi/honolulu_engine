@@ -58,6 +58,10 @@ class graphics_engine
 
     void setup_default_shading_systems();
 
+    template <ShadingSystem S>
+    void add_shading_system(u_ptr<S>&& system)
+    { shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system); }
+
     // getter
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
@@ -73,7 +77,7 @@ class graphics_engine
     u_ptr<graphics::device> device_;
     u_ptr<graphics::renderer> renderer_;
 
-    static shading_system_map shading_system_map_;
+    static shading_system_map shading_systems_;
 };
 
 }

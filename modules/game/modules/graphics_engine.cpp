@@ -8,7 +8,7 @@
 
 namespace hnll::game {
 
-shading_system_map graphics_engine::shading_system_map_;
+shading_system_map graphics_engine::shading_systems_;
 
 u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
 { return std::make_unique<graphics_engine>(window_name, rendering_type);}
@@ -50,9 +50,7 @@ void graphics_engine::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
 
 void graphics_engine::setup_default_shading_systems()
 {
-  if (device_->get_rendering_type() == utils::rendering_type::VERTEX_SHADING) {
 
-  }
 }
 
 // getter
