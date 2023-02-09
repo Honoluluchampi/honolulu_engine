@@ -56,14 +56,15 @@ class device
     { return std::make_unique<device>(window, type); }
 
     // getter
-    VkCommandPool        get_command_pool()         { return command_pool_; }
-    VkInstance           get_instance()             { return instance_; }
-    VkPhysicalDevice     get_physical_device()      { return physical_device_; }
-    VkDevice             get_device()               { return device_; }
-    VkSurfaceKHR         get_surface()              { return surface_; }
-    VkQueue              get_graphics_queue()       { return graphics_queue_; }
-    VkQueue              get_present_queue()        { return present_queue_; }
-    queue_family_indices get_queue_family_indices() { return queue_family_indices_; }
+    VkCommandPool         get_command_pool()         { return command_pool_; }
+    VkInstance            get_instance()             { return instance_; }
+    VkPhysicalDevice      get_physical_device()      { return physical_device_; }
+    VkDevice              get_device()               { return device_; }
+    VkSurfaceKHR          get_surface()              { return surface_; }
+    VkQueue               get_graphics_queue()       { return graphics_queue_; }
+    VkQueue               get_present_queue()        { return present_queue_; }
+    queue_family_indices  get_queue_family_indices() { return queue_family_indices_; }
+    utils::rendering_type get_rendering_type() const { return rendering_type_; }
 
     swap_chain_support_details get_swap_chain_support() { return query_swap_chain_support(physical_device_); }
     uint32_t                   find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties);

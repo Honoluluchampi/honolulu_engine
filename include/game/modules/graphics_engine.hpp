@@ -2,10 +2,13 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <game/shading_template_config.hpp>
+#include <game/shading_system.hpp>
 
 // std
 #include <map>
 #include <vector>
+#include <variant>
 
 // lib
 #include <GLFW/glfw3.h>
@@ -30,12 +33,12 @@ namespace utils {
 namespace game {
 
 // forward declaration
-class shading_system;
 class renderable_component;
+
+using shading_system_map = std::map<uint32_t, shading_system_variant>;
 
 class graphics_engine
 {
-  using shading_system_map = std::map<uint32_t, u_ptr<shading_system>>;
   public:
     static constexpr int WIDTH = 960;
     static constexpr int HEIGHT = 820;
@@ -53,6 +56,8 @@ class graphics_engine
 
     void wait_idle();
 
+    void setup_default_shading_systems();
+
     // getter
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
@@ -67,6 +72,8 @@ class graphics_engine
     u_ptr<graphics::window> window_;
     u_ptr<graphics::device> device_;
     u_ptr<graphics::renderer> renderer_;
+
+    static shading_system_map shading_system_map_;
 };
 
 }
