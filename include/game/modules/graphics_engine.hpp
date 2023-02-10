@@ -56,9 +56,6 @@ class graphics_engine
 
     void wait_idle();
 
-    void setup_shading_system_config();
-    void setup_default_shading_systems();
-
     template <ShadingSystem S>
     void add_shading_system(u_ptr<S>&& system)
     { shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system); }
@@ -70,23 +67,26 @@ class graphics_engine
     graphics::device& get_device_r();
     graphics::renderer& get_renderer_r();
 
-    static VkDescriptorSetLayout get_global_desc_set_layout() { return global_desc_set_layout_; }
+    static VkDescriptorSetLayout get_global_desc_layout() { return vk_global_desc_layout_; }
     static VkRenderPass get_default_render_pass() { return default_render_pass_; }
 
   private:
     void init();
+    void setup_ubo();
+    void setup_shading_system_config();
+    void setup_default_shading_systems();
 
     // construct in impl
     u_ptr<graphics::window> window_;
     u_ptr<graphics::device> device_;
     u_ptr<graphics::renderer> renderer_;
 
-    // u_ptr<graphics::descriptor_set_layout> global_set_layout_;
+    u_ptr<graphics::desc_layout> global_set_layout_;
 
     static shading_system_map shading_systems_;
 
     // global config for shading system
-    static VkDescriptorSetLayout global_desc_set_layout_;
+    static VkDescriptorSetLayout vk_global_desc_layout_;
     static VkRenderPass default_render_pass_;
 };
 

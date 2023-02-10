@@ -4,12 +4,13 @@
 #include <graphics/device.hpp>
 #include <graphics/renderer.hpp>
 #include <graphics/swap_chain.hpp>
+#include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
 
 namespace hnll::game {
 
 shading_system_map    graphics_engine::shading_systems_;
-VkDescriptorSetLayout graphics_engine::global_desc_set_layout_;
+VkDescriptorSetLayout graphics_engine::vk_global_desc_layout_;
 VkRenderPass          graphics_engine::default_render_pass_;
 
 u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
@@ -32,8 +33,19 @@ graphics_engine::~graphics_engine()
 // todo : separate into some functions
 void graphics_engine::init()
 {
+  setup_ubo();
   setup_shading_system_config();
   setup_default_shading_systems();
+}
+
+void graphics_engine::setup_ubo()
+{
+  // this is set layout of master system
+  // enable ubo to be referenced by oall stages of a graphics pipeline
+  global_set_layout_ = graphics::desc_layout::builder(*device_)
+    .add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_MESH_BIT_NV)
+    .build();
+  // may add additional layout of child system
 }
 
 void graphics_engine::render()
@@ -54,7 +66,7 @@ void graphics_engine::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
 void graphics_engine::setup_shading_system_config()
 {
   default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);
-  // global_desc_set_layout_ = global_set_layout_->get_descriptor_set_layout();
+  vk_global_desc_layout_ = global_set_layout_->get_descriptor_set_layout();
 }
 
 void graphics_engine::setup_default_shading_systems()
