@@ -4,6 +4,8 @@ set(SOURCES
     renderer.cpp
     swap_chain.cpp
     pipeline.cpp
+    desc_set.cpp
+    buffer.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

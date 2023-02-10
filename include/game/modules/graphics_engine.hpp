@@ -21,8 +21,8 @@ namespace graphics {
   class device;
   class renderer;
   class swap_chain;
-  class descriptor_set_layout;
-  class descriptor_pool;
+  class desc_layout;
+  class desc_pool;
   class buffer;
 }
 

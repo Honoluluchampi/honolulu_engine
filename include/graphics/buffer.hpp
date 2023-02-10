@@ -53,13 +53,13 @@ class buffer {
     void write_to_buffer(void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     VkResult flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-    VkDescriptorBufferInfo descriptor_info(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+    VkDescriptorBufferInfo desc_info(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
     VkResult invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
     // for multiple instances per buffer
     void write_to_index(void* data, int index);
     VkResult flush_index(int index);
-    VkDescriptorBufferInfo descriptor_info_for_index(int index);
+    VkDescriptorBufferInfo desc_info_for_index(int index) const;
     VkResult invalidate_index(int index);
 
     VkBuffer              get_buffer()                const { return buffer_; }
