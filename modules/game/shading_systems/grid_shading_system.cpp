@@ -25,7 +25,7 @@ grid_shading_system::shading_system(graphics::device& device, utils::shading_typ
   pipeline_ = create_pipeline(
     pipeline_layout_,
     graphics_engine::get_default_render_pass(),
-    "/modules/graphics/shader/spv/",
+    "/modules/graphics/shaders/spv/",
     { "grid_shader.vert.spv", "grid_shader.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
     config_info
