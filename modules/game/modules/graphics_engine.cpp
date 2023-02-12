@@ -30,7 +30,7 @@ graphics_engine_core::graphics_engine_core(const std::string& window_name, utils
 // delete static vulkan objects explicitly, because static member would be deleted after non-static member(device)
 graphics_engine_core::~graphics_engine_core()
 {
-
+  cleanup();
 }
 
 // todo : separate into some functions
@@ -48,6 +48,14 @@ void graphics_engine_core::setup_ubo()
     .add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_MESH_BIT_NV)
     .build();
   // may add additional layout of child system
+}
+
+void graphics_engine_core::cleanup()
+{
+  global_set_layout_.reset();
+  renderer_.reset();
+  device_.reset();
+  window_.reset();
 }
 
 void graphics_engine_core::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }

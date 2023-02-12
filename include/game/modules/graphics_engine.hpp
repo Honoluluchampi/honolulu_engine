@@ -67,6 +67,8 @@ class graphics_engine_core
     void setup_ubo();
     void setup_global_shading_system_config();
 
+    void cleanup();
+
     // construct in impl
     static u_ptr<graphics::window> window_;
     static u_ptr<graphics::device> device_;
@@ -89,7 +91,7 @@ class graphics_engine
     static constexpr float MAX_FRAME_TIME = 0.05;
 
     graphics_engine(const std::string &application_name, utils::rendering_type rendering_type);
-    ~graphics_engine() {}
+    ~graphics_engine() { cleanup(); }
 
     static u_ptr<graphics_engine<S...>> create(const std::string &application_name, utils::rendering_type rendering_type)
     { return std::make_unique<graphics_engine<S...>>(application_name, rendering_type); }
@@ -99,19 +101,10 @@ class graphics_engine
 
     void render();
 
-    void wait_idle();
-
     template <ShadingSystem SS> void add_shading_system();
 
-    // getter
-    bool should_close_window() const;
-    GLFWwindow* get_glfw_window() const ;
-    graphics::window& get_window_r();
-    graphics::device& get_device_r();
-    graphics::renderer& get_renderer_r();
-
   private:
-    void init();
+    void cleanup();
 
     graphics_engine_core& core_;
     static shading_system_map shading_systems_;
@@ -145,5 +138,10 @@ GRPH_ENGN_API template <ShadingSystem SS> void GRPH_ENGN_TYPE::add_shading_syste
   shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
 }
 
+GRPH_ENGN_API void GRPH_ENGN_TYPE::cleanup()
+{
+  for (auto& s : shading_systems_) {
+    std::visit([](auto& system) { system.reset(); }, s.second);
+  }
 }
-} // namespace hnll::game
+}} // namespace hnll::game

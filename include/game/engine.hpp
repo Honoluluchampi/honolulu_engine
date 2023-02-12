@@ -21,9 +21,15 @@ class engine_core
 {
   public:
     engine_core(const std::string &application_name, utils::rendering_type rendering_type);
+    ~engine_core();
+
     void render_gui();
+
   private:
     void update_gui() {}
+
+    void cleanup();
+
     // glfw
     void set_glfw_mouse_button_callbacks();
     void add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow *, int, int, int)>> &&func);
@@ -53,6 +59,7 @@ class engine<shading_system_list<S...>, actor_list<A...>>
   private:
     void update(const float& dt);
     void render();
+    void cleanup();
 
     // for each specific engine
     void update_this() {}
@@ -85,6 +92,7 @@ ENGN_API void ENGN_TYPE::run()
     render();
   }
   graphics_engine_core_.wait_idle();
+  cleanup();
 }
 
 ENGN_API void ENGN_TYPE::update(const float& dt)
@@ -96,5 +104,11 @@ ENGN_API void ENGN_TYPE::update(const float& dt)
 
 ENGN_API void ENGN_TYPE::render()
 { graphics_engine_->render(); core_.render_gui(); }
+
+ENGN_API void ENGN_TYPE::cleanup()
+{
+  graphics_engine_.reset();
+  utils::singleton_deleter::delete_reversely();
+}
 
 }} // namespace hnll::game

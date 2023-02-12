@@ -26,6 +26,8 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
   set_glfw_mouse_button_callbacks();
 }
 
+engine_core::~engine_core() { cleanup(); }
+
 void engine_core::render_gui()
 {
   if (!hnll::graphics::renderer::swap_chain_recreated_) {
@@ -34,6 +36,8 @@ void engine_core::render_gui()
     gui_engine_->render();
   }
 }
+
+void engine_core::cleanup() { gui_engine_.reset(); }
 
 // glfw
 void engine_core::set_glfw_mouse_button_callbacks()
