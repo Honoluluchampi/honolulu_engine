@@ -14,8 +14,13 @@ namespace game {
 
 class gui_engine;
 
-class engine
+template <typename... T> struct type_list {};
+template <typename... T> class engine;
+
+template <ShadingSystem... S, Actor... A>
+class engine <type_list<S...>, type_list<A...>>
 {
+    using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
     engine(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
     ~engine();
@@ -33,8 +38,10 @@ class engine
     static std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> glfw_mouse_button_callbacks_;
 
     // modules
-    static u_ptr<graphics_engine> graphics_engine_;
+    static u_ptr<graphics_engine<S...>> graphics_engine_;
     u_ptr<gui_engine> gui_engine_;
+
+    actor_map actors_;
 };
 
 }} // namespace hnll::game

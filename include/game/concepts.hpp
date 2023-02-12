@@ -2,7 +2,11 @@
 
 #include <concepts>
 
-namespace hnll::game {
+namespace hnll {
+
+namespace utils { class frame_info; }
+
+namespace game {
 
 template <typename T>
 concept Updatable = requires (T a, const float& dt) { a.update(dt); };
@@ -22,7 +26,21 @@ concept UpdatableComponent = requires (T t) {
            Component<decltype(t)>;
 };
 
+template <typename T>
+concept GraphicalModel =
+requires(T a) { a.bind(); a.draw(); } &&
+requires(const T a) { a.get_shading_type(); };
+
+template <typename T>
+concept RenderableComponent =
+requires(T a) { a.bind(); a.draw(); } &&
+requires(const T a) { a.get_rc_id(); a.get_shading_type(); };
+
+template <typename T>
+concept ShadingSystem =
+requires(T a, const utils::frame_info& frame_info) { a.render(frame_info); };
+
 using component_id = unsigned int;
 using actor_id     = unsigned int;
 
-}
+}} // namespace hnll::game

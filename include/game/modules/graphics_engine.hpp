@@ -2,8 +2,8 @@
 
 // hnll
 #include <utils/common_alias.hpp>
-#include <game/shading_systems/shading_system_variant.hpp>
 #include <game/shading_system.hpp>
+#include <game/concepts.hpp>
 
 // std
 #include <map>
@@ -35,10 +35,10 @@ namespace game {
 // forward declaration
 class renderable_component;
 
-using shading_system_map = std::map<uint32_t, shading_system_variant>;
-
+template <ShadingSystem... S>
 class graphics_engine
 {
+    using shading_system_map = std::map<uint32_t, std::variant<u_ptr<S>...>>;
   public:
     static constexpr int WIDTH = 960;
     static constexpr int HEIGHT = 820;
@@ -56,8 +56,8 @@ class graphics_engine
 
     void wait_idle();
 
-    template <ShadingSystem S>
-    void add_shading_system(u_ptr<S>&& system)
+    template <ShadingSystem SS>
+    void add_shading_system(u_ptr<SS>&& system)
     { shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system); }
 
     // getter

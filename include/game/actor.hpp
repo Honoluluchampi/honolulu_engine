@@ -20,8 +20,10 @@ class actor
     static u_ptr<actor<UpdatableComponents...>> create(Args&& ...args)
     {
       auto ret = std::make_unique<actor<UpdatableComponents...>>(std::forward<Args>(args)...);
+      // assign unique id
       static actor_id id = 0;
       ret->id_ = id;
+      // add to game engine's update list
       return ret;
     }
 
