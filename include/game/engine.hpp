@@ -44,15 +44,15 @@ class engine_core
 // for multiple template parameter packs
 template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
-template <typename... T> class engine;
+template <class Derived, typename... T> class engine_base;
 
-template <ShadingSystem... S, Actor... A>
-class engine<shading_system_list<S...>, actor_list<A...>>
+template <class Derived, ShadingSystem... S, Actor... A>
+class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 {
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
-    engine(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
-    ~engine(){}
+    engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
+    ~engine_base(){}
 
     void run();
 
@@ -74,10 +74,10 @@ class engine<shading_system_list<S...>, actor_list<A...>>
 };
 
 // impl
-#define ENGN_API template <ShadingSystem... S, Actor... A>
-#define ENGN_TYPE engine<shading_system_list<S...>, actor_list<A...>>
+#define ENGN_API template <class Derived, ShadingSystem... S, Actor... A>
+#define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
-ENGN_API ENGN_TYPE::engine(const std::string &application_name, utils::rendering_type rendering_type)
+ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
  : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),
    graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
 {

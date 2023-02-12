@@ -7,25 +7,36 @@
 // std
 #include <iostream>
 
+#define DEFINE_ENGINE( new_engine, shading_systems, actors ) new_engine : public game::engine_base<new_engine, shading_systems, actors>
+#define DEFINE_ACTOR( new_actor, ... ) new_actor : public game::actor_base<new_actor, __VA_ARGS__>
+#define DEFINE_COMPONENT( new_comp ) new_comp : public game::component_base<new_comp>
+
 namespace hnll {
 
-class dummy_component : public game::component_base<dummy_component>
+class DEFINE_COMPONENT(dummy_component)
 {
   public:
     void update(const float& dt) {}
 };
 
-using dummy_actor = game::actor<dummy_component>;
+class DEFINE_ACTOR(dummy_actor, dummy_component)
+{
 
-using shading_system_list = game::shading_system_list<game::grid_shading_system>;
-using actor_list = game::actor_list<dummy_actor>;
+};
 
-using mesh_shader = game::engine<shading_system_list, actor_list>;
+using shading_systems = game::shading_system_list<game::grid_shading_system>;
+using actors = game::actor_list<dummy_actor>;
+
+class DEFINE_ENGINE(my_engine, shading_systems, actors)
+{
+  private:
+    void update_this(const float& dt) {}
+};
 
 } // namespace hnll
 
 int main() {
-  hnll::mesh_shader engine;
+  hnll::my_engine engine;
 
   try { engine.run(); }
   catch (const std::exception &e) {

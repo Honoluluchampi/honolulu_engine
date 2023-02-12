@@ -11,15 +11,15 @@
 
 namespace hnll::game {
 
-template <UpdatableComponent... UpdatableComponents>
-class actor
+template <typename Derived, UpdatableComponent... UpdatableComponents>
+class actor_base
 {
     using updatable_components_map = std::unordered_map<component_id, std::variant<u_ptr<UpdatableComponents>...>>;
   public:
     template<typename... Args>
-    static u_ptr<actor<UpdatableComponents...>> create(Args&& ...args)
+    static u_ptr<actor_base<UpdatableComponents...>> create(Args&& ...args)
     {
-      auto ret = std::make_unique<actor<UpdatableComponents...>>(std::forward<Args>(args)...);
+      auto ret = std::make_unique<actor_base<UpdatableComponents...>>(std::forward<Args>(args)...);
       // assign unique id
       static actor_id id = 0;
       ret->id_ = id++;
