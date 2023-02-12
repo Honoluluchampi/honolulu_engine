@@ -1,7 +1,7 @@
 #pragma once
 
 #include <game/renderable_component.hpp>
-#include <game/shading_template_config.hpp>
+#include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/pipeline.hpp>
 

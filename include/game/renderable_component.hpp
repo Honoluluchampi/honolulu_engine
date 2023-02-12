@@ -1,7 +1,7 @@
 #pragma once
 
 // hnll
-#include <game/shading_template_config.hpp>
+#include <game/concepts.hpp>
 #include <utils/rendering_utils.hpp>
 
 // std

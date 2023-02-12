@@ -1,6 +1,10 @@
 #pragma once
 
+// hnll
 #include <game/shading_systems/grid_shading_system.hpp>
+
+// std
+#include <variant>
 
 namespace hnll::game {
 
