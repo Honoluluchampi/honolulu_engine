@@ -9,14 +9,12 @@
 
 namespace hnll::game {
 
-graphics_engine::shading_system_map graphics_engine::shading_systems_;
+// ************************ graphics engine core ************************************
+// static members
 VkDescriptorSetLayout graphics_engine_core::vk_global_desc_layout_;
 VkRenderPass          graphics_engine_core::default_render_pass_;
 
-u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
-{ return std::make_unique<graphics_engine>(window_name, rendering_type);}
-
-graphics_engine::graphics_engine(const std::string& window_name, utils::rendering_type rendering_type)
+graphics_engine_core::graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type)
 {
   window_ = graphics::window::create(WIDTH, HEIGHT, window_name);
   device_ = graphics::device::create(*window_, rendering_type);
@@ -25,20 +23,19 @@ graphics_engine::graphics_engine(const std::string& window_name, utils::renderin
 }
 
 // delete static vulkan objects explicitly, because static member would be deleted after non-static member(device)
-graphics_engine::~graphics_engine()
+graphics_engine_core::~graphics_engine_core()
 {
 
 }
 
 // todo : separate into some functions
-void graphics_engine::init()
+void graphics_engine_core::init()
 {
   setup_ubo();
-  setup_shading_system_config();
-  setup_default_shading_systems();
+  setup_global_shading_system_config();
 }
 
-void graphics_engine::setup_ubo()
+void graphics_engine_core::setup_ubo()
 {
   // this is set layout of master system
   // enable ubo to be referenced by oall stages of a graphics pipeline
@@ -48,40 +45,32 @@ void graphics_engine::setup_ubo()
   // may add additional layout of child system
 }
 
-void graphics_engine::render()
-{
-  // returns nullptr if the swap chain is need to be recreated
-  if (auto command_buffer = renderer_->begin_frame()) {
-    int frame_index = renderer_->get_frame_index();
+void graphics_engine_core::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
 
-    renderer_->begin_swap_chain_render_pass(command_buffer, HVE_RENDER_PASS_ID);
+// for graphics_engine::render()
+VkCommandBuffer graphics_engine_core::begin_frame() { return renderer_->begin_frame(); }
 
-    renderer_->end_swap_chain_render_pass(command_buffer);
-    renderer_->end_frame();
-  }
-}
+int graphics_engine_core::get_frame_index() { return renderer_->get_frame_index(); }
 
-void graphics_engine::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
+void graphics_engine_core::begin_swap_chain_render_pass(VkCommandBuffer command_buffer)
+{ renderer_->begin_swap_chain_render_pass(command_buffer, HVE_RENDER_PASS_ID); }
 
-void graphics_engine::setup_shading_system_config()
+void graphics_engine_core::end_swap_chain_and_frame(VkCommandBuffer command_buffer)
+{ renderer_->end_swap_chain_render_pass(command_buffer); renderer_->end_frame(); }
+
+void graphics_engine_core::setup_global_shading_system_config()
 {
   default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);
   vk_global_desc_layout_ = global_set_layout_->get_descriptor_set_layout();
 }
 
-void graphics_engine::setup_default_shading_systems()
-{
-  auto grid_shader = grid_shading_system::create(*device_);
-  add_shading_system(std::move(grid_shader));
-}
-
 // getter
-bool graphics_engine::should_close_window() const { return window_->should_be_closed(); }
+bool graphics_engine_core::should_close_window() const { return window_->should_be_closed(); }
 
-GLFWwindow* graphics_engine::get_glfw_window() const { return window_->get_glfw_window(); }
+GLFWwindow* graphics_engine_core::get_glfw_window() const { return window_->get_glfw_window(); }
 
-graphics::window& graphics_engine::get_window_r() { return *window_; }
-graphics::device& graphics_engine::get_device_r() { return *device_; }
-graphics::renderer& graphics_engine::get_renderer_r() { return *renderer_; }
+graphics::window& graphics_engine_core::get_window_r() { return *window_; }
+graphics::device& graphics_engine_core::get_device_r() { return *device_; }
+graphics::renderer& graphics_engine_core::get_renderer_r() { return *renderer_; }
 
 } // namespace hnll::game

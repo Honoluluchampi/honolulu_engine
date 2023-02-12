@@ -44,10 +44,13 @@ class graphics_engine_core
     graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type);
     ~graphics_engine_core();
 
-    static u_ptr<graphics_engine_core> create(const std::string& window_name, utils::rendering_type rendering_type);
-
-
     void wait_idle();
+
+    // for graphics_engine::render()
+    VkCommandBuffer begin_frame();
+    int  get_frame_index();
+    void begin_swap_chain_render_pass(VkCommandBuffer command_buffer);
+    void end_swap_chain_and_frame(VkCommandBuffer command_buffer);
 
     // getter
     bool should_close_window() const;
@@ -85,10 +88,11 @@ class graphics_engine
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine(const std::string& window_name, utils::rendering_type rendering_type);
+    graphics_engine();
     ~graphics_engine();
 
-    static u_ptr<graphics_engine> create(const std::string& window_name, utils::rendering_type rendering_type);
+    static u_ptr<graphics_engine<S...>> create()
+    { return std::make_unique<graphics_engine<S...>>(); }
 
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
@@ -97,8 +101,7 @@ class graphics_engine
 
     void wait_idle();
 
-    template <ShadingSystem SS> void add_shading_system(u_ptr<SS>&& system)
-    { shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system); }
+    template <ShadingSystem SS> void add_shading_system();
 
     // getter
     bool should_close_window() const;
@@ -109,13 +112,37 @@ class graphics_engine
 
   private:
     void init();
-    void setup_ubo();
-    void setup_shading_system_config();
-    void setup_default_shading_systems();
 
     graphics_engine_core& core_;
     static shading_system_map shading_systems_;
 };
 
+// impl
+#define GRPH_ENGN_API  template <ShadingSystem... S>
+#define GRPH_ENGN_TYPE graphics_engine<S...>
+
+GRPH_ENGN_API typename graphics_engine<S...>::shading_system_map GRPH_ENGN_TYPE::shading_systems_;
+
+GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine()
+{
+  // construct all selected shading systems
+  add_shading_system<S...>();
 }
-} // namespace hnll::graphics
+
+GRPH_ENGN_API void GRPH_ENGN_TYPE::render()
+{
+  if (auto command_buffer = core_.begin_frame()) {
+    int frame_index = core_.get_frame_index();
+    core_.begin_swap_chain_render_pass(command_buffer);
+    core_.end_swap_chain_and_frame(command_buffer);
+  }
+}
+
+GRPH_ENGN_API template <ShadingSystem SS> void GRPH_ENGN_TYPE::add_shading_system()
+{
+  auto system = SS::create();
+  shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
+}
+
+}
+} // namespace hnll::game
