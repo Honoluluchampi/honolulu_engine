@@ -33,6 +33,7 @@ namespace utils {
 
 namespace game {
 
+// should be wrapped by utils::singleton
 class graphics_engine_core
 {
   public:
@@ -45,8 +46,6 @@ class graphics_engine_core
 
     static u_ptr<graphics_engine_core> create(const std::string& window_name, utils::rendering_type rendering_type);
 
-    graphics_engine_core(const graphics_engine_core &) = delete;
-    graphics_engine_core &operator= (const graphics_engine_core &) = delete;
 
     void wait_idle();
 
@@ -66,11 +65,11 @@ class graphics_engine_core
     void setup_global_shading_system_config();
 
     // construct in impl
-    u_ptr<graphics::window> window_;
-    u_ptr<graphics::device> device_;
-    u_ptr<graphics::renderer> renderer_;
+    static u_ptr<graphics::window> window_;
+    static u_ptr<graphics::device> device_;
+    static u_ptr<graphics::renderer> renderer_;
 
-    u_ptr<graphics::desc_layout> global_set_layout_;
+    static u_ptr<graphics::desc_layout> global_set_layout_;
 
     // global config for shading system
     static VkDescriptorSetLayout vk_global_desc_layout_;
@@ -98,8 +97,7 @@ class graphics_engine
 
     void wait_idle();
 
-    template <ShadingSystem SS>
-    void add_shading_system(u_ptr<SS>&& system)
+    template <ShadingSystem SS> void add_shading_system(u_ptr<SS>&& system)
     { shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system); }
 
     // getter
@@ -115,7 +113,7 @@ class graphics_engine
     void setup_shading_system_config();
     void setup_default_shading_systems();
 
-    utils::singleton<graphics_engine_core> common_impl_;
+    graphics_engine_core& core_;
     static shading_system_map shading_systems_;
 };
 

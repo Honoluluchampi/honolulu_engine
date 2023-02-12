@@ -10,30 +10,25 @@
 namespace hnll::game {
 
 // static members
-u_ptr<graphics_engine> engine::graphics_engine_;
-std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine::glfw_mouse_button_callbacks_;
+std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
 
-engine::engine(const std::string& application_name, utils::rendering_type rendering_type)
+engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
 {
-  graphics_engine_ = graphics_engine::create(application_name, rendering_type);
+  graphics_engine_core_ = utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type);
 
 #ifndef IMGUI_DISABLED
-  gui_engine_ = gui_engine::create(graphics_engine_->get_window_r(), graphics_engine_->get_device_r());
+  gui_engine_ = gui_engine::create(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r());
   // configure dependency between renderers
-  graphics_engine_->get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
+  graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
 #endif
 
   // glfw
   set_glfw_mouse_button_callbacks();
 }
 
-engine::~engine() {}
-
 // glfw
 void engine_core::set_glfw_mouse_button_callbacks()
-{
-  glfwSetMouseButtonCallback(graphics_engine_core_.get_glfw_window(), glfw_mouse_button_callback);
-}
+{ glfwSetMouseButtonCallback(graphics_engine_core_.get_glfw_window(), glfw_mouse_button_callback); }
 
 void engine_core::add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow* window, int button, int action, int mods)>>&& func)
 {

@@ -26,17 +26,19 @@ template <typename T>
 class singleton
 {
   public:
-    static T& get_instance()
+    template <typename... Args>
+    static T& get_instance(Args&&... args)
     {
-      std::call_once(init_flag_, create);
+      std::call_once(init_flag_, create<Args...>, std::forward<Args>(args)...);
       assert(instance_);
       return *instance_;
     }
 
   private:
-    static void create()
+    template <typename... Args>
+    static void create(Args... args)
     {
-      instance_ = std::make_unique<T>();
+      instance_ = std::make_unique<T>(std::forward<Args>(args)...);
       singleton_deleter::add_deleter(deleter_);
     }
 
