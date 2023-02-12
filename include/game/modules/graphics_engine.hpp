@@ -88,11 +88,11 @@ class graphics_engine
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine();
-    ~graphics_engine();
+    graphics_engine(const std::string &application_name, utils::rendering_type rendering_type);
+    ~graphics_engine() {}
 
-    static u_ptr<graphics_engine<S...>> create()
-    { return std::make_unique<graphics_engine<S...>>(); }
+    static u_ptr<graphics_engine<S...>> create(const std::string &application_name, utils::rendering_type rendering_type)
+    { return std::make_unique<graphics_engine<S...>>(application_name, rendering_type); }
 
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
@@ -123,7 +123,8 @@ class graphics_engine
 
 GRPH_ENGN_API typename graphics_engine<S...>::shading_system_map GRPH_ENGN_TYPE::shading_systems_;
 
-GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine()
+GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name, utils::rendering_type rendering_type)
+ : core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
 {
   // construct all selected shading systems
   add_shading_system<S...>();
@@ -140,7 +141,7 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render()
 
 GRPH_ENGN_API template <ShadingSystem SS> void GRPH_ENGN_TYPE::add_shading_system()
 {
-  auto system = SS::create();
+  auto system = SS::create(core_.get_device_r());
   shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
 }
 

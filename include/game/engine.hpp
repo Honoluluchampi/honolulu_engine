@@ -23,13 +23,14 @@ class engine_core
     engine_core(const std::string &application_name, utils::rendering_type rendering_type);
     void render_gui();
   private:
+    void update_gui() {}
     // glfw
-    static void set_glfw_mouse_button_callbacks();
+    void set_glfw_mouse_button_callbacks();
+    void add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow *, int, int, int)>> &&func);
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
-    static void add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow *, int, int, int)>> &&func);
     static std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> glfw_mouse_button_callbacks_;
 
-    static graphics_engine_core& graphics_engine_core_;
+    graphics_engine_core& graphics_engine_core_;
     static u_ptr<gui_engine> gui_engine_;
 };
 
@@ -45,12 +46,12 @@ class engine<shading_system_list<S...>, actor_list<A...>>
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
     engine(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
-    ~engine();
+    ~engine(){}
 
     void run();
 
   private:
-    void update();
+    void update(const float& dt);
     void render();
 
     // for each specific engine
@@ -70,25 +71,28 @@ class engine<shading_system_list<S...>, actor_list<A...>>
 #define ENGN_TYPE engine<shading_system_list<S...>, actor_list<A...>>
 
 ENGN_API ENGN_TYPE::engine(const std::string &application_name, utils::rendering_type rendering_type)
+ : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),
+   graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
 {
-  core_ = utils::singleton<engine_core>::get_instance(application_name, rendering_type);
-  graphics_engine_core_ = utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type);
-
-  graphics_engine_ = graphics_engine<S...>::create();
+  graphics_engine_ = graphics_engine<S...>::create(application_name, rendering_type);
 }
 
 ENGN_API void ENGN_TYPE::run()
 {
   while (!graphics_engine_core_.should_close_window()) {
     glfwPollEvents();
-    update();
+    update(0.1);
     render();
   }
   graphics_engine_core_.wait_idle();
 }
 
-ENGN_API void ENGN_TYPE::update()
-{ update_this(); for (auto& a : actors_) a->update(); }
+ENGN_API void ENGN_TYPE::update(const float& dt)
+{
+  update_this();
+  for (auto& a : actors_)
+    std::visit([&dt](auto& actor) { actor->update(dt); }, a.second);
+}
 
 ENGN_API void ENGN_TYPE::render()
 { graphics_engine_->render(); core_.render_gui(); }

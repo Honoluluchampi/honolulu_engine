@@ -14,7 +14,7 @@ grid_shading_system::shading_system(graphics::device& device, utils::shading_typ
 {
   pipeline_layout_ = create_pipeline_layout_without_push(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-    std::vector<VkDescriptorSetLayout>{ graphics_engine::get_global_desc_layout() }
+    std::vector<VkDescriptorSetLayout>{ graphics_engine_core::get_global_desc_layout() }
   );
 
   // delete redundant vertex attributes
@@ -24,7 +24,7 @@ grid_shading_system::shading_system(graphics::device& device, utils::shading_typ
 
   pipeline_ = create_pipeline(
     pipeline_layout_,
-    graphics_engine::get_default_render_pass(),
+    graphics_engine_core::get_default_render_pass(),
     "/modules/graphics/shaders/spv/",
     { "grid_shader.vert.spv", "grid_shader.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },

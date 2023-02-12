@@ -6,7 +6,7 @@
 
 namespace hnll::game {
 
-template <Component Derived>
+template <typename Derived>
 class component_base
 {
   public:

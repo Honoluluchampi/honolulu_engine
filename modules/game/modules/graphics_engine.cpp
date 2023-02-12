@@ -9,6 +9,11 @@
 
 namespace hnll::game {
 
+u_ptr<graphics::window>   graphics_engine_core::window_;
+u_ptr<graphics::device>   graphics_engine_core::device_;
+u_ptr<graphics::renderer> graphics_engine_core::renderer_;
+u_ptr<graphics::desc_layout> graphics_engine_core::global_set_layout_;
+
 // ************************ graphics engine core ************************************
 // static members
 VkDescriptorSetLayout graphics_engine_core::vk_global_desc_layout_;

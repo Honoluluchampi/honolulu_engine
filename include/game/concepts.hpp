@@ -5,6 +5,7 @@
 namespace hnll {
 
 namespace utils { class frame_info; }
+namespace graphics { class device; }
 
 namespace game {
 
@@ -39,7 +40,7 @@ requires(const T a) { a.get_rc_id(); a.get_shading_type(); };
 template <typename T>
 concept ShadingSystem =
 requires(T a, const utils::frame_info& frame_info) { a.render(frame_info); } &&
-requires(T) { T::create(); };
+requires(T, graphics::device& device) { T::create(device); };
 
 using component_id = unsigned int;
 using actor_id     = unsigned int;

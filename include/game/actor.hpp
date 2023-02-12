@@ -22,7 +22,7 @@ class actor
       auto ret = std::make_unique<actor<UpdatableComponents...>>(std::forward<Args>(args)...);
       // assign unique id
       static actor_id id = 0;
-      ret->id_ = id;
+      ret->id_ = id++;
       // add to game engine's update list
       return ret;
     }
@@ -30,10 +30,12 @@ class actor
     void update(const float& dt)
     {
       update_this(dt);
-      for (const auto& comp : updatable_components_) {
-        comp->update(dt);
+      for (const auto& c : updatable_components_) {
+        std::visit([&dt](auto& comp) { comp->update(dt); }, c.second);
       }
     }
+
+    actor_id get_actor_id() const { return id_; }
 
   private:
     // specialize this function for each actor class
