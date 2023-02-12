@@ -17,7 +17,7 @@ class actor
     using updatable_components_map = std::unordered_map<component_id, std::variant<u_ptr<UpdatableComponents>...>>;
   public:
     template<typename... Args>
-    static u_ptr<actor<UpdatableComponents...>> create(Args... args)
+    static u_ptr<actor<UpdatableComponents...>> create(Args&& ...args)
     {
       auto ret = std::make_unique<actor<UpdatableComponents...>>(std::forward<Args>(args)...);
       static actor_id id = 0;
