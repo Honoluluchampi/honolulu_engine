@@ -1,5 +1,6 @@
 set(SOURCES
     utils.cpp
+    singleton.cpp
 )
 
 add_library(hnll_utils STATIC ${SOURCES})

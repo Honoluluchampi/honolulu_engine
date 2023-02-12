@@ -10,8 +10,8 @@
 namespace hnll::game {
 
 graphics_engine::shading_system_map graphics_engine::shading_systems_;
-VkDescriptorSetLayout graphics_engine_common::vk_global_desc_layout_;
-VkRenderPass          graphics_engine_common::default_render_pass_;
+VkDescriptorSetLayout graphics_engine_core::vk_global_desc_layout_;
+VkRenderPass          graphics_engine_core::default_render_pass_;
 
 u_ptr<graphics_engine> graphics_engine::create(const std::string& window_name, utils::rendering_type rendering_type)
 { return std::make_unique<graphics_engine>(window_name, rendering_type);}

@@ -1,9 +1,10 @@
 #pragma once
 
 // hnll
-#include <utils/common_alias.hpp>
 #include <game/shading_system.hpp>
 #include <game/concepts.hpp>
+#include <utils/common_alias.hpp>
+#include <utils/singleton.hpp>
 
 // std
 #include <map>
@@ -32,20 +33,20 @@ namespace utils {
 
 namespace game {
 
-class graphics_engine_common
+class graphics_engine_core
 {
   public:
     static constexpr int WIDTH = 960;
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine_common(const std::string& window_name, utils::rendering_type rendering_type);
-    ~graphics_engine_common();
+    graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type);
+    ~graphics_engine_core();
 
-    static u_ptr<graphics_engine_common> create(const std::string& window_name, utils::rendering_type rendering_type);
+    static u_ptr<graphics_engine_core> create(const std::string& window_name, utils::rendering_type rendering_type);
 
-    graphics_engine_common(const graphics_engine_common &) = delete;
-    graphics_engine_common &operator= (const graphics_engine_common &) = delete;
+    graphics_engine_core(const graphics_engine_core &) = delete;
+    graphics_engine_core &operator= (const graphics_engine_core &) = delete;
 
     void wait_idle();
 
@@ -114,7 +115,7 @@ class graphics_engine
     void setup_shading_system_config();
     void setup_default_shading_systems();
 
-    static u_ptr<graphics_engine_common> common_impl_;
+    utils::singleton<graphics_engine_core> common_impl_;
     static shading_system_map shading_systems_;
 };
 

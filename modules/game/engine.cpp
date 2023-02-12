@@ -29,47 +29,19 @@ engine::engine(const std::string& application_name, utils::rendering_type render
 
 engine::~engine() {}
 
-void engine::run()
-{
-  while (!graphics_engine_->should_close_window()) {
-    glfwPollEvents();
-    update();
-    render();
-  }
-  graphics_engine_->wait_idle();
-
-}
-
-void engine::update()
-{
-
-}
-
-void engine::render()
-{
-  graphics_engine_->render();
-#ifndef IMGUI_DISABLED
-  if (!hnll::graphics::renderer::swap_chain_recreated_){
-    gui_engine_->begin_imgui();
-    // update_gui();
-    gui_engine_->render();
-  }
-#endif
-}
-
 // glfw
-void engine::set_glfw_mouse_button_callbacks()
+void engine_core::set_glfw_mouse_button_callbacks()
 {
-  glfwSetMouseButtonCallback(graphics_engine_->get_glfw_window(), glfw_mouse_button_callback);
+  glfwSetMouseButtonCallback(graphics_engine_core_.get_glfw_window(), glfw_mouse_button_callback);
 }
 
-void engine::add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow* window, int button, int action, int mods)>>&& func)
+void engine_core::add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow* window, int button, int action, int mods)>>&& func)
 {
   glfw_mouse_button_callbacks_.emplace_back(std::move(func));
   set_glfw_mouse_button_callbacks();
 }
 
-void engine::glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void engine_core::glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
   for (const auto& func : glfw_mouse_button_callbacks_)
     func->operator()(window, button, action, mods);
