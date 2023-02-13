@@ -7,12 +7,6 @@
 // std
 #include <iostream>
 
-#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors>
-#define DEFINE_ACTOR(new_actor, ...) class new_actor : public game::actor_base<new_actor, __VA_ARGS__>
-#define DEFINE_COMPONENT(new_comp) class new_comp : public game::component_base<new_comp>
-#define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
-#define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
-
 namespace hnll {
 
 DEFINE_COMPONENT(dummy_component)

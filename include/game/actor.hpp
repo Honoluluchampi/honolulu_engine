@@ -9,6 +9,9 @@
 #include <concepts>
 #include <variant>
 
+// macro for crtp
+#define DEFINE_ACTOR(new_actor, ...) class new_actor : public game::actor_base<new_actor, __VA_ARGS__>
+
 namespace hnll::game {
 
 template <typename Derived, UpdatableComponent... UpdatableComponents>

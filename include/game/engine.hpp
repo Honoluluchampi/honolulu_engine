@@ -12,6 +12,11 @@
 // lib
 #include <GLFW/glfw3.h>
 
+// macro for crtp
+#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors>
+#define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
+#define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
+
 namespace hnll {
 
 namespace game {

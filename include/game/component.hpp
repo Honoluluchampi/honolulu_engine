@@ -4,6 +4,9 @@
 #include <game/concepts.hpp>
 #include <utils/common_alias.hpp>
 
+// macro for crtp
+#define DEFINE_COMPONENT(new_comp) class new_comp : public game::component_base<new_comp>
+
 namespace hnll::game {
 
 template <typename Derived>
