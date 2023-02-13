@@ -8,14 +8,11 @@ namespace hnll {
 
 // forward declaration
 namespace graphics { class renderer; }
-namespace geometry { class perspective_frustum; }
 
 namespace game {
 
 DEFINE_COMPONENT(viewer_comp) {
   public:
-    enum class update_view_frustum { ON, OFF };
-
     viewer_comp(const utils::transform &transform, graphics::renderer &renderer);
     ~viewer_comp();
 
@@ -33,8 +30,6 @@ DEFINE_COMPONENT(viewer_comp) {
     mat4 get_inverse_perspective_projection() const;
     mat4 get_inverse_view_yxz() const;
 
-    const geometry::perspective_frustum &get_perspective_frustum() const;
-
     // setter
     void set_orthogonal_projection(float left, float right, float top, float bottom, float near, float far);
     void set_perspective_projection(float fov_y, float aspect, float near, float far);
@@ -45,9 +40,6 @@ DEFINE_COMPONENT(viewer_comp) {
     void set_view_target(const vec3 &position, const vec3 &target, const vec3 &up = vec3(0.f, -1.f, 0.f));
     void set_view_yxz();
 
-    void set_perspective_frustum(s_ptr<geometry::perspective_frustum> &&frustum);
-    void auto_update_view_frustum() { update_view_frustum_ = update_view_frustum::ON; }
-
   private:
     // ref of owner's transform
     const utils::transform &transform_;
@@ -55,9 +47,6 @@ DEFINE_COMPONENT(viewer_comp) {
     mat4 view_matrix_         = mat4::Identity();
     mat4 inverse_view_matrix_ = mat4::Identity();
     graphics::renderer &renderer_;
-
-    s_ptr<geometry::perspective_frustum> perspective_frustum_;
-    update_view_frustum update_view_frustum_ = update_view_frustum::OFF;
 
     // distance to the screen
     static float near_distance_, far_distance_;

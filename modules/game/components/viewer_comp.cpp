@@ -1,6 +1,6 @@
 // hnll
 #include <game/components/viewer_comp.hpp>
-// #include <geometry/perspective_frustum.hpp>
+#include <graphics/renderer.hpp>
 
 // std
 #include <limits>
@@ -10,14 +10,6 @@ namespace hnll::game {
 float viewer_comp::near_distance_ = 0.1f;
 float viewer_comp::far_distance_  = 50.f;
 float viewer_comp::fov_y_ = 50.f * M_PI / 180.f;
-
-s_ptr<viewer_comp> viewer_comp::create(utils::transform& transform, graphics::renderer &renderer,double fov_x, double fov_y, double near_z, double far_z)
-{
-  auto viewer_compo = std::make_shared<viewer_comp>(transform, renderer);
-  auto frustum = geometry::perspective_frustum::create(fov_x, fov_y, near_z, far_z);
-  viewer_compo->set_perspective_frustum(std::move(frustum));
-  return viewer_compo;
-}
 
 viewer_comp::viewer_comp(const hnll::utils::transform& transform, hnll::graphics::renderer& renderer)
   : transform_(transform), renderer_(renderer) {}
@@ -32,8 +24,6 @@ void viewer_comp::set_orthogonal_projection(float left, float right, float top, 
     0.f,                  0.f,                  1.f / (far - near), -near / (far - near),
     0.f,                  0.f,                  0.f,                1.f;
 }
-
-void viewer_comp::update_frustum() { perspective_frustum_->update_planes(transform_); }
 
 void viewer_comp::set_perspective_projection(float fov_y, float aspect, float near, float far)
 {
@@ -132,17 +122,6 @@ void viewer_comp::update(const float& dt)
   set_view_yxz();
   auto aspect = renderer_.get_aspect_ratio();
   set_perspective_projection(fov_y_, aspect, near_distance_, far_distance_);
-
-  if (update_view_frustum_ == update_view_frustum::ON)
-    perspective_frustum_->update_planes(transform_);
 }
-
-// getter setter
-const geometry::perspective_frustum& viewer_comp::get_perspective_frustum() const
-{ return *perspective_frustum_; }
-
-void viewer_comp::set_perspective_frustum(s_ptr<geometry::perspective_frustum>&& frustum)
-{ perspective_frustum_ = std::move(frustum); }
-
 
 } // namespace hnll::game
