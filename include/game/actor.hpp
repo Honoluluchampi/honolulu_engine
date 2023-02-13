@@ -29,7 +29,7 @@ class actor_base
 
     void update(const float& dt)
     {
-      update_this(dt);
+      static_cast<Derived*>(this)->update_this(dt);
       for (const auto& c : updatable_components_) {
         std::visit([&dt](auto& comp) { comp->update(dt); }, c.second);
       }

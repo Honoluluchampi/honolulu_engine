@@ -16,7 +16,7 @@ namespace hnll {
 class DEFINE_COMPONENT(dummy_component)
 {
   public:
-    void update(const float& dt) {}
+    void update(const float& dt) {std::cout << "l" << std::endl;}
 };
 
 class DEFINE_ACTOR(dummy_actor, dummy_component)
@@ -29,8 +29,8 @@ using actors = game::actor_list<dummy_actor>;
 
 class DEFINE_ENGINE(my_engine, shading_systems, actors)
 {
-  private:
-    void update_this(const float& dt) {}
+  public:
+//    void update_this(const float& dt);
 };
 
 } // namespace hnll

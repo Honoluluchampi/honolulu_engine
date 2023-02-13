@@ -62,7 +62,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
     void cleanup();
 
     // for each specific engine
-    void update_this() {}
+    void update_this(const float& dt) {}
 
     // common part
     engine_core& core_;
@@ -97,7 +97,7 @@ ENGN_API void ENGN_TYPE::run()
 
 ENGN_API void ENGN_TYPE::update(const float& dt)
 {
-  update_this();
+  static_cast<Derived*>(this)->update_this(dt);
   for (auto& a : actors_)
     std::visit([&dt](auto& actor) { actor->update(dt); }, a.second);
 }
