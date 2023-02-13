@@ -7,27 +7,29 @@
 // std
 #include <iostream>
 
-#define DEFINE_ENGINE( new_engine, shading_systems, actors ) new_engine : public game::engine_base<new_engine, shading_systems, actors>
-#define DEFINE_ACTOR( new_actor, ... ) new_actor : public game::actor_base<new_actor, __VA_ARGS__>
-#define DEFINE_COMPONENT( new_comp ) new_comp : public game::component_base<new_comp>
+#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors>
+#define DEFINE_ACTOR(new_actor, ...) class new_actor : public game::actor_base<new_actor, __VA_ARGS__>
+#define DEFINE_COMPONENT(new_comp) class new_comp : public game::component_base<new_comp>
+#define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
+#define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
 
 namespace hnll {
 
-class DEFINE_COMPONENT(dummy_component)
+DEFINE_COMPONENT(dummy_component)
 {
   public:
-    void update(const float& dt) {std::cout << "l" << std::endl;}
+    void update(const float& dt) {}
 };
 
-class DEFINE_ACTOR(dummy_actor, dummy_component)
+DEFINE_ACTOR(dummy_actor, dummy_component)
 {
 
 };
 
-using shading_systems = game::shading_system_list<game::grid_shading_system>;
-using actors = game::actor_list<dummy_actor>;
+SELECT_SHADING_SYSTEM(shading_systems, game::grid_shading_system);
+SELECT_ACTOR(actors, dummy_actor);
 
-class DEFINE_ENGINE(my_engine, shading_systems, actors)
+DEFINE_ENGINE(my_engine, shading_systems, actors)
 {
   public:
 //    void update_this(const float& dt);

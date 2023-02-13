@@ -6,6 +6,9 @@
 #include <utils/rendering_utils.hpp>
 #include <utils/singleton.hpp>
 
+// std
+#include <chrono>
+
 // lib
 #include <GLFW/glfw3.h>
 
@@ -25,6 +28,9 @@ class engine_core
 
     void render_gui();
 
+    inline const std::chrono::system_clock::time_point& get_old_time() const { return old_time_; };
+    inline void set_old_time(std::chrono::system_clock::time_point&& time) { old_time_ = std::move(time); }
+
   private:
     void update_gui() {}
 
@@ -38,6 +44,8 @@ class engine_core
 
     graphics_engine_core& graphics_engine_core_;
     static u_ptr<gui_engine> gui_engine_;
+
+    std::chrono::system_clock::time_point old_time_;
 };
 
 // parametric impl
@@ -57,7 +65,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
     void run();
 
   private:
-    void update(const float& dt);
+    void update();
     void render();
     void cleanup();
 
@@ -88,15 +96,21 @@ ENGN_API void ENGN_TYPE::run()
 {
   while (!graphics_engine_core_.should_close_window()) {
     glfwPollEvents();
-    update(0.1);
+    update();
     render();
   }
   graphics_engine_core_.wait_idle();
   cleanup();
 }
 
-ENGN_API void ENGN_TYPE::update(const float& dt)
+ENGN_API void ENGN_TYPE::update()
 {
+  // calc delta time
+  std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();;
+  const auto& old_time = core_.get_old_time();
+  auto dt = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
+  core_.set_old_time(std::move(new_time));
+
   static_cast<Derived*>(this)->update_this(dt);
   for (auto& a : actors_)
     std::visit([&dt](auto& actor) { actor->update(dt); }, a.second);
