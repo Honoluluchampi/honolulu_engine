@@ -51,6 +51,7 @@ void graphics_engine_core::setup_ubo()
   // // 2 uniform buffer descriptor
   global_pool_ = graphics::desc_pool::builder(*device_)
     .set_max_sets(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT)
+    .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
     .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, graphics::swap_chain::MAX_FRAMES_IN_FLIGHT)
     .build();
 
@@ -85,6 +86,9 @@ void graphics_engine_core::setup_ubo()
 
 void graphics_engine_core::cleanup()
 {
+  global_pool_->free_descriptors(global_desc_sets_);
+  for(auto& buffer : ubo_buffers_) buffer.reset();
+  global_pool_.reset();
   global_set_layout_.reset();
   renderer_.reset();
   device_.reset();
