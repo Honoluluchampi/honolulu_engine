@@ -1,6 +1,9 @@
 // hnll
 #include <utils/singleton.hpp>
 
+// std
+#include <vector>
+
 namespace hnll::utils {
 
 std::mutex singleton_deleter::mutex_;
