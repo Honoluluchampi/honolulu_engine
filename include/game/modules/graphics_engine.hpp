@@ -152,7 +152,7 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::viewer_info& viewer_info)
     core_.begin_swap_chain_render_pass(command_buffer);
 
     for (auto& system_kv : shading_systems_) {
-      auto& system = *system_kv.second;
+      std::visit([&frame_info](auto& system) { system->render(frame_info); }, system_kv.second);
     }
 
     core_.end_swap_chain_and_frame(command_buffer);

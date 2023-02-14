@@ -24,7 +24,7 @@ DEFINE_PURE_ACTOR(default_camera)
     default_camera(default_camera &&) = delete;
     default_camera& operator=(default_camera &&) = delete;
 
-    void update(const float& dt) { key_comp_->update(dt); viewer_comp_->update(dt); }
+    void update(const float& dt);
     void update_frustum() { viewer_comp_->update_frustum(); }
     // getter
     utils::viewer_info  get_viewer_info()  const { return {viewer_comp_->get_projection(), viewer_comp_->get_view(), viewer_comp_->get_inverse_view()}; }

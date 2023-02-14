@@ -15,7 +15,7 @@
 
 namespace hnll::game {
 
-actor_id id_pool = 0;
+static actor_id id_pool = 0;
 
 template <typename Derived, UpdatableComponent... UpdatableComponents>
 class actor_base

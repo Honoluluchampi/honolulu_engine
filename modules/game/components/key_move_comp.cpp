@@ -99,7 +99,7 @@ void key_move_comp::process_move_input(GLFWgamepadstate& state, float dt)
   float moveZ = state.buttons[pads.dp_up] - state.buttons[pads.dp_down];
 
   float yaw = transform_.rotation.y();
-  const vec3 forward_direction{sin(yaw), 0.f, cos(yaw)};
+  const vec3 forward_direction{std::sin(yaw), 0.f, std::cos(yaw)};
   const vec3 right_direction{forward_direction.z(), 0.f, -forward_direction.x()};
   const vec3 up_direction{0.f, -1.f, 0.f};
 

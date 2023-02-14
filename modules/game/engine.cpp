@@ -12,6 +12,7 @@ namespace hnll::game {
 // static members
 u_ptr<gui_engine> engine_core::gui_engine_;
 std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
+utils::viewer_info engine_core::viewer_info_;
 
 engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
  : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))

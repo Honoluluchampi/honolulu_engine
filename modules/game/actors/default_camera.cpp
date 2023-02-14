@@ -1,5 +1,6 @@
 // hnll
 #include <game/actors/default_camera.hpp>
+#include <game/engine.hpp>
 #include <game/modules/graphics_engine.hpp>
 //#include <geometry/perspective_frustum.hpp>
 
@@ -13,6 +14,13 @@ default_camera::default_camera(graphics_engine_core& g_core)
   transform_.translation.y() = -2.f;
 
   key_comp_ = key_move_comp::create(g_core.get_glfw_window(), transform_);
+}
+
+void default_camera::update(const float &dt)
+{
+  key_comp_->update(dt);
+  viewer_comp_->update(dt);
+  engine_core::set_viewer_info({viewer_comp_->get_projection(), viewer_comp_->get_view(), viewer_comp_->get_inverse_view()});
 }
 
 //utils::frustum_info default_camera::get_frustum_info() const

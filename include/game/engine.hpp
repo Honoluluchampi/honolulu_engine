@@ -36,6 +36,9 @@ class engine_core
     inline const std::chrono::system_clock::time_point& get_old_time() const { return old_time_; };
     inline void set_old_time(std::chrono::system_clock::time_point&& time) { old_time_ = std::move(time); }
 
+    inline const utils::viewer_info& get_viewer_info() const { return viewer_info_; }
+    static inline void set_viewer_info(utils::viewer_info&& v) { viewer_info_ = std::move(v); }
+
   private:
     void update_gui() {}
 
@@ -51,6 +54,7 @@ class engine_core
     static u_ptr<gui_engine> gui_engine_;
 
     std::chrono::system_clock::time_point old_time_;
+    static utils::viewer_info viewer_info_;
 };
 
 // parametric impl
@@ -122,7 +126,10 @@ ENGN_API void ENGN_TYPE::update()
 }
 
 ENGN_API void ENGN_TYPE::render()
-{ graphics_engine_->render(); core_.render_gui(); }
+{
+  graphics_engine_->render(core_.get_viewer_info());
+  core_.render_gui();
+}
 
 ENGN_API void ENGN_TYPE::cleanup()
 {
