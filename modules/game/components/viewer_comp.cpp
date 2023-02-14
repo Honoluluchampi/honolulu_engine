@@ -28,7 +28,7 @@ void viewer_comp::set_orthogonal_projection(float left, float right, float top, 
 void viewer_comp::set_perspective_projection(float fov_y, float aspect, float near, float far)
 {
   assert(std::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
-  const float tan_half_fov_y = tan(fov_y / 2.f);
+  const float tan_half_fov_y = std::tan(fov_y / 2.f);
   projection_matrix_ <<
     1.f / (aspect * tan_half_fov_y), 0.f,                  0.f,                0.f,
     0.f,                             1.f / tan_half_fov_y, 0.f,                0.f,

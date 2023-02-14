@@ -1,5 +1,4 @@
 // hnll
-#include <game/engine.hpp>
 #include <game/components/key_move_comp.hpp>
 
 void joystickCallback(int jid, int event)
