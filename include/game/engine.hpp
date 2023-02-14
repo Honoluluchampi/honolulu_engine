@@ -73,8 +73,11 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     void run();
 
+    template <Actor Act>
+    static void add_update_target(u_ptr<Act>&& target);
+
     template <Actor Act, typename... Args>
-    static void add_actor(Args&&... args);
+    static void add_update_target_directly(Args&&... args);
 
   private:
     void update();
@@ -90,7 +93,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
-    static actor_map actors_;
+    static actor_map update_target_actors_;
 };
 
 // impl
@@ -98,7 +101,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 #define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
 // static members
-ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::actors_;
+ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
  : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),
@@ -127,7 +130,7 @@ ENGN_API void ENGN_TYPE::update()
   core_.set_old_time(std::move(new_time));
 
   static_cast<Derived*>(this)->update_this(dt);
-  for (auto& a : actors_)
+  for (auto& a : update_target_actors_)
     std::visit([&dt](auto& actor) { actor->update(dt); }, a.second);
 }
 
@@ -143,10 +146,13 @@ ENGN_API void ENGN_TYPE::cleanup()
   utils::singleton_deleter::delete_reversely();
 }
 
-ENGN_API template <Actor Act, typename... Args> void ENGN_TYPE::add_actor(Args &&...args)
+ENGN_API template <Actor Act> void ENGN_TYPE::add_update_target(u_ptr<Act>&& target)
+{ update_target_actors_[target->get_actor_id()] = std::move(target); }
+
+ENGN_API template <Actor Act, typename... Args> void ENGN_TYPE::add_update_target_directly(Args &&...args)
 {
-  auto a = Act::create(std::forward<Args>(args)...);
-  actors_[a->get_actor_id()] = std::move(a);
+  auto target = Act::create(std::forward<Args>(args)...);
+  update_target_actors_[target->get_actor_id()] = std::move(target);
 }
 
 

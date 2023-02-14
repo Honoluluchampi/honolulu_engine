@@ -10,27 +10,15 @@
 
 namespace hnll {
 
-DEFINE_COMPONENT(dummy_component)
-{
-  public:
-    void update(const float& dt) {}
-};
-
-DEFINE_ACTOR(dummy_actor, dummy_component)
-{
-
-};
-
 SELECT_SHADING_SYSTEM(shading_systems, game::grid_shading_system);
-SELECT_ACTOR(actors, game::default_camera, dummy_actor);
+SELECT_ACTOR(actors, game::default_camera);
 
 DEFINE_ENGINE(my_engine, shading_systems, actors)
 {
   public:
     my_engine()
     {
-      add_actor<dummy_actor>();
-      add_actor<game::default_camera>();
+      add_update_target_directly<game::default_camera>();
     }
 };
 
