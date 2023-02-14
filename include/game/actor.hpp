@@ -11,7 +11,7 @@
 
 // macro for crtp
 #define DEFINE_ACTOR(new_actor, ...) class new_actor : public game::actor_base<new_actor, __VA_ARGS__>
-#define DEFINE_PURE_ACTOR(new_actor, ...) class new_actor : public game::pure_actor_base<new_actor>
+#define DEFINE_PURE_ACTOR(new_actor) class new_actor : public game::pure_actor_base<new_actor>
 
 namespace hnll::game {
 

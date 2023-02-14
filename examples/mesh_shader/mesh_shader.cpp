@@ -4,6 +4,7 @@
 #include <game/component.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
 #include <game/actors/default_camera.hpp>
+#include <game/components/static_model_comp.hpp>
 
 // std
 #include <iostream>
