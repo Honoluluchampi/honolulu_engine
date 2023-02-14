@@ -1,5 +1,5 @@
 // hnll
-#include <graphics/static_mesh.hpp>
+#include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/utils.hpp>
