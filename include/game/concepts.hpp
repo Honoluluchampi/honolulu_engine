@@ -28,7 +28,7 @@ concept UpdatableComponent = requires (T t) {
 };
 
 template <typename T>
-concept GraphicalModel =
+concept GraphicsModel =
 requires(T a) { a.bind(); a.draw(); } &&
 requires(const T a) { a.get_shading_type(); };
 

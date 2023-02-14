@@ -5,33 +5,24 @@
 #include <graphics/utils.hpp>
 #include <utils/utils.hpp>
 
-// libs
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader/tiny_obj_loader.h>
-
 // std
 #include <iostream>
 #include <unordered_map>
 
 namespace hnll::graphics {
 
-static_mesh::static_mesh(device& device, const mesh_builder &builder) : device_{device}
+static_mesh::graphics_model(device& device, const obj_loader &loader) : device_{device}
 {
-  create_vertex_buffers(builder.vertices);
-  create_index_buffers(builder.indices);
+  create_vertex_buffers(loader.vertices);
+  create_index_buffers(loader.indices);
 
-  vertex_list_ = std::move(builder.vertices);
-}
-
-static_mesh::~static_mesh()
-{
-  // buffers will be freed in dtor of hnll::graphics::buffer
+  vertex_list_ = std::move(loader.vertices);
 }
 
 u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::string &filename)
 {
   auto filepath = utils::get_full_path(filename);
-  mesh_builder builder;
+  obj_loader builder;
   builder.load_model(filepath);
   std::cout << filename << " vertex count: " << builder.vertices.size() << "\n";
   return std::make_unique<static_mesh>(device, builder);
@@ -121,64 +112,6 @@ void static_mesh::draw(VkCommandBuffer command_buffer)
     vkCmdDrawIndexed(command_buffer, index_count_, 1, 0, 0, 0);
   else
     vkCmdDraw(command_buffer, vertex_count_, 1, 0, 0);
-}
-
-void mesh_builder::load_model(const std::string& filename)
-{
-  // loader
-  tinyobj::attrib_t attrib;
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
-  std::string warn, err;
-
-  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str()))
-    throw std::runtime_error(warn + err);
-
-  vertices.clear();
-  indices.clear();
-
-  std::unordered_map<vertex, uint32_t> unique_vertices{};
-
-  for (const auto &shape : shapes) {
-    for (const auto &index : shape.mesh.indices) {
-      vertex vertex{};
-      // copy the vertex
-      if (index.vertex_index >= 0) {
-        vertex.position = {
-          attrib.vertices[3 * index.vertex_index + 0],
-          attrib.vertices[3 * index.vertex_index + 1],
-          attrib.vertices[3 * index.vertex_index + 2]
-        };
-        // color support
-        vertex.color = {
-          attrib.colors[3 * index.vertex_index + 0],
-          attrib.colors[3 * index.vertex_index + 1],
-          attrib.colors[3 * index.vertex_index + 2]
-        };
-      }
-      // copy the normal
-      if (index.normal_index >= 0) {
-        vertex.normal = {
-          attrib.normals[3 * index.normal_index + 0],
-          attrib.normals[3 * index.normal_index + 1],
-          attrib.normals[3 * index.normal_index + 2]
-        };
-      }
-      // copy the texture coordinate
-      if (index.texcoord_index >= 0) {
-        vertex.uv = {
-          attrib.vertices[2 * index.texcoord_index + 0],
-          attrib.vertices[2 * index.texcoord_index + 1]
-        };
-      }
-      // if vertex is a new vertex
-      if (unique_vertices.find(vertex) == unique_vertices.end()) {
-        unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
-        vertices.push_back(vertex);
-      }
-      indices.push_back(unique_vertices[vertex]);
-    }
-  }
 }
 
 const std::vector<vertex>& static_mesh::get_vertex_list() const { return vertex_list_; }

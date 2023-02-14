@@ -24,7 +24,7 @@ struct vertex
   { return position == other.position && color == other.color && normal == other.normal && uv == other.uv; }
 };
 
-struct mesh_builder
+struct obj_loader
 {
   // copied to the vertex buffer and index buffer
   std::vector<vertex> vertices{};

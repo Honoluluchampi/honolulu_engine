@@ -8,8 +8,9 @@ namespace hnll::geometry { class mesh_model; }
 
 namespace hnll::graphics {
 
+class device;
 class buffer;
-class mesh_builder;
+class obj_loader;
 class vertex;
 
 using static_mesh = graphics_model<utils::shading_type::MESH>;
@@ -19,8 +20,8 @@ class graphics_model<utils::shading_type::MESH> {
   public:
     // compatible with wavefront obj. file
 
-    graphics_model<utils::shading_type::MESH>(device &device, const mesh_builder &builder);
-    ~graphics_model<utils::shading_type::MESH>();
+    graphics_model<utils::shading_type::MESH>(device &device, const obj_loader &builder);
+    ~graphics_model<utils::shading_type::MESH>() = default;
 
     graphics_model<utils::shading_type::MESH>(const graphics_model<utils::shading_type::MESH> &) = delete;
     graphics_model<utils::shading_type::MESH> &operator=(const graphics_model<utils::shading_type::MESH> &) = delete;
@@ -44,6 +45,7 @@ class graphics_model<utils::shading_type::MESH> {
     void create_vertex_buffers(const std::vector<vertex> &vertices);
     void create_index_buffers(const std::vector<uint32_t> &indices);
 
+    device& device_;
     // contains buffer itself and buffer memory
     std::unique_ptr<buffer> vertex_buffer_;
     std::unique_ptr<buffer> index_buffer_;

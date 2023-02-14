@@ -12,7 +12,7 @@ namespace hnll::game {
 // renderable component id
 using rc_id = uint32_t;
 
-template <GraphicalModel M>
+template <GraphicsModel M>
 class renderable_comp
 {
   public:
