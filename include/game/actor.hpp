@@ -23,9 +23,9 @@ class actor_base
     using updatable_components_map = std::unordered_map<component_id, std::variant<u_ptr<UpdatableComponents>...>>;
   public:
     template<typename... Args>
-    static u_ptr<actor_base<UpdatableComponents...>> create(Args&& ...args)
+    static u_ptr<Derived> create(Args&& ...args)
     {
-      auto ret = std::make_unique<actor_base<UpdatableComponents...>>(std::forward<Args>(args)...);
+      auto ret = std::make_unique<Derived>(std::forward<Args>(args)...);
       // assign unique id
       ret->id_ = id_pool++;
       // add to game engine's update list
@@ -56,9 +56,9 @@ class pure_actor_base
 {
   public:
     template<typename... Args>
-    static u_ptr<actor_base<Derived>> create(Args&& ...args)
+    static u_ptr<Derived> create(Args&& ...args)
     {
-      auto ret = std::make_unique<actor_base<Derived>>(std::forward<Args>(args)...);
+      auto ret = std::make_unique<Derived>(std::forward<Args>(args)...);
       // assign unique id
       ret->id_ = id_pool++;
       // add to game engine's update list

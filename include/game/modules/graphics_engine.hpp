@@ -76,9 +76,9 @@ class graphics_engine_core
     static u_ptr<graphics::renderer> renderer_;
 
     static u_ptr<graphics::desc_layout>  global_set_layout_;
-    u_ptr<graphics::desc_pool>           global_pool_;
-    std::vector<u_ptr<graphics::buffer>> ubo_buffers_;
-    std::vector<VkDescriptorSet>         global_desc_sets_;
+    static u_ptr<graphics::desc_pool>           global_pool_;
+    static std::vector<u_ptr<graphics::buffer>> ubo_buffers_;
+    static std::vector<VkDescriptorSet>         global_desc_sets_;
 
     // global config for shading system
     static VkDescriptorSetLayout vk_global_desc_layout_;

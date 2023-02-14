@@ -28,8 +28,6 @@ class desc_layout {
     // ctor dtor
     desc_layout(device &device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
     ~desc_layout();
-    desc_layout(const desc_layout &) = delete;
-    desc_layout &operator=(const desc_layout &) = delete;
 
     VkDescriptorSetLayout get_descriptor_set_layout() const { return descriptor_set_layout_; }
     VkDescriptorSetLayout* get_p_descriptor_set_layout() { return &descriptor_set_layout_; }
@@ -66,8 +64,6 @@ class desc_pool {
       VkDescriptorPoolCreateFlags pool_flags,
       const std::vector<VkDescriptorPoolSize> &pool_sizes);
     ~desc_pool();
-    desc_pool(const desc_pool &) = delete;
-    desc_pool &operator=(const desc_pool &) = delete;
 
     bool allocate_descriptor(const VkDescriptorSetLayout descriptor_set_layout, VkDescriptorSet &descriptor) const;
     void free_descriptors(std::vector<VkDescriptorSet> &descriptors) const;

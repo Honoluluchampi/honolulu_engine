@@ -16,13 +16,11 @@ class graphics_engine_core;
 DEFINE_PURE_ACTOR(default_camera)
 {
   public:
-    default_camera(graphics_engine_core& engine);
+    default_camera();
     ~default_camera(){}
 
     default_camera(const default_camera &) = delete;
     default_camera& operator=(const default_camera &) = delete;
-    default_camera(default_camera &&) = delete;
-    default_camera& operator=(default_camera &&) = delete;
 
     void update(const float& dt);
     void update_frustum() { viewer_comp_->update_frustum(); }
@@ -42,6 +40,7 @@ DEFINE_PURE_ACTOR(default_camera)
     template<class V> void set_rotation(V&& vec) { transform_.rotation = std::forward<V>(vec); }
 
   private:
+    graphics_engine_core& graphics_engine_core_;
     hnll::utils::transform transform_ {};
     u_ptr<viewer_comp>   viewer_comp_;
     u_ptr<key_move_comp> key_comp_;

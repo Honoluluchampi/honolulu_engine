@@ -73,6 +73,9 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     void run();
 
+    template <Actor Act, typename... Args>
+    static void add_actor(Args&&... args);
+
   private:
     void update();
     void render();
@@ -87,12 +90,15 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
-    actor_map actors_;
+    static actor_map actors_;
 };
 
 // impl
 #define ENGN_API template <class Derived, ShadingSystem... S, Actor... A>
 #define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
+
+// static members
+ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
  : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),
@@ -136,5 +142,12 @@ ENGN_API void ENGN_TYPE::cleanup()
   graphics_engine_.reset();
   utils::singleton_deleter::delete_reversely();
 }
+
+ENGN_API template <Actor Act, typename... Args> void ENGN_TYPE::add_actor(Args &&...args)
+{
+  auto a = Act::create(std::forward<Args>(args)...);
+  actors_[a->get_actor_id()] = std::move(a);
+}
+
 
 }} // namespace hnll::game

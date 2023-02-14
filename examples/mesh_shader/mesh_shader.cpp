@@ -22,12 +22,16 @@ DEFINE_ACTOR(dummy_actor, dummy_component)
 };
 
 SELECT_SHADING_SYSTEM(shading_systems, game::grid_shading_system);
-SELECT_ACTOR(actors, game::default_camera);
+SELECT_ACTOR(actors, game::default_camera, dummy_actor);
 
 DEFINE_ENGINE(my_engine, shading_systems, actors)
 {
   public:
-//    void update_this(const float& dt);
+    my_engine()
+    {
+      add_actor<dummy_actor>();
+      add_actor<game::default_camera>();
+    }
 };
 
 } // namespace hnll
