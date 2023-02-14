@@ -49,6 +49,7 @@ class graphics_engine_core
     // for graphics_engine::render()
     VkCommandBuffer begin_frame();
     int  get_frame_index();
+    VkDescriptorSet update_ubo(const utils::global_ubo& ubo, int frame_index);
     void begin_swap_chain_render_pass(VkCommandBuffer command_buffer);
     void end_swap_chain_and_frame(VkCommandBuffer command_buffer);
 
@@ -74,7 +75,10 @@ class graphics_engine_core
     static u_ptr<graphics::device> device_;
     static u_ptr<graphics::renderer> renderer_;
 
-    static u_ptr<graphics::desc_layout> global_set_layout_;
+    static u_ptr<graphics::desc_layout>  global_set_layout_;
+    u_ptr<graphics::desc_pool>           global_pool_;
+    std::vector<u_ptr<graphics::buffer>> ubo_buffers_;
+    std::vector<VkDescriptorSet>         global_desc_sets_;
 
     // global config for shading system
     static VkDescriptorSetLayout vk_global_desc_layout_;
@@ -99,7 +103,7 @@ class graphics_engine
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
 
-    void render();
+    void render(const utils::viewer_info& viewer_info);
 
     template <ShadingSystem SS> void add_shading_system();
 
@@ -123,11 +127,34 @@ GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_nam
   add_shading_system<S...>();
 }
 
-GRPH_ENGN_API void GRPH_ENGN_TYPE::render()
+GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::viewer_info& viewer_info)
 {
   if (auto command_buffer = core_.begin_frame()) {
     int frame_index = core_.get_frame_index();
+
+    // update
+    utils::global_ubo ubo;
+    ubo.projection   = viewer_info.projection;
+    ubo.view         = viewer_info.view;
+    ubo.inverse_view = viewer_info.inverse_view;
+    // temp
+    ubo.point_lights[0] = {{0.f, -6.f, 0.f, 0.f}, { 1.f, 1.f, 1.f, 1.f}};
+    ubo.lights_count = 1;
+    ubo.ambient_light_color = { 0.6f, 0.6f, 0.6f, 0.6f };
+
+    utils::frame_info frame_info{
+      frame_index,
+      command_buffer,
+      core_.update_ubo(ubo, frame_index),
+      {}
+    };
+
     core_.begin_swap_chain_render_pass(command_buffer);
+
+    for (auto& system_kv : shading_systems_) {
+      auto& system = *system_kv.second;
+    }
+
     core_.end_swap_chain_and_frame(command_buffer);
   }
 }
