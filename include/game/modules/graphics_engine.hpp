@@ -3,6 +3,7 @@
 // hnll
 #include <game/shading_system.hpp>
 #include <game/concepts.hpp>
+#include <graphics/graphics_model_pool.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/singleton.hpp>
 
@@ -54,6 +55,9 @@ class graphics_engine_core
     void end_swap_chain_and_frame(VkCommandBuffer command_buffer);
 
     // getter
+    template <utils::shading_type type>
+    static graphics::graphics_model<type>& get_graphics_model(const std::string& name) { model_pool_->get_model<type>(name); }
+
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
     graphics::window& get_window_r();
@@ -83,6 +87,8 @@ class graphics_engine_core
     // global config for shading system
     static VkDescriptorSetLayout vk_global_desc_layout_;
     static VkRenderPass default_render_pass_;
+
+    static u_ptr<graphics::graphics_model_pool> model_pool_;
 };
 
 template <ShadingSystem... S>

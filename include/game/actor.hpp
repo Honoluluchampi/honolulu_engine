@@ -66,7 +66,7 @@ class pure_actor_base
       auto ret = std::make_unique<Derived>(std::forward<Args>(args)...);
       // assign unique id
       ret->id_ = id_pool++;
-      ret->transform_ = std::make_unique<utils::transform>();
+      ret->set_transform(std::make_unique<utils::transform>());
       // add to game engine's update list
       return ret;
     }
@@ -77,6 +77,7 @@ class pure_actor_base
     inline actor_id get_actor_id() const { return id_; }
     inline const utils::transform& get_transform() const { return *transform_; }
 
+    void set_transform(u_ptr<utils::transform>&& tf) { transform_ = std::move(tf); }
   private:
     // specialize this function for each actor class
     void update_this(const float& dt) {}

@@ -13,9 +13,11 @@ template <typename T>
 concept Updatable = requires (T a, const float& dt) { a.update(dt); };
 
 template <typename T>
-concept Actor = requires (const T t) {
+concept Actor = requires (const T t) { requires
+  requires { t.get_actor_id(); };
+} &&
+requires (T t){
   requires Updatable<decltype(t)> &&
-  requires { t.get_actor_id(); } &&
   requires { t.get_transform(); };
 };
 

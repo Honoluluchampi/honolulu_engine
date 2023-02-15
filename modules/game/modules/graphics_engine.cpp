@@ -25,11 +25,14 @@ std::vector<VkDescriptorSet>         graphics_engine_core::global_desc_sets_;
 VkDescriptorSetLayout graphics_engine_core::vk_global_desc_layout_;
 VkRenderPass          graphics_engine_core::default_render_pass_;
 
+u_ptr<graphics::graphics_model_pool> graphics_engine_core::model_pool_;
+
 graphics_engine_core::graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type)
 {
   window_ = graphics::window::create(WIDTH, HEIGHT, window_name);
   device_ = graphics::device::create(*window_, rendering_type);
   renderer_ = graphics::renderer::create(*window_, *device_);
+  model_pool_ = graphics::graphics_model_pool::create(*device_);
   init();
 }
 

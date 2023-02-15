@@ -2,12 +2,11 @@
 
 // hnll
 #include <game/component.hpp>
-#include <graphics/graphics_model.hpp>
+#include <game/modules/graphics_engine.hpp>
+#include <graphics/graphics_models/static_mesh.hpp>
 #include <utils/rendering_utils.hpp>
 
 namespace hnll {
-
-namespace graphics { class static_mesh; class static_meshlet; }
 
 namespace game {
 
@@ -22,7 +21,7 @@ DEFINE_TEMPLATE_COMPONENT(static_model_comp, type)
     {
       auto ret = std::make_unique<static_model_comp<type>>();
       ret->transform_ = owner->get_transform();
-      ret->model_ = engine_core::get_graphics_model<type>(filename);
+      ret->model_ = graphics_engine_core::get_graphics_model<type>(filename);
       return ret;
     }
 
