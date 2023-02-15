@@ -2,6 +2,7 @@
 
 // hnll
 #include <game/component.hpp>
+#include <graphics/graphics_model.hpp>
 #include <utils/rendering_utils.hpp>
 
 namespace hnll {
@@ -16,32 +17,24 @@ template <utils::shading_type type>
 DEFINE_TEMPLATE_COMPONENT(static_model_comp, type)
 {
   public:
-    void bind_and_draw();
+    template <Actor A>
+    static u_ptr<static_model_comp<type>> create(const A& owner, const std::string& filename)
+    {
+      auto ret = std::make_unique<static_model_comp<type>>();
+      ret->transform_ = owner->get_transform();
+      ret->model_ = engine_core::get_graphics_model<type>(filename);
+      return ret;
+    }
+
+    void bind_and_draw(VkCommandBuffer command_buffer)
+    { model_->bind(command_buffer); model_->draw(command_buffer); }
 
     utils::shading_type get_shading_type() const { return type; }
 
   private:
-    utils::shading_type type_ = type;
-};
-
-template <>
-class static_model_comp<utils::shading_type::MESH>
-{
-  public:
-    static_model_comp<utils::shading_type::MESH>(const std::string& model_name);
-
-  private:
-    graphics::static_mesh& model_;
-};
-
-template <>
-class static_model_comp<utils::shading_type::MESHLET>
-{
-  public:
-    static_model_comp<utils::shading_type::MESHLET>(const std::string& model_name);
-
-  private:
-    graphics::static_meshlet& model_;
+    graphics::graphics_model<type> model_;
+    // reference to the owner actor
+    const utils::transform& transform_;
 };
 
 }} // namespace hnll::game

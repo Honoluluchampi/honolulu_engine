@@ -2,6 +2,7 @@
 
 // hnll
 #include <game/modules/graphics_engine.hpp>
+#include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/singleton.hpp>
@@ -22,6 +23,10 @@ namespace hnll {
 namespace game {
 
 class gui_engine;
+
+// model name -> model
+template <utils::shading_type type>
+using graphics_model_map = std::unordered_map<std::string, u_ptr<graphics::graphics_model<type>>>;
 
 // common impl
 // should be wrapped by utils::singleton
