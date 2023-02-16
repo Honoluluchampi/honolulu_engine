@@ -38,7 +38,7 @@ class graphics_model_pool
 
       if (type == utils::shading_type::MESH) {
         load_model(full_path, static_mesh_map_, ".obj");
-        return *static_mesh_map_[name];
+        return *static_mesh_map_[full_path];
       }
     }
 

@@ -66,7 +66,6 @@ class pure_actor_base
       auto ret = std::make_unique<Derived>(std::forward<Args>(args)...);
       // assign unique id
       ret->id_ = id_pool++;
-      ret->set_transform(std::make_unique<utils::transform>());
       // add to game engine's update list
       return ret;
     }
@@ -84,7 +83,7 @@ class pure_actor_base
 
     actor_id id_;
 
-    u_ptr<utils::transform> transform_;
+    u_ptr<utils::transform> transform_ = std::make_unique<utils::transform>();
 };
 
 } // namespace hnll::game

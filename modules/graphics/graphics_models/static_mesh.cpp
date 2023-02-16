@@ -96,7 +96,7 @@ void static_mesh::create_index_buffers(const std::vector<uint32_t> &indices)
 
 void static_mesh::bind(VkCommandBuffer command_buffer)
 {
-  VkBuffer buffers[] = {vertex_buffer_->get_buffer()};
+  VkBuffer buffers[] = { vertex_buffer_->get_buffer() };
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(command_buffer, 0, 1, buffers, offsets);
 

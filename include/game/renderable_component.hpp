@@ -19,7 +19,8 @@ template <utils::shading_type type>
 class renderable_comp
 {
   public:
-    renderable_comp(graphics::graphics_model<type>& model, const utils::transform& transform) : model_(model), transform_(transform){}
+    renderable_comp(graphics::graphics_model<type>& model, const utils::transform& transform)
+    : model_(model), transform_(transform){}
 
     // hold only by its actor
     template <Actor A>
@@ -27,8 +28,7 @@ class renderable_comp
     {
       auto& model = graphics_engine_core::get_graphics_model<type>(name);
       const auto& tf = owner.get_transform();
-      auto ret = std::make_unique<renderable_comp<type>>(model, tf);
-      return std::move(ret);
+      return std::make_unique<renderable_comp<type>>(model, tf);
     }
 
     template <typename... T>

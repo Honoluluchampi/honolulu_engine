@@ -40,9 +40,11 @@ DEFINE_ENGINE(my_engine, shading_systems, actors)
   private:
     void add_mesh_model()
     {
-      auto a = mesh_actor::create();
-      add_render_target<game::static_mesh_shading_system>(a->get_mesh_comp());
+      a_ = mesh_actor::create();
+      add_render_target<game::static_mesh_shading_system>(a_->get_mesh_comp());
     }
+
+    u_ptr<mesh_actor> a_;
 };
 
 } // namespace hnll

@@ -113,8 +113,8 @@ class graphics_engine
     template <ShadingSystem SS, RenderableComponent RC>
     void add_render_target(RC& rc)
     {
-      auto key = static_cast<uint32_t>(rc->get_shading_type());
-      std::get<u_ptr<SS>>(shading_systems_[key])->add_render_target(rc->get_rc_id(), rc);
+      auto key = static_cast<uint32_t>(rc.get_shading_type());
+      std::get<u_ptr<SS>>(shading_systems_[key])->add_render_target(rc.get_rc_id(), rc);
     }
 
   private:

@@ -86,7 +86,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     template <ShadingSystem SS, RenderableComponent RC>
     void add_render_target(RC& rc)
-    {  }
+    { graphics_engine_->template add_render_target<SS>(rc); }
 
   private:
     void update();
