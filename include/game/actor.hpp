@@ -29,7 +29,6 @@ class actor_base
       auto ret = std::make_unique<Derived>(std::forward<Args>(args)...);
       // assign unique id
       ret->id_ = id_pool++;
-      ret->transform_ = std::make_unique<utils::transform>();
       // add to game engine's update list
       return ret;
     }
@@ -43,7 +42,9 @@ class actor_base
     }
 
     inline actor_id get_actor_id() const { return id_; }
-    inline const utils::transform& get_transform() const { return *transform_; }
+    inline const utils::transform& get_transform() const { return transform_; }
+    void set_rotation(const vec3& rot) { transform_.rotation = rot; }
+    void add_rotation(const vec3& rot) { transform_.rotation += rot; }
 
   private:
     // specialize this function for each actor class
@@ -53,7 +54,7 @@ class actor_base
 
     updatable_components_map updatable_components_;
 
-    u_ptr<utils::transform> transform_;
+    utils::transform transform_ {};
 };
 
 template <typename Derived>
@@ -74,16 +75,18 @@ class pure_actor_base
     { static_cast<Derived*>(this)->update_this(dt); }
 
     inline actor_id get_actor_id() const { return id_; }
-    inline const utils::transform& get_transform() const { return *transform_; }
+    inline const utils::transform& get_transform() const { return transform_; }
 
-    void set_transform(u_ptr<utils::transform>&& tf) { transform_ = std::move(tf); }
+    void set_transform(const utils::transform& tf) { transform_ = tf; }
+    void set_rotation(const vec3& rot) { transform_.rotation = rot; }
+    void add_rotation(const vec3& rot) { transform_.rotation += rot; }
   private:
     // specialize this function for each actor class
     void update_this(const float& dt) {}
 
     actor_id id_;
 
-    u_ptr<utils::transform> transform_ = std::make_unique<utils::transform>();
+    utils::transform transform_ {};
 };
 
 } // namespace hnll::game
