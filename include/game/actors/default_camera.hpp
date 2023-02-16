@@ -41,7 +41,6 @@ DEFINE_PURE_ACTOR(default_camera)
 
   private:
     graphics_engine_core& graphics_engine_core_;
-    hnll::utils::transform transform_ {};
     u_ptr<viewer_comp>   viewer_comp_;
     u_ptr<key_move_comp> key_comp_;
 };

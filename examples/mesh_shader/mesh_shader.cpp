@@ -2,9 +2,10 @@
 #include <game/engine.hpp>
 #include <game/actor.hpp>
 #include <game/component.hpp>
-#include <game/shading_systems/alias.hpp>
 #include <game/actors/default_camera.hpp>
 #include <game/renderable_component.hpp>
+#include <game/shading_systems/grid_shading_system.hpp>
+#include <game/shading_systems/static_mesh_shading_system.hpp>
 
 // std
 #include <iostream>

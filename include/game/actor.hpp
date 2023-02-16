@@ -46,7 +46,7 @@ class actor_base
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
 
-  private:
+  protected:
     // specialize this function for each actor class
     void update_this(const float& dt) {}
 
@@ -80,7 +80,8 @@ class pure_actor_base
     void set_transform(const utils::transform& tf) { transform_ = tf; }
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
-  private:
+
+  protected:
     // specialize this function for each actor class
     void update_this(const float& dt) {}
 

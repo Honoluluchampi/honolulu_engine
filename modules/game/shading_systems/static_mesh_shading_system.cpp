@@ -1,13 +1,10 @@
 // hnll
+#include <game/shading_systems/static_mesh_shading_system.hpp>
 #include <game/modules/graphics_engine.hpp>
-#include <game/renderable_component.hpp>
 
 namespace hnll {
 
 namespace game {
-
-using static_mesh_comp = renderable_comp<utils::shading_type::MESH>;
-using static_mesh_shading_system = shading_system<static_mesh_comp>;
 
 struct mesh_push_constant
 {
@@ -15,14 +12,10 @@ struct mesh_push_constant
   mat4 normal_matrix;
 };
 
-template <>
-u_ptr<static_mesh_shading_system> static_mesh_shading_system::create(graphics::device& device)
-{ return std::make_unique<static_mesh_shading_system>(device); }
-
-template <>
-static_mesh_shading_system::shading_system(graphics::device &device)
-  : device_(device), shading_type_(utils::shading_type::MESH)
+void static_mesh_shading_system::setup()
 {
+  shading_type_ = utils::shading_type::MESH;
+
   pipeline_layout_ = create_pipeline_layout<mesh_push_constant>(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{ graphics_engine_core::get_global_desc_layout() }
@@ -42,7 +35,6 @@ static_mesh_shading_system::shading_system(graphics::device &device)
   );
 }
 
-template <>
 void static_mesh_shading_system::render(const utils::frame_info& frame_info)
 {
   pipeline_->bind(frame_info.command_buffer);

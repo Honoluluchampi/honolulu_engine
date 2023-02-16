@@ -26,7 +26,6 @@ class renderable_comp
     template <Actor A>
     static u_ptr<renderable_comp<type>> create(A& owner, const std::string& name)
     {
-      owner.add_rotation({ M_PI, 0.f, 0.f});
       auto& model = graphics_engine_core::get_graphics_model<type>(name);
       const auto& tf = owner.get_transform();
       return std::make_unique<renderable_comp<type>>(model, tf);

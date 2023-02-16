@@ -54,8 +54,8 @@ void obj_loader::load_model(const std::string& filename)
       if (index.vertex_index >= 0) {
         vertex.position = {
           attrib.vertices[3 * index.vertex_index + 0],
-          attrib.vertices[3 * index.vertex_index + 1],
-          attrib.vertices[3 * index.vertex_index + 2]
+          -attrib.vertices[3 * index.vertex_index + 1],
+          -attrib.vertices[3 * index.vertex_index + 2]
         };
         // color support
         vertex.color = {
@@ -68,8 +68,8 @@ void obj_loader::load_model(const std::string& filename)
       if (index.normal_index >= 0) {
         vertex.normal = {
           attrib.normals[3 * index.normal_index + 0],
-          attrib.normals[3 * index.normal_index + 1],
-          attrib.normals[3 * index.normal_index + 2]
+          -attrib.normals[3 * index.normal_index + 1],
+          -attrib.normals[3 * index.normal_index + 2]
         };
       }
       // copy the texture coordinate
