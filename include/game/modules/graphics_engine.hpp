@@ -56,7 +56,7 @@ class graphics_engine_core
 
     // getter
     template <utils::shading_type type>
-    static graphics::graphics_model<type>& get_graphics_model(const std::string& name) { model_pool_->get_model<type>(name); }
+    static graphics::graphics_model<type>& get_graphics_model(const std::string& name) { return model_pool_->get_model<type>(name); }
 
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
@@ -94,12 +94,8 @@ class graphics_engine_core
 template <ShadingSystem... S>
 class graphics_engine
 {
-    using shading_system_map = std::map<uint32_t, std::variant<u_ptr<S>...>>;
+    using shading_system_map = std::unordered_map<uint32_t, std::variant<u_ptr<S>...>>;
   public:
-    static constexpr int WIDTH = 960;
-    static constexpr int HEIGHT = 820;
-    static constexpr float MAX_FRAME_TIME = 0.05;
-
     graphics_engine(const std::string &application_name, utils::rendering_type rendering_type);
     ~graphics_engine() { cleanup(); }
 
@@ -111,7 +107,15 @@ class graphics_engine
 
     void render(const utils::viewer_info& viewer_info);
 
-    template <ShadingSystem SS> void add_shading_system();
+    template <ShadingSystem Head, ShadingSystem... Rest> void add_shading_system();
+    void add_shading_system(){}
+
+    template <ShadingSystem SS, RenderableComponent RC>
+    void add_render_target(RC& rc)
+    {
+      auto key = static_cast<uint32_t>(rc->get_shading_type());
+      std::get<u_ptr<SS>>(shading_systems_[key])->add_render_target(rc->get_rc_id(), rc);
+    }
 
   private:
     void cleanup();
@@ -165,10 +169,13 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::viewer_info& viewer_info)
   }
 }
 
-GRPH_ENGN_API template <ShadingSystem SS> void GRPH_ENGN_TYPE::add_shading_system()
+GRPH_ENGN_API template <ShadingSystem Head, ShadingSystem... Rest> void GRPH_ENGN_TYPE::add_shading_system()
 {
-  auto system = SS::create(core_.get_device_r());
+  auto system = Head::create(core_.get_device_r());
   shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
+
+  if constexpr (sizeof...(Rest) >= 1)
+    add_shading_system<Rest...>();
 }
 
 GRPH_ENGN_API void GRPH_ENGN_TYPE::cleanup()
