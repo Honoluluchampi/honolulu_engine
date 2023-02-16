@@ -89,6 +89,7 @@ void graphics_engine_core::setup_ubo()
 
 void graphics_engine_core::cleanup()
 {
+  model_pool_.reset();
   global_pool_->free_descriptors(global_desc_sets_);
   for(auto& buffer : ubo_buffers_) buffer.reset();
   global_pool_.reset();
