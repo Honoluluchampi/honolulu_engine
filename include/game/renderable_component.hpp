@@ -32,13 +32,15 @@ class renderable_comp
     }
 
     template <typename... T>
-    inline void bind(VkCommandBuffer cb, T... args) { model_->bind(cb, args...); }
+    inline void bind(VkCommandBuffer cb, T... args) { model_.bind(cb, args...); }
     template <typename... T>
-    inline void draw(VkCommandBuffer cb, T... args) { model_->draw(cb, args...); }
+    inline void draw(VkCommandBuffer cb, T... args) { model_.draw(cb, args...); }
 
     // getter
     inline rc_id get_rc_id() const { return rc_id_; }
     inline utils::shading_type get_shading_type() const { return type; }
+
+    inline const utils::transform& get_transform() const { return transform_; }
 
   private:
     // reference to game::graphical_model_map

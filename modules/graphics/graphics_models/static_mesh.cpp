@@ -21,9 +21,8 @@ static_mesh::graphics_model(device& device, const obj_loader &loader) : device_{
 
 u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::string &filename)
 {
-  auto filepath = utils::get_full_path(filename);
   obj_loader builder;
-  builder.load_model(filepath);
+  builder.load_model(filename);
   std::cout << filename << " vertex count: " << builder.vertices.size() << "\n";
   return std::make_unique<static_mesh>(device, builder);
 }

@@ -1,5 +1,4 @@
 // hnll
-#include <game/shading_systems/alias.hpp>
 #include <game/modules/graphics_engine.hpp>
 
 namespace hnll::game {
@@ -8,11 +7,11 @@ using grid_shading_system = shading_system<dummy_renderable_comp<utils::shading_
 
 template<>
 u_ptr<grid_shading_system> grid_shading_system::create(graphics::device& device)
-{ return std::make_unique<grid_shading_system>(device, utils::shading_type::GRID); }
+{ return std::make_unique<grid_shading_system>(device); }
 
 template<>
-grid_shading_system::shading_system(graphics::device& device, utils::shading_type type)
- : device_(device), shading_type_(type)
+grid_shading_system::shading_system(graphics::device& device)
+ : device_(device), shading_type_(utils::shading_type::GRID)
 {
   pipeline_layout_ = create_pipeline_layout_without_push(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
