@@ -1,10 +1,10 @@
 #pragma once
 
 // hnll
-#include <game/renderable_component.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/pipeline.hpp>
+#include <utils/rendering_utils.hpp>
 
 // std
 #include <unordered_map>
@@ -154,8 +154,8 @@ template<utils::shading_type T>
 class dummy_renderable_comp
 {
   public:
-    void bind() {}
-    void draw() {}
+    void bind(VkCommandBuffer cb) {}
+    void draw(VkCommandBuffer cb) {}
     rc_id get_rc_id() const { return 0; }
     utils::shading_type get_shading_type() const { return type; }
   private:

@@ -1,6 +1,9 @@
 #pragma once
 
+// std
 #include <concepts>
+// lib
+#include <vulkan/vulkan.h>
 
 namespace hnll {
 
@@ -35,9 +38,9 @@ concept GraphicsModel =
 requires(T a) { a.bind(); a.draw(); } &&
 requires(const T a) { a.get_shading_type(); };
 
-template <typename T>
+template <typename T, typename... Args>
 concept RenderableComponent =
-requires(T a) { a.bind(); a.draw(); } &&
+requires(T a, VkCommandBuffer cb, Args... args) { a.bind(cb, args...); a.draw(cb, args...); } &&
 requires(const T a) { a.get_rc_id(); a.get_shading_type(); };
 
 template <typename T>
@@ -47,5 +50,6 @@ requires(T, graphics::device& device) { T::create(device); };
 
 using component_id = unsigned int;
 using actor_id     = unsigned int;
+using rc_id        = unsigned int;
 
 }} // namespace hnll::game

@@ -1,8 +1,10 @@
 // hnll
-#include <game/shading_systems/grid_shading_system.hpp>
+#include <game/shading_systems/alias.hpp>
 #include <game/modules/graphics_engine.hpp>
 
 namespace hnll::game {
+
+using grid_shading_system = shading_system<dummy_renderable_comp<utils::shading_type::GRID>>;
 
 template<>
 u_ptr<grid_shading_system> grid_shading_system::create(graphics::device& device)
