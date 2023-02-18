@@ -33,9 +33,9 @@ concept UpdatableComponent = requires (T t) {
            Component<decltype(t)>;
 };
 
-template <typename T>
+template <typename T, typename... Args>
 concept GraphicsModel =
-requires(T a) { a.bind(); a.draw(); } &&
+requires(T a, VkCommandBuffer cb, Args... args) { a.bind(cb, args...); a.draw(cb, args...); } &&
 requires(const T a) { a.get_shading_type(); };
 
 template <typename T, typename... Args>

@@ -9,9 +9,8 @@ namespace graphics {
 // forward declaration
 class device;
 class buffer;
-class descriptor_pool;
-class descriptor_set_layout;
-struct frame_info;
+class desc_pool;
+class desc_layout;
 struct vertex;
 struct mesh_builder;
 
@@ -22,15 +21,15 @@ class graphics_model<utils::shading_type::MESHLET>
 {
   public:
 
-    graphics_model(std::vector<vertex>&& raw_vertices, std::vector<meshlet>&& meshlets);
+    graphics_model(device& device, std::vector<vertex>&& raw_vertices, std::vector<meshlet>&& meshlets);
 
-    static u_ptr<static_meshlet> create_from_file(device& _device, std::string _filename);
+    static u_ptr<static_meshlet> create_from_file(device& device, std::string filename);
 
     void bind(
-      VkCommandBuffer               _command_buffer,
-      std::vector<VkDescriptorSet>  _external_desc_set,
-      VkPipelineLayout              _pipeline_layout);
-    void draw(VkCommandBuffer  _command_buffer);
+      VkCommandBuffer               command_buffer,
+      std::vector<VkDescriptorSet>  external_desc_set,
+      VkPipelineLayout              pipeline_layout);
+    void draw(VkCommandBuffer  command_buffer);
 
     // getter
     const buffer& get_vertex_buffer()  const;
@@ -38,23 +37,24 @@ class graphics_model<utils::shading_type::MESHLET>
     inline void* get_raw_vertices_data() { return raw_vertices_.data(); }
     inline void* get_meshlets_data()     { return meshlets_.data(); }
     inline uint32_t get_meshlets_count() { return meshlet_count_; }
-    std::vector<VkDescriptorSetLayout> get_raw_desc_set_layouts() const;
+    std::vector<VkDescriptorSetLayout> get_raw_desc_layouts() const;
 
-    static std::vector<u_ptr<descriptor_set_layout>> default_desc_set_layouts(device& _device);
+    static std::vector<u_ptr<desc_layout>> default_desc_layouts(device& _device);
 
   private:
-    void setup_descs(device& _device);
-    void create_desc_pool(device& _device);
-    void create_desc_buffers(device& _device);
-    void create_desc_set_layouts(device& _device);
+    void setup_descs();
+    void create_desc_pool();
+    void create_desc_buffers();
+    void create_desc_set_layouts();
     void create_desc_sets();
 
+    device& device_;
     std::vector<vertex>  raw_vertices_;
     std::vector<meshlet> meshlets_;
-    u_ptr<descriptor_pool>                    desc_pool_;
-    std::vector<u_ptr<buffer>>                desc_buffers_;
-    std::vector<u_ptr<descriptor_set_layout>> desc_set_layouts_;
-    std::vector<VkDescriptorSet>              desc_sets_;
+    u_ptr<desc_pool>                desc_pool_;
+    std::vector<u_ptr<buffer>>      desc_buffers_;
+    std::vector<u_ptr<desc_layout>> desc_layouts_;
+    std::vector<VkDescriptorSet>    desc_sets_;
     uint32_t meshlet_count_;
 };
 

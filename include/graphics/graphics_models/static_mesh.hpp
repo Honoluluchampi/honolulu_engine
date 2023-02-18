@@ -13,6 +13,8 @@ class buffer;
 class obj_loader;
 class vertex;
 
+using static_mesh = graphics_model<utils::shading_type::MESH>;
+
 template<>
 class graphics_model<utils::shading_type::MESH> {
   public:
@@ -20,8 +22,8 @@ class graphics_model<utils::shading_type::MESH> {
 
     graphics_model(device& _device, const obj_loader &builder);
 
-    static u_ptr<graphics_model<utils::shading_type::MESH>> create_from_file(device &device, const std::string &filename);
-    static u_ptr<graphics_model<utils::shading_type::MESH>> create_from_geometry_mesh_model(device &device, const s_ptr<geometry::mesh_model> &gm);
+    static u_ptr<static_mesh> create_from_file(device &device, const std::string &filename);
+    static u_ptr<static_mesh> create_from_geometry_mesh_model(device &device, const s_ptr<geometry::mesh_model> &gm);
 
     void bind(VkCommandBuffer command_buffer);
     void draw(VkCommandBuffer command_buffer);
@@ -51,7 +53,5 @@ class graphics_model<utils::shading_type::MESH> {
     // for geometric process
     std::vector<vertex> vertex_list_{};
 };
-
-using static_mesh = graphics_model<utils::shading_type::MESH>;
 
 }
