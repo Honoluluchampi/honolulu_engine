@@ -1,5 +1,7 @@
 set(SOURCES
         mesh_separation.cpp
+        mesh_model.cpp
+        bounding_volume.cpp
         )
 
 add_library(hnll_geometry STATIC ${SOURCES})
