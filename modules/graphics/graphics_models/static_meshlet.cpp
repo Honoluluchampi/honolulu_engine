@@ -3,6 +3,8 @@
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
 #include <graphics/utils.hpp>
+#include <geometry/mesh_model.hpp>
+#include <geometry/mesh_separation.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -31,7 +33,7 @@ u_ptr<static_meshlet> static_meshlet::create_from_file(hnll::graphics::device &d
   // if model's cache exists
   meshlets = geometry::mesh_separation::load_meshlet_cache(filename);
   if (meshlets.size() == 0) {
-    meshlets = geometry::mesh_separation::separate(geometry_model, filename);
+    meshlets = geometry::mesh_separation::separate_into_graphics_meshlet(geometry_model, filename);
   }
 
   return std::make_unique<static_meshlet>(device, geometry_model->move_raw_vertices(), std::move(meshlets));
