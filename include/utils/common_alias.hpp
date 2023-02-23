@@ -23,4 +23,7 @@ using vec4d = Eigen::Vector4d;
 using mat3d = Eigen::Matrix3d;
 using mat4d = Eigen::Matrix4d;
 
+using uvec4 = Eigen::Matrix<unsigned, 4, 1>;
+using quat  = Eigen::Quaternionf;
+
 } // namespace hnll

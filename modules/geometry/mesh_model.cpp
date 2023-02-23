@@ -4,7 +4,6 @@
 #include <geometry/bounding_volume.hpp>
 #include <graphics/utils.hpp>
 #include <graphics/frame_anim_utils.hpp>
-#include <utils/utils.hpp>
 
 // std
 #include <filesystem>
@@ -77,8 +76,8 @@ s_ptr<mesh_model> mesh_model::create_from_obj_file(const std::string& filename)
 
 s_ptr<vertex> translate_vertex(const graphics::frame_anim_utils::dynamic_attributes& pseudo, uint32_t id)
 {
-  auto vertex_sp = vertex::create(pseudo.position.cast<double>());
-  vertex_sp->normal_   = pseudo.normal.cast<double>();
+  auto vertex_sp = vertex::create(pseudo.position);
+  vertex_sp->normal_   = pseudo.normal;
   vertex_sp->id_ = id;
   return vertex_sp;
 }
