@@ -43,6 +43,13 @@ if [ ! -e $HNLL_ENGN/submodules/tiny_gltf/tiny_gltf.h ]; then
 fi
 export TINY_GLTF_DIR=$HNLL_ENGN/submodules/tiny_gltf
 
+# download stb image
+if [ ! -e $HNLL_ENGN/submodules/stb_image/stb_image.h ]; then
+  mkdir -p $HNLL_ENGN/submodules/stb_image
+  echo "downloading stb image"
+  curl -o $HNLL_ENGN/submodules/stb_image/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+fi
+
 # download nv vulkan extensions
 if [ ! -e $HNLL_ENGN/submodules/extensions/extensions_vk.hpp ]; then
   mkdir -p $HNLL_ENGN/submodules/extensions
