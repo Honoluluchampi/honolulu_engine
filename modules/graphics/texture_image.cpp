@@ -10,9 +10,15 @@
 
 namespace hnll::graphics {
 
-VkDeviceSize load_stb_image(stbi_uc* raw_data, const std::string& filepath)
+VkExtent3D load_stb_image(stbi_uc* raw_data, const std::string& filepath)
 {
+  // stb image utility
+  int width, height, channels;
+  raw_data = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
+  if (!raw_data) { throw std::runtime_error("failed to load stb image."); }
+
+  return { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
 }
 
 u_ptr<texture_image> create(device& device, const std::string& filepath)
@@ -21,22 +27,19 @@ u_ptr<texture_image> create(device& device, const std::string& filepath)
 texture_image::texture_image(device &device, const std::string &filepath)
  : device_(device)
 {
-  // stb image utility
-  int width, height, channels;
-  stbi_uc* raw_data = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-  VkDeviceSize image_size = width * height * 4;
+  stbi_uc* raw_data;
+  auto extent = load_stb_image(raw_data, filepath);
 
-  if (!raw_data) { throw std::runtime_error("failed to load stb image."); }
+  VkDeviceSize image_size = extent.width * extent.height * 4;
 
   VkImage texture_image;
   VkDeviceMemory texture_image_memory;
 
+  // create image
   VkImageCreateInfo image_info{};
   image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.extent.width = static_cast<uint32_t>(width);
-  image_info.extent.height = static_cast<uint32_t>(height);
-  image_info.extent.depth = 1;
+  image_info.extent = extent;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 1;
   image_info.format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -55,6 +58,23 @@ texture_image::texture_image(device &device, const std::string &filepath)
 
   if (vkCreateImage(device_.get_device(), &image_info, nullptr, &texture_image) != VK_SUCCESS)
     throw std::runtime_error("failed to create vulkan image!");
+
+  // allocate image memory
+  VkMemoryRequirements mem_requirements;
+  vkGetImageMemoryRequirements(device_.get_device(), texture_image, &mem_requirements);
+
+  VkMemoryAllocateInfo alloc_info{};
+  alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  alloc_info.allocationSize = mem_requirements.size;
+  alloc_info.memoryTypeIndex = device_.find_memory_type(
+    mem_requirements.memoryTypeBits,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+  );
+
+  if (vkAllocateMemory(device_.get_device(), &alloc_info, nullptr, &texture_image_memory) != VK_SUCCESS)
+    throw std::runtime_error("failed to allocate image memory!");
+
+  vkBindImageMemory(device_.get_device(), texture_image, texture_image_memory, 0);
 }
 
 } // namespace hnll::graphics
