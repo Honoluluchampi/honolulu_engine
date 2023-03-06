@@ -54,6 +54,7 @@ class image_resource
 
   private:
     void create_image_view();
+    void create_sampler();
 
     void transition_image_layout(
       VkImageLayout old_layout,
@@ -81,6 +82,8 @@ class image_resource
       0, // base array layer
       1, // layer count
     };
+
+    VkSampler sampler_;
 };
 
 } // namespace hnll::graphics
