@@ -126,6 +126,7 @@ image_resource::image_resource(
   vkBindImageMemory(device_.get_device(), image_, image_memory_, 0);
 
   create_image_view();
+  create_sampler();
 }
 
 image_resource::~image_resource()
