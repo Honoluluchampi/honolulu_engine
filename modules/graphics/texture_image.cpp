@@ -67,6 +67,15 @@ u_ptr<image> image::create_texture_image(device& device, const std::string& file
   );
 }
 
+u_ptr<image> image::create(
+  device &device,
+  VkExtent3D extent,
+  VkFormat image_format,
+  VkImageTiling tiling,
+  VkImageUsageFlags usage,
+  VkMemoryPropertyFlags properties)
+{ return std::make_unique<image>(device, extent, image_format, tiling, usage, properties); }
+
 image::image(
   device &device,
   VkExtent3D extent,
@@ -118,6 +127,12 @@ image::image(
   vkBindImageMemory(device_.get_device(), image_, image_memory_, 0);
 }
 
+image::~image()
+{
+  vkDestroyImage(device_.get_device(), image_, nullptr);
+  vkFreeMemory(device_.get_device(), image_memory_, nullptr);
+}
+
 void image::transition_image_layout(
   VkFormat format,
   VkImageLayout old_layout,
@@ -142,12 +157,27 @@ void image::transition_image_layout(
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
 
-  barrier.srcAccessMask = 0;
-  barrier.dstAccessMask = 0;
+  VkPipelineStageFlags src_stage;
+  VkPipelineStageFlags dst_stage;
+
+  if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  }
+  else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  } else {
+    throw std::invalid_argument("unsupported layout transition!");
+  }
 
   vkCmdPipelineBarrier(
     command_buffer,
-    0, 0,
+    src_stage, dst_stage,
     0,
     0, nullptr,
     0, nullptr,

@@ -34,6 +34,8 @@ class image
       VkImageUsageFlags usage,
       VkMemoryPropertyFlags properties);
 
+    ~image();
+
   private:
     void transition_image_layout(
       VkFormat format,
