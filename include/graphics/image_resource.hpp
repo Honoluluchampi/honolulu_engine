@@ -52,11 +52,10 @@ class image_resource
       return &descriptor_;
     }
 
-    void set_image_layout_barrier_state(VkCommandBuffer command, VkImageLayout new_layout);
-
   private:
+    void create_image_view();
+
     void transition_image_layout(
-      VkFormat format,
       VkImageLayout old_layout,
       VkImageLayout new_layout
     );
@@ -71,6 +70,7 @@ class image_resource
     VkDeviceMemory image_memory_;
     VkImageLayout  layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
     VkImageView    image_view_;
+    VkFormat       image_format_;
     VkExtent2D     extent_;
     VkDescriptorImageInfo descriptor_ = {};
 
