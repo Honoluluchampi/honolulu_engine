@@ -1,5 +1,5 @@
 // hnll
-#include <graphics/image.hpp>
+#include <graphics/image_resource.hpp>
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 
@@ -21,7 +21,7 @@ VkExtent3D load_stb_image(stbi_uc* raw_data, const std::string& filepath)
   return { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
 }
 
-u_ptr<image> image::create_texture_image(device& device, const std::string& filepath)
+u_ptr<image_resource> image_resource::create_texture_image(device& device, const std::string& filepath)
 {
   // load raw data using stb_image
   stbi_uc* raw_data;
@@ -30,7 +30,7 @@ u_ptr<image> image::create_texture_image(device& device, const std::string& file
   VkDeviceSize image_size = extent.width * extent.height * 4;
 
   auto staging_buffer = buffer::create(
-    device_,
+    device,
     image_size,
     1,
     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -43,7 +43,7 @@ u_ptr<image> image::create_texture_image(device& device, const std::string& file
   // create texture image
   VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
-  auto ret = std::make_unique<image>(
+  auto ret = std::make_unique<image_resource>(
     device,
     extent,
     format,
@@ -52,31 +52,31 @@ u_ptr<image> image::create_texture_image(device& device, const std::string& file
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   // available for copy destination
-  transition_image_layout(
+  ret->transition_image_layout(
     format,
     VK_IMAGE_LAYOUT_UNDEFINED,
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  copy_buffer_to_image(staging_buffer->get_buffer(), extent);
+  ret->copy_buffer_to_image(staging_buffer->get_buffer(), extent);
 
   // available for shader
-  transition_image_layout(
+  ret->transition_image_layout(
     format,
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
   );
 }
 
-u_ptr<image> image::create(
+u_ptr<image_resource> image_resource::create(
   device &device,
   VkExtent3D extent,
   VkFormat image_format,
   VkImageTiling tiling,
   VkImageUsageFlags usage,
   VkMemoryPropertyFlags properties)
-{ return std::make_unique<image>(device, extent, image_format, tiling, usage, properties); }
+{ return std::make_unique<image_resource>(device, extent, image_format, tiling, usage, properties); }
 
-image::image(
+image_resource::image_resource(
   device &device,
   VkExtent3D extent,
   VkFormat image_format,
@@ -127,13 +127,13 @@ image::image(
   vkBindImageMemory(device_.get_device(), image_, image_memory_, 0);
 }
 
-image::~image()
+image_resource::~image_resource()
 {
   vkDestroyImage(device_.get_device(), image_, nullptr);
   vkFreeMemory(device_.get_device(), image_memory_, nullptr);
 }
 
-void image::transition_image_layout(
+void image_resource::transition_image_layout(
   VkFormat format,
   VkImageLayout old_layout,
   VkImageLayout new_layout)
@@ -187,7 +187,7 @@ void image::transition_image_layout(
   device_.end_one_shot_commands(command_buffer);
 }
 
-void image::copy_buffer_to_image(VkBuffer buffer, VkExtent3D extent)
+void image_resource::copy_buffer_to_image(VkBuffer buffer, VkExtent3D extent)
 {
   auto command_buffer = device_.begin_one_shot_commands();
 
@@ -214,6 +214,58 @@ void image::copy_buffer_to_image(VkBuffer buffer, VkExtent3D extent)
   );
 
   device_.end_one_shot_commands(command_buffer);
+}
+
+void image_resource::set_image_layout_barrier_state(VkCommandBuffer command, VkImageLayout new_layout) {
+  VkImageMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.oldLayout = layout_;
+  barrier.newLayout = new_layout;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.subresourceRange = sub_resource_range_;
+  barrier.image = image_;
+
+  VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+  VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+  switch (layout_) {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+      barrier.srcAccessMask = 0;
+      break;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+      barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+      break;
+    default:
+      break;
+  }
+
+  switch (new_layout) {
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+      barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+      dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+      break;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+      barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+      break;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      dst_stage = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+      break;
+    default:
+      break;
+  }
+
+  vkCmdPipelineBarrier(
+    command,
+    src_stage,
+    dst_stage,
+    0, 0, nullptr, 0, nullptr, 1, &barrier
+  );
+
+  layout_ = new_layout;
 }
 
 } // namespace hnll::graphics

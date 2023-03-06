@@ -7,7 +7,7 @@ set(SOURCES
     desc_set.cpp
     buffer.cpp
     utils.cpp
-    texture_image.cpp
+    image_resource.cpp
     graphics_models/static_mesh.cpp
     graphics_models/static_meshlet.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
