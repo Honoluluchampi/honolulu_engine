@@ -21,7 +21,7 @@ VkExtent3D load_stb_image(stbi_uc* raw_data, const std::string& filepath)
   return { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
 }
 
-u_ptr<image_resource> image_resource::create_texture_image(device& device, const std::string& filepath)
+u_ptr<image_resource> image_resource::create_from_file(device& device, const std::string& filepath)
 {
   // load raw data using stb_image
   stbi_uc* raw_data;
@@ -126,12 +126,10 @@ image_resource::image_resource(
   vkBindImageMemory(device_.get_device(), image_, image_memory_, 0);
 
   create_image_view();
-  create_sampler();
 }
 
 image_resource::~image_resource()
 {
-  vkDestroySampler(device_.get_device(), sampler_, nullptr);
   vkDestroyImageView(device_.get_device(), image_view_, nullptr);
   vkDestroyImage(device_.get_device(), image_, nullptr);
   vkFreeMemory(device_.get_device(), image_memory_, nullptr);
@@ -228,41 +226,6 @@ void image_resource::create_image_view()
     throw std::runtime_error("failed to create texture image view!");
 }
 
-void image_resource::create_sampler()
-{
-  VkSamplerCreateInfo sampler_info{};
-  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  // filtering
-  sampler_info.magFilter = VK_FILTER_LINEAR;
-  sampler_info.minFilter = VK_FILTER_LINEAR;
-  // matters when you sample outside of the image
-  // repeat is common for texture tiling
-  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-  sampler_info.anisotropyEnable = VK_TRUE;
-  // determine proper value for max anisotropy
-  VkPhysicalDeviceProperties prop{};
-  vkGetPhysicalDeviceProperties(device_.get_physical_device(), &prop);
-  sampler_info.maxAnisotropy = prop.limits.maxSamplerAnisotropy;
-
-  // when sampling beyond the image with clamp to border addressing mode
-  sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-
-  sampler_info.unnormalizedCoordinates = VK_FALSE;
-
-  // for percentage closer filtering on shadow maps
-  sampler_info.compareEnable = VK_FALSE;
-  sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-
-  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  sampler_info.mipLodBias = 0.0f;
-  sampler_info.minLod = 0.0f;
-  sampler_info.maxLod = 0.0f;
-
-  if (vkCreateSampler(device_.get_device(), &sampler_info, nullptr, &sampler_) != VK_SUCCESS)
-    throw std::runtime_error("failed to create sampler!");
-}
 
 } // namespace hnll::graphics

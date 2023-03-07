@@ -17,7 +17,7 @@ class buffer;
 class image_resource
 {
   public:
-    static u_ptr<image_resource> create_texture_image(device& device, const std::string& filepath);
+    static u_ptr<image_resource> create_from_file(device& device, const std::string& filepath);
     static u_ptr<image_resource> create(
       device& device,
       VkExtent3D extent,
@@ -44,14 +44,6 @@ class image_resource
     [[nodiscard]] const VkExtent2D& get_extent()       const { return extent_; }
     [[nodiscard]] VkImageSubresourceRange get_sub_resource_range() const { return sub_resource_range_; }
 
-    const VkDescriptorImageInfo *get_descriptor(VkSampler sampler = VK_NULL_HANDLE)
-    {
-      descriptor_.imageView = image_view_;
-      descriptor_.imageLayout = layout_;
-      descriptor_.sampler = sampler;
-      return &descriptor_;
-    }
-
   private:
     void create_image_view();
     void create_sampler();
@@ -73,7 +65,6 @@ class image_resource
     VkImageView    image_view_;
     VkFormat       image_format_;
     VkExtent2D     extent_;
-    VkDescriptorImageInfo descriptor_ = {};
 
     VkImageSubresourceRange sub_resource_range_ = {
       VK_IMAGE_ASPECT_COLOR_BIT,
@@ -82,8 +73,6 @@ class image_resource
       0, // base array layer
       1, // layer count
     };
-
-    VkSampler sampler_;
 };
 
 } // namespace hnll::graphics
