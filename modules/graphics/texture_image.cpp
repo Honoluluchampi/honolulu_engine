@@ -10,6 +10,7 @@ texture_image::texture_image(device &device, const std::string& filepath) : devi
 {
   image_ = image_resource::create_from_file(device, filepath);
   create_sampler();
+  create_desc_set();
 }
 
 texture_image::~texture_image()
@@ -78,7 +79,10 @@ void texture_image::create_desc_set()
       VK_SHADER_STAGE_FRAGMENT_BIT)
     .build();
 
-
+  auto image_info = get_image_info();
+  desc_writer(*desc_layout_, *desc_pool_)
+    .write_image(0, &image_info)
+    .build(desc_set_);
 }
 
 } // namespace hnll::graphics
