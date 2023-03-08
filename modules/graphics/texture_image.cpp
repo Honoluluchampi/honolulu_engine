@@ -34,7 +34,7 @@ void texture_image::create_sampler()
   // filtering
   sampler_info.magFilter = VK_FILTER_LINEAR;
   sampler_info.minFilter = VK_FILTER_LINEAR;
-  // matters when you sample outside of the image
+  // matters when you sample outside the image
   // repeat is common for texture tiling
   sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -62,6 +62,23 @@ void texture_image::create_sampler()
 
   if (vkCreateSampler(device_.get_device(), &sampler_info, nullptr, &sampler_) != VK_SUCCESS)
     throw std::runtime_error("failed to create sampler!");
+}
+
+void texture_image::create_desc_set()
+{
+  desc_pool_ = desc_pool::builder(device_)
+    .set_max_sets(1)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+    .build();
+
+  desc_layout_ = desc_layout::builder(device_)
+    .add_binding(
+      0,
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+      VK_SHADER_STAGE_FRAGMENT_BIT)
+    .build();
+
+
 }
 
 } // namespace hnll::graphics
