@@ -1,0 +1,36 @@
+#pragma once
+
+// hnll
+#include <utils/common_alias.hpp>
+
+// std
+#include <vulkan/vulkan.h>
+
+namespace hnll::graphics {
+
+class device;
+class desc_pool;
+class desc_layout;
+class image_resource;
+
+class texture_image
+{
+  public:
+    u_ptr<texture_image> create();
+
+    texture_image(device& device, const std::string& filepath);
+    ~texture_image();
+
+    VkDescriptorImageInfo get_image_info() const;
+  private:
+    void create_sampler();
+    void create_desc_set();
+
+    device& device_;
+    u_ptr<desc_pool>   desc_pool_;
+    u_ptr<desc_layout> desc_layout_;
+    u_ptr<image_resource> image_;
+    VkSampler sampler_;
+};
+
+} // namespace hnll::graphics

@@ -43,8 +43,9 @@ class graphics_model<utils::shading_type::MESH> {
 
     device& device_;
     // contains buffer itself and buffer memory
-    std::unique_ptr<buffer> vertex_buffer_;
-    std::unique_ptr<buffer> index_buffer_;
+    u_ptr<buffer> vertex_buffer_;
+    u_ptr<buffer> index_buffer_;
+
     uint32_t vertex_count_;
     uint32_t index_count_;
 

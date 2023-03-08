@@ -3,6 +3,9 @@
 #include <graphics/graphics_model.hpp>
 #include <graphics/meshlet.hpp>
 
+// std
+#include <vector>
+
 namespace hnll {
 namespace graphics {
 

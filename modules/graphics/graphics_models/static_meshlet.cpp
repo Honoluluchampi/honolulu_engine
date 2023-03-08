@@ -3,7 +3,6 @@
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
 #include <graphics/utils.hpp>
-#include <geometry/mesh_model.hpp>
 #include <geometry/mesh_separation.hpp>
 #include <utils/utils.hpp>
 
