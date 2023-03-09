@@ -3,6 +3,7 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/utils.hpp>
+#include <graphics/texture_image.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -21,9 +22,13 @@ static_mesh::graphics_model(device& device, const obj_loader &loader) : device_{
 
 u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::string &filename)
 {
+  // load geometry
   obj_loader builder;
   builder.load_model(filename);
   std::cout << filename << " vertex count: " << builder.vertices.size() << "\n";
+
+  // load texture
+
   return std::make_unique<static_mesh>(device, builder);
 }
 
