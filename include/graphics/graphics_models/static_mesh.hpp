@@ -12,6 +12,7 @@ class device;
 class buffer;
 class obj_loader;
 class vertex;
+class texture_image;
 
 using static_mesh = graphics_model<utils::shading_type::MESH>;
 
@@ -50,6 +51,10 @@ class graphics_model<utils::shading_type::MESH> {
     uint32_t index_count_;
 
     bool had_index_buffer_ = false;
+
+    // texture
+    u_ptr<texture_image> texture_;
+    bool is_textured_ = false;
 
     // for geometric process
     std::vector<vertex> vertex_list_{};
