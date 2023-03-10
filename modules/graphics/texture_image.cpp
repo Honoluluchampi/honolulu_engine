@@ -75,13 +75,6 @@ void texture_image::create_desc_set()
     .add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
     .build();
 
-  desc_layout_ = desc_layout::builder(device_)
-    .add_binding(
-      0,
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      VK_SHADER_STAGE_FRAGMENT_BIT)
-    .build();
-
   auto image_info = get_image_info();
   desc_writer(*desc_layout_, *desc_pool_)
     .write_image(0, &image_info)

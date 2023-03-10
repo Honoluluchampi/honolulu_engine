@@ -18,7 +18,10 @@ void static_mesh_shading_system::setup()
 
   pipeline_layout_ = create_pipeline_layout<mesh_push_constant>(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-    std::vector<VkDescriptorSetLayout>{ graphics_engine_core::get_global_desc_layout() }
+    std::vector<VkDescriptorSetLayout>{
+      graphics_engine_core::get_global_desc_layout(),
+      graphics_engine_core::get_texture_desc_layout()
+    }
   );
 
   auto pipeline_config_info = graphics::pipeline::default_pipeline_config_info();
@@ -29,7 +32,7 @@ void static_mesh_shading_system::setup()
     pipeline_layout_,
     graphics_engine_core::get_default_render_pass(),
     "/modules/graphics/shaders/spv/",
-    { "simple_shader.vert.spv", "simple_shader.frag.spv" },
+    { "textured.vert.spv", "textured.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
     pipeline_config_info
   );
@@ -66,6 +69,8 @@ void static_mesh_shading_system::render(const utils::frame_info& frame_info)
       sizeof(mesh_push_constant),
       &push
     );
+
+    if (obj.is)
 
     obj.bind(frame_info.command_buffer);
     obj.draw(frame_info.command_buffer);

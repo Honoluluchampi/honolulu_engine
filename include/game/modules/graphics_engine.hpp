@@ -64,7 +64,8 @@ class graphics_engine_core
     graphics::device& get_device_r();
     graphics::renderer& get_renderer_r();
 
-    static VkDescriptorSetLayout get_global_desc_layout() { return vk_global_desc_layout_; }
+    static VkDescriptorSetLayout get_texture_desc_layout();
+    static VkDescriptorSetLayout get_global_desc_layout();
     static VkRenderPass get_default_render_pass() { return default_render_pass_; }
 
   private:
@@ -79,13 +80,13 @@ class graphics_engine_core
     static u_ptr<graphics::device> device_;
     static u_ptr<graphics::renderer> renderer_;
 
+    // global config for shading system
+    static u_ptr<graphics::desc_layout> texture_desc_layout_;
     static u_ptr<graphics::desc_layout>  global_set_layout_;
     static u_ptr<graphics::desc_pool>           global_pool_;
     static std::vector<u_ptr<graphics::buffer>> ubo_buffers_;
     static std::vector<VkDescriptorSet>         global_desc_sets_;
 
-    // global config for shading system
-    static VkDescriptorSetLayout vk_global_desc_layout_;
     static VkRenderPass default_render_pass_;
 
     static u_ptr<graphics::graphics_model_pool> model_pool_;
