@@ -6,6 +6,8 @@
 
 namespace hnll::graphics {
 
+u_ptr<desc_layout> texture_image::desc_layout_;
+
 u_ptr<texture_image> texture_image::create(device& device, const std::string &filepath)
 { return std::make_unique<texture_image>(device, filepath); }
 
@@ -19,6 +21,16 @@ texture_image::texture_image(device &device, const std::string& filepath) : devi
 texture_image::~texture_image()
 {
   vkDestroySampler(device_.get_device(), sampler_, nullptr);
+}
+
+void texture_image::setup_desc_layout(device& device)
+{
+  desc_layout_ = graphics::desc_layout::builder(device)
+    .add_binding(
+      0,
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+      VK_SHADER_STAGE_FRAGMENT_BIT)
+    .build();
 }
 
 VkDescriptorImageInfo texture_image::get_image_info() const

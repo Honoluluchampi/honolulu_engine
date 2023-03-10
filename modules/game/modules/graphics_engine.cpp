@@ -17,7 +17,6 @@ u_ptr<graphics::window>   graphics_engine_core::window_;
 u_ptr<graphics::device>   graphics_engine_core::device_;
 u_ptr<graphics::renderer> graphics_engine_core::renderer_;
 
-u_ptr<graphics::desc_layout>         graphics_engine_core::texture_desc_layout_;
 u_ptr<graphics::desc_layout>         graphics_engine_core::global_set_layout_;
 u_ptr<graphics::desc_pool>           graphics_engine_core::global_pool_;
 std::vector<u_ptr<graphics::buffer>> graphics_engine_core::ubo_buffers_;
@@ -94,7 +93,6 @@ void graphics_engine_core::cleanup()
   for(auto& buffer : ubo_buffers_) buffer.reset();
   global_pool_.reset();
   global_set_layout_.reset();
-  texture_desc_layout_.reset();
   renderer_.reset();
   device_.reset();
   window_.reset();
@@ -117,12 +115,8 @@ void graphics_engine_core::setup_global_shading_system_config()
 {
   default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);
 
-  texture_desc_layout_ = graphics::desc_layout::builder(*device_)
-    .add_binding(
-      0,
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      VK_SHADER_STAGE_FRAGMENT_BIT)
-    .build();
+  // texture desc layout should be defined before shading system ctor
+  graphics::texture_image::setup_desc_layout(*device_);
 }
 
 // getter
@@ -143,7 +137,5 @@ graphics::renderer& graphics_engine_core::get_renderer_r() { return *renderer_; 
 
 VkDescriptorSetLayout graphics_engine_core::get_global_desc_layout()
 { return global_set_layout_->get_descriptor_set_layout(); }
-VkDescriptorSetLayout graphics_engine_core::get_texture_desc_layout()
-{ return texture_desc_layout_->get_descriptor_set_layout(); }
 
 } // namespace hnll::game

@@ -20,7 +20,7 @@ void static_mesh_shading_system::setup()
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{
       graphics_engine_core::get_global_desc_layout(),
-      graphics_engine_core::get_texture_desc_layout()
+      graphics::texture_image::get_desc_layout()
     }
   );
 
