@@ -6,6 +6,9 @@
 
 namespace hnll::graphics {
 
+u_ptr<texture_image> texture_image::create(device& device, const std::string &filepath)
+{ return std::make_unique<texture_image>(device, filepath); }
+
 texture_image::texture_image(device &device, const std::string& filepath) : device_(device)
 {
   image_ = image_resource::create_from_file(device, filepath);

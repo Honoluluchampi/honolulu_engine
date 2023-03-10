@@ -8,6 +8,7 @@
 
 // std
 #include <iostream>
+#include <filesystem>
 #include <unordered_map>
 
 namespace hnll::graphics {
@@ -27,9 +28,16 @@ u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::stri
   builder.load_model(filename);
   std::cout << filename << " vertex count: " << builder.vertices.size() << "\n";
 
-  // load texture
+  auto ret = std::make_unique<static_mesh>(device, builder);
 
-  return std::make_unique<static_mesh>(device, builder);
+  // load texture
+  auto texture_path = filename.substr(0, filename.size() - 4) + ".png";
+  if (std::filesystem::exists(texture_path)) {
+    auto texture = texture_image::create(device, texture_path);
+    ret->set_texture(std::move(texture));
+  }
+
+  return ret;
 }
 
 void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices)
@@ -116,6 +124,12 @@ void static_mesh::draw(VkCommandBuffer command_buffer)
     vkCmdDrawIndexed(command_buffer, index_count_, 1, 0, 0, 0);
   else
     vkCmdDraw(command_buffer, vertex_count_, 1, 0, 0);
+}
+
+void static_mesh::set_texture(u_ptr<texture_image> &&texture)
+{
+  texture_ = std::move(texture);
+  is_textured_ = true;
 }
 
 const std::vector<vertex>& static_mesh::get_vertex_list() const { return vertex_list_; }

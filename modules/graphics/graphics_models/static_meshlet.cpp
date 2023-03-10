@@ -27,15 +27,15 @@ u_ptr<static_meshlet> static_meshlet::create_from_file(hnll::graphics::device &d
   auto filepath = utils::get_full_path(filename);
 
   // prepare required data
-  auto geometry_model = geometry::mesh_model::create_from_obj_file(filepath);
-
-  // if model's cache exists
-  meshlets = geometry::mesh_separation::load_meshlet_cache(filename);
-  if (meshlets.size() == 0) {
-    meshlets = geometry::mesh_separation::separate_into_graphics_meshlet(geometry_model, filename);
-  }
-
-  return std::make_unique<static_meshlet>(device, geometry_model->move_raw_vertices(), std::move(meshlets));
+//  auto geometry_model = geometry::mesh_model::create_from_obj_file(filepath);
+//
+//  // if model's cache exists
+//  meshlets = geometry::mesh_separation::load_meshlet_cache(filename);
+//  if (meshlets.size() == 0) {
+//    meshlets = geometry::mesh_separation::separate_into_graphics_meshlet(geometry_model, filename);
+//  }
+//
+//  return std::make_unique<static_meshlet>(device, geometry_model->move_raw_vertices(), std::move(meshlets));
 }
 
 void static_meshlet::bind(

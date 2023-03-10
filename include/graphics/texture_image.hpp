@@ -17,7 +17,7 @@ class image_resource;
 class texture_image
 {
   public:
-    u_ptr<texture_image> create();
+    static u_ptr<texture_image> create(device&, const std::string& filepath);
 
     texture_image(device& device, const std::string& filepath);
     ~texture_image();

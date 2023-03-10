@@ -2,6 +2,7 @@
 
 // hnll
 #include <graphics/graphics_model.hpp>
+#include <graphics/texture_image.hpp>
 
 // forward declaration
 namespace hnll::geometry { class mesh_model; }
@@ -12,7 +13,6 @@ class device;
 class buffer;
 class obj_loader;
 class vertex;
-class texture_image;
 
 using static_mesh = graphics_model<utils::shading_type::MESH>;
 
@@ -31,6 +31,7 @@ class graphics_model<utils::shading_type::MESH> {
 
     // setter
     bool has_index_buffer() const { return had_index_buffer_; }
+    void set_texture(u_ptr<texture_image>&& texture);
 
     // getter
     const std::vector<vertex> &get_vertex_list() const;
