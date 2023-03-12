@@ -8,7 +8,17 @@
 namespace hnll {
 
 namespace utils { class frame_info; }
-namespace graphics { class device; }
+
+namespace graphics {
+
+class device;
+
+template <typename T, typename... Args>
+concept GraphicsModel =
+requires(T a, VkCommandBuffer cb, Args... args) { a.bind(cb, args...); a.draw(cb, args...); } &&
+requires(const T a) { T::get_shading_type(); a.is_textured(); };
+
+}
 
 namespace game {
 
@@ -32,11 +42,6 @@ concept UpdatableComponent = requires (T t) {
   requires Updatable<decltype(t)> &&
            Component<decltype(t)>;
 };
-
-template <typename T, typename... Args>
-concept GraphicsModel =
-requires(T a, VkCommandBuffer cb, Args... args) { a.bind(cb, args...); a.draw(cb, args...); } &&
-requires(const T a) { a.get_shading_type(); };
 
 template <typename T, typename... Args>
 concept RenderableComponent =

@@ -13,7 +13,7 @@
 
 namespace hnll::graphics {
 
-static_mesh::graphics_model(device& device, const obj_loader &loader) : device_{device}
+static_mesh::static_mesh(device& device, const obj_loader &loader) : device_{device}
 {
   create_vertex_buffers(loader.vertices);
   create_index_buffers(loader.indices);
@@ -124,12 +124,6 @@ void static_mesh::draw(VkCommandBuffer command_buffer)
     vkCmdDrawIndexed(command_buffer, index_count_, 1, 0, 0, 0);
   else
     vkCmdDraw(command_buffer, vertex_count_, 1, 0, 0);
-}
-
-void static_mesh::set_texture(u_ptr<texture_image> &&texture)
-{
-  texture_ = std::move(texture);
-  is_textured_ = true;
 }
 
 const std::vector<vertex>& static_mesh::get_vertex_list() const { return vertex_list_; }

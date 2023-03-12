@@ -17,14 +17,11 @@ class desc_layout;
 struct vertex;
 struct mesh_builder;
 
-using static_meshlet = graphics_model<utils::shading_type::MESHLET>;
-
-template<>
-class graphics_model<utils::shading_type::MESHLET>
+DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
 {
   public:
 
-    graphics_model(device& device, std::vector<vertex>&& raw_vertices, std::vector<meshlet>&& meshlets);
+    static_meshlet(device& device, std::vector<vertex>&& raw_vertices, std::vector<meshlet>&& meshlets);
 
     static u_ptr<static_meshlet> create_from_file(device& device, std::string filename);
 

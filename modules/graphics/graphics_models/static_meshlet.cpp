@@ -11,7 +11,7 @@
 
 namespace hnll::graphics {
 
-static_meshlet::graphics_model(device& device, std::vector<vertex> &&raw_vertices, std::vector<meshlet> &&meshlets)
+static_meshlet::static_meshlet(device& device, std::vector<vertex> &&raw_vertices, std::vector<meshlet> &&meshlets)
  : device_(device)
 {
   raw_vertices_ = std::move(raw_vertices);

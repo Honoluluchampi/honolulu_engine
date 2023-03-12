@@ -14,8 +14,8 @@ namespace hnll::graphics {
 
 class graphics_model_pool
 {
-    template <utils::shading_type type>
-    using model_map = std::unordered_map<std::string, u_ptr<graphics_model<type>>>;
+    template <GraphicsModel M>
+    using model_map = std::unordered_map<std::string, u_ptr<M>>;
 
   public:
     static u_ptr<graphics_model_pool> create(device& device)
@@ -25,31 +25,31 @@ class graphics_model_pool
     ~graphics_model_pool()
     {
       static_mesh_map_.clear();
-      static_meshlet_map_.clear();
-      skinning_mesh_map_.clear();
-      frame_anim_mesh_map_.clear();
-      frame_anim_meshlet_map_.clear();
+//      static_meshlet_map_.clear();
+//      skinning_mesh_map_.clear();
+//      frame_anim_mesh_map_.clear();
+//      frame_anim_meshlet_map_.clear();
     }
 
-    template <utils::shading_type type>
-    graphics_model<type>& get_model(const std::string& name)
+    template <GraphicsModel M>
+    M& get_model(const std::string& name)
     {
       auto full_path = utils::get_full_path(name);
 
-      if (type == utils::shading_type::MESH) {
+      if (M::get_shading_type() == utils::shading_type::MESH) {
         load_model(full_path, static_mesh_map_, ".obj");
         return *static_mesh_map_[full_path];
       }
     }
 
   private:
-    template <utils::shading_type type>
-    void load_model(const std::string &path, model_map<type>& map_, const std::string& extension) {
+    template <GraphicsModel M>
+    void load_model(const std::string &path, model_map<M>& map_, const std::string& extension) {
       // if already loaded
       if (static_mesh_map_.find(path) != static_mesh_map_.end()) return;
 
       if (std::filesystem::path(path).extension().string() == extension) {
-        auto model = graphics_model<type>::create_from_file(device_, path);
+        auto model = M::create_from_file(device_, path);
         map_.emplace(path, std::move(model));
       }
       else {
@@ -59,11 +59,11 @@ class graphics_model_pool
 
     device& device_;
 
-    model_map<utils::shading_type::MESH> static_mesh_map_;
-    model_map<utils::shading_type::MESHLET> static_meshlet_map_;
-    model_map<utils::shading_type::SKINNING_MESH> skinning_mesh_map_;
-    model_map<utils::shading_type::FRAME_ANIM_MESH> frame_anim_mesh_map_;
-    model_map<utils::shading_type::FRAME_ANIM_MESHLET> frame_anim_meshlet_map_;
+    model_map<static_mesh> static_mesh_map_;
+//    model_map<utils::shading_type::MESHLET> static_meshlet_map_;
+//    model_map<utils::shading_type::SKINNING_MESH> skinning_mesh_map_;
+//    model_map<utils::shading_type::FRAME_ANIM_MESH> frame_anim_mesh_map_;
+//    model_map<utils::shading_type::FRAME_ANIM_MESHLET> frame_anim_meshlet_map_;
 };
 
 } // namespace hnll::game
