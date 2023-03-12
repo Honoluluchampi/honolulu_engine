@@ -70,8 +70,6 @@ void static_mesh_shading_system::render(const utils::frame_info& frame_info)
       &push
     );
 
-    if (obj.is_tex)
-
     obj.bind(frame_info.command_buffer);
     obj.draw(frame_info.command_buffer);
   }

@@ -55,8 +55,9 @@ class graphics_engine_core
     void end_swap_chain_and_frame(VkCommandBuffer command_buffer);
 
     // getter
-    template <utils::shading_type type>
-    static graphics::graphics_model<type>& get_graphics_model(const std::string& name) { return model_pool_->get_model<type>(name); }
+    template <graphics::GraphicsModel M>
+    static M& get_graphics_model(const std::string& name)
+    { return model_pool_->get_model<M>(name); }
 
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;

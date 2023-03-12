@@ -43,6 +43,9 @@ VkDescriptorImageInfo texture_image::get_image_info() const
   return image_info;
 }
 
+VkDescriptorSetLayout texture_image::get_desc_layout()
+{ return desc_layout_->get_descriptor_set_layout(); }
+
 void texture_image::create_sampler()
 {
   VkSamplerCreateInfo sampler_info{};

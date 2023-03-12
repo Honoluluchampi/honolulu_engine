@@ -25,8 +25,8 @@ namespace game {
 class gui_engine;
 
 // model name -> model
-template <utils::shading_type type>
-using graphics_model_map = std::unordered_map<std::string, u_ptr<graphics::graphics_model<type>>>;
+template <graphics::GraphicsModel M>
+using graphics_model_map = std::unordered_map<std::string, u_ptr<M>>;
 
 // common impl
 // should be wrapped by utils::singleton
