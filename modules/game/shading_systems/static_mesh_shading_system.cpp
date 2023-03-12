@@ -42,17 +42,6 @@ void static_mesh_shading_system::render(const utils::frame_info& frame_info)
 {
   pipeline_->bind(frame_info.command_buffer);
 
-  vkCmdBindDescriptorSets(
-    frame_info.command_buffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipeline_layout_,
-    0,
-    1,
-    &frame_info.global_descriptor_set,
-    0,
-    nullptr
-  );
-
   for (auto& target : targets_) {
     auto obj = target.second;
 
@@ -60,6 +49,23 @@ void static_mesh_shading_system::render(const utils::frame_info& frame_info)
     const auto& tf = obj.get_transform();
     push.model_matrix  = tf.transform_mat4();
     push.normal_matrix = tf.normal_matrix();
+
+    // desc_set
+    std::vector<VkDescriptorSet> desc_sets = {
+      frame_info.global_descriptor_set,
+      obj.get_texture_desc_set()
+    };
+
+    vkCmdBindDescriptorSets(
+      frame_info.command_buffer,
+      VK_PIPELINE_BIND_POINT_GRAPHICS,
+      pipeline_layout_,
+      0,
+      desc_sets.size(),
+      desc_sets.data(),
+      0,
+      nullptr
+    );
 
     vkCmdPushConstants(
       frame_info.command_buffer,

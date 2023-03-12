@@ -39,7 +39,8 @@ class renderable_comp
     // getter
     inline rc_id get_rc_id() const { return rc_id_; }
     inline utils::shading_type get_shading_type() const { return model_.get_shading_type(); }
-
+    inline VkDescriptorSet get_texture_desc_set()
+    { return model_.get_texture_desc_set(); }
     inline const utils::transform& get_transform() const { return transform_; }
 
     bool is_textured() const { return model_.is_textured(); }

@@ -27,6 +27,9 @@ class texture_image
     // getter
     VkDescriptorImageInfo get_image_info() const;
     static VkDescriptorSetLayout get_desc_layout();
+    inline VkDescriptorSet get_desc_set() { return desc_set_; }
+
+    static void reset_desc_layout();
 
   private:
     void create_sampler();

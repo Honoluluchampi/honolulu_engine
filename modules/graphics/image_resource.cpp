@@ -38,7 +38,7 @@ u_ptr<image_resource> image_resource::create_from_file(device& device, const std
     raw_data
   );
 
-  stbi_image_free(raw_data);
+//  free(raw_data);
 
   // create texture image
   VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;

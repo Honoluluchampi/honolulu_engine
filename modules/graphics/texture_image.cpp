@@ -96,4 +96,7 @@ void texture_image::create_desc_set()
     .build(desc_set_);
 }
 
+void texture_image::reset_desc_layout()
+{ desc_layout_.reset(); }
+
 } // namespace hnll::graphics
