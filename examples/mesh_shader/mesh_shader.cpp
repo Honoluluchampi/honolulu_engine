@@ -15,7 +15,7 @@ namespace hnll {
 DEFINE_PURE_ACTOR(mesh_actor)
 {
   public:
-    mesh_actor() { mesh_model_ = game::static_mesh_comp::create(*this, "plane.obj"); }
+    mesh_actor() { mesh_model_ = game::static_mesh_comp::create(*this, "viking_room.obj"); }
 
     game::static_mesh_comp& get_mesh_comp() { return *mesh_model_; }
 

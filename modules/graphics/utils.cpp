@@ -75,8 +75,8 @@ void obj_loader::load_model(const std::string& filename)
       // copy the texture coordinate
       if (index.texcoord_index >= 0) {
         vertex.uv = {
-          attrib.vertices[2 * index.texcoord_index + 0],
-          attrib.vertices[2 * index.texcoord_index + 1]
+          attrib.texcoords[2 * index.texcoord_index + 0],
+          attrib.texcoords[2 * index.texcoord_index + 1]
         };
       }
       // if vertex is a new vertex
