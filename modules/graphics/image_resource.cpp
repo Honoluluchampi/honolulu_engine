@@ -10,24 +10,13 @@
 
 namespace hnll::graphics {
 
-VkExtent3D load_stb_image(stbi_uc* raw_data, const std::string& filepath)
-{
-  // stb image utility
-  int width, height, channels;
-  raw_data = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-  if (!raw_data) { throw std::runtime_error("failed to load stb image."); }
-
-  return { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
-}
-
 u_ptr<image_resource> image_resource::create_from_file(device& device, const std::string& filepath)
 {
   // load raw data using stb_image
-  stbi_uc* raw_data;
-  auto extent = load_stb_image(raw_data, filepath);
+  int width, height, channels;
+  stbi_uc* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-  VkDeviceSize image_size = extent.width * extent.height * 4;
+  VkDeviceSize image_size = width * height * 4;
 
   auto staging_buffer = buffer::create(
     device,
@@ -35,10 +24,11 @@ u_ptr<image_resource> image_resource::create_from_file(device& device, const std
     1,
     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    raw_data
+    pixels
   );
 
-//  free(raw_data);
+  VkExtent3D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
+  free(pixels);
 
   // create texture image
   VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
