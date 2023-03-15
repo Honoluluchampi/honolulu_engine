@@ -31,7 +31,11 @@ struct queue_family_indices
 {
   std::optional<uint32_t> graphics_family_ = std::nullopt;
   std::optional<uint32_t> present_family_  = std::nullopt;
-  inline bool is_complete() { return (graphics_family_ != std::nullopt) && (present_family_ != std::nullopt); };
+  std::optional<uint32_t> compute_family_  = std::nullopt;
+  inline bool is_complete() { return
+    (graphics_family_ != std::nullopt) &&
+    (present_family_  != std::nullopt) &&
+    (compute_family_  != std::nullopt); };
 };
 
 class device
@@ -122,6 +126,7 @@ class device
     VkCommandPool command_pool_;
     VkQueue graphics_queue_;
     VkQueue present_queue_;
+    VkQueue compute_queue_;
     queue_family_indices queue_family_indices_; // for hie ctor
     VkDebugUtilsMessengerEXT debug_messenger_;
 

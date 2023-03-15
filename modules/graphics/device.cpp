@@ -226,8 +226,13 @@ void device::create_logical_device()
   // create a set of all unique queue families that are necessary for required queues
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   // if queue families are the same, handle for those queues are also same
-  std::set<uint32_t> unique_queue_families = {indices.graphics_family_.value(), indices.present_family_.value()};
+  std::set<uint32_t> unique_queue_families = {
+    indices.graphics_family_.value(),
+    indices.present_family_.value(),
+    indices.compute_family_.value(),
+  };
 
+  // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
   for (uint32_t queue_family : unique_queue_families) {
     // VkDeviceQueueCreateInfo descrives the number of queues we want for a single queue family
@@ -358,7 +363,15 @@ void device::create_logical_device()
   // retrieve queue handles for each queue family
   // simply use index 0, because were only creating a single queue from  this family
   vkGetDeviceQueue(device_, indices.graphics_family_.value(), 0, &graphics_queue_);
-  vkGetDeviceQueue(device_, indices.present_family_.value(), 0, &present_queue_);
+  vkGetDeviceQueue(device_, indices.present_family_.value(),  0, &present_queue_);
+  vkGetDeviceQueue(device_, indices.compute_family_.value(),  0, &compute_queue_);
+
+  if (indices.graphics_family_.value() == indices.compute_family_.value()) {
+    std::cout << "same queue family for compute and graphics." << std::endl;
+  }
+  else {
+    std::cout << "dedicated compute queue family detected." << std::endl;
+  }
 
   if (rendering_type_ == utils::rendering_type::MESH_SHADING || rendering_type_ == utils::rendering_type::RAY_TRACING) {
     load_VK_EXTENSIONS(instance_, vkGetInstanceProcAddr, device_, vkGetDeviceProcAddr);
@@ -534,6 +547,7 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
 
   // check whether at least one queue_family support VK_QUEUEGRAPHICS_BIT
   int i = 0;
+  int compute_graphics_common_index;
   for (const auto &queue_family : queue_families) {
     // same i for presentFamily and graphicsFamily improves the performance
     // graphics: No DRI3 support detected - required for presentation
@@ -546,10 +560,24 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
     if (queue_family.queueCount > 0 && present_support) {
       indices.present_family_ = i;
     }
+
+    // for async compute
+    if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+      // prefer different queue from graphics
+      if (indices.graphics_family_ != i && !indices.compute_family_.has_value()) {
+        indices.compute_family_ = i;
+      }
+      else
+        compute_graphics_common_index = i;
+    }
     if (indices.is_complete()) {
       break;
     }
     i++;
+  }
+
+  if (!indices.compute_family_.has_value()) {
+    indices.compute_family_ = compute_graphics_common_index;
   }
 
   queue_family_indices_ = indices;
