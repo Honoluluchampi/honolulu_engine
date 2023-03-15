@@ -1,32 +1,39 @@
 #pragma once
 
-#include <game/renderable_component.hpp>
+// hnll
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/pipeline.hpp>
+#include <utils/rendering_utils.hpp>
+
+// std
+#include <unordered_map>
+
+#define DEFINE_SHADING_SYSTEM(new_system, rc) class new_system : public game::shading_system<new_system, rc>
 
 namespace hnll {
 
 namespace game {
 
-template<RenderableComponent RC>
+template<typename Derived, RenderableComponent RC>
 class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    explicit shading_system(graphics::device &device, utils::shading_type type)
-      : device_(device), shading_type_(type) {}
-
+    shading_system(graphics::device& device)
+     : device_(device) { static_cast<Derived*>(this)->setup(); }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
-    static u_ptr<shading_system<RC>> create(graphics::device& device);
+    template <typename... Args>
+    static u_ptr<Derived> create(graphics::device& device, Args... args)
+    { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
 
     shading_system(const shading_system &) = delete;
     shading_system &operator=(const shading_system &) = delete;
     shading_system(shading_system &&) = default;
     shading_system &operator=(shading_system &&) = default;
 
-    void render(const utils::frame_info &frame_info) {}
+    void render(const utils::frame_info &frame_info);
 
     void add_render_target(rc_id id, RC& target) { targets_.emplace(id, target); }
     void remove_render_target(rc_id id) { targets_.erase(id); }
@@ -38,6 +45,7 @@ class shading_system {
     shading_system &set_shading_type(utils::shading_type type) { shading_type_ = type; return *this; }
 
   protected:
+    void setup();
     // takes push_constant struct as type parameter (use it for size calculation)
     template<typename PushConstant>
     VkPipelineLayout create_pipeline_layout(
@@ -70,9 +78,11 @@ class shading_system {
 };
 
 // impl
+#define SS_API template <typename Derived, RenderableComponent R>
+#define SS_TYPE shading_system<Derived, R>
+
 // takes push_constant struct as type parameter
-template <RenderableComponent R> template<typename PushConstant>
-VkPipelineLayout shading_system<R>::create_pipeline_layout(
+SS_API template<typename PushConstant> VkPipelineLayout SS_TYPE::create_pipeline_layout(
   VkShaderStageFlagBits shader_stage_flags,
   const std::vector<VkDescriptorSetLayout>& desc_set_layouts) {
   // configure push constant
@@ -97,8 +107,7 @@ VkPipelineLayout shading_system<R>::create_pipeline_layout(
   return ret;
 }
 
-template<RenderableComponent RC>
-VkPipelineLayout shading_system<RC>::create_pipeline_layout_without_push(
+SS_API VkPipelineLayout SS_TYPE::create_pipeline_layout_without_push(
   VkShaderStageFlagBits shader_stage_flags,
   const std::vector<VkDescriptorSetLayout>& desc_set_layouts)
 {
@@ -119,8 +128,7 @@ VkPipelineLayout shading_system<RC>::create_pipeline_layout_without_push(
 }
 
 // shaders_directory is relative to $ENV{HNLL_ENGN}
-template<RenderableComponent RC>
-u_ptr<graphics::pipeline> shading_system<RC>::create_pipeline(
+SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
   VkPipelineLayout                   pipeline_layout,
   VkRenderPass                       render_pass,
   const std::string&                        shaders_directory,
@@ -150,8 +158,8 @@ template<utils::shading_type T>
 class dummy_renderable_comp
 {
   public:
-    void bind() {}
-    void draw() {}
+    void bind(VkCommandBuffer cb) {}
+    void draw(VkCommandBuffer cb) {}
     rc_id get_rc_id() const { return 0; }
     utils::shading_type get_shading_type() const { return type; }
   private:

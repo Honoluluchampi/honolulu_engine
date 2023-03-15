@@ -2,6 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/utils.hpp>
 #include <game/concepts.hpp>
 
 // std
@@ -11,7 +12,7 @@
 
 // macro for crtp
 #define DEFINE_ACTOR(new_actor, ...) class new_actor : public game::actor_base<new_actor, __VA_ARGS__>
-#define DEFINE_PURE_ACTOR(new_actor, ...) class new_actor : public game::pure_actor_base<new_actor>
+#define DEFINE_PURE_ACTOR(new_actor) class new_actor : public game::pure_actor_base<new_actor>
 
 namespace hnll::game {
 
@@ -41,14 +42,19 @@ class actor_base
     }
 
     inline actor_id get_actor_id() const { return id_; }
+    inline const utils::transform& get_transform() const { return transform_; }
+    void set_rotation(const vec3& rot) { transform_.rotation = rot; }
+    void add_rotation(const vec3& rot) { transform_.rotation += rot; }
 
-  private:
+  protected:
     // specialize this function for each actor class
     void update_this(const float& dt) {}
 
     actor_id id_;
 
     updatable_components_map updatable_components_;
+
+    utils::transform transform_ {};
 };
 
 template <typename Derived>
@@ -69,12 +75,19 @@ class pure_actor_base
     { static_cast<Derived*>(this)->update_this(dt); }
 
     inline actor_id get_actor_id() const { return id_; }
+    inline const utils::transform& get_transform() const { return transform_; }
 
-  private:
+    void set_transform(const utils::transform& tf) { transform_ = tf; }
+    void set_rotation(const vec3& rot) { transform_.rotation = rot; }
+    void add_rotation(const vec3& rot) { transform_.rotation += rot; }
+
+  protected:
     // specialize this function for each actor class
     void update_this(const float& dt) {}
 
     actor_id id_;
+
+    utils::transform transform_ {};
 };
 
 } // namespace hnll::game

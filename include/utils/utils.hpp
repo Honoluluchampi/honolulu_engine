@@ -5,6 +5,7 @@
 
 // std
 #include <memory>
+#include <vector>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -30,7 +31,7 @@ struct transform
   vec3 translation { 0.f, 0.f, 0.f }; // position offset
   vec3 scale { 1.f, 1.f, 1.f };
   // y-z-x tait-brian rotation
-  vec3 rotation{};
+  vec3 rotation{ 0.f, 0.f, 0.f };
 
   // Matrix corresponds to Translate * Ry * Rz * Rx * Scale
   // Rotations correspond to Tait-bryan angles of Y(1), Z(2), X(3)

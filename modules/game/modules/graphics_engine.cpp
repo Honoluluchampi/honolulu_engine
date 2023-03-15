@@ -22,14 +22,16 @@ u_ptr<graphics::desc_pool>           graphics_engine_core::global_pool_;
 std::vector<u_ptr<graphics::buffer>> graphics_engine_core::ubo_buffers_;
 std::vector<VkDescriptorSet>         graphics_engine_core::global_desc_sets_;
 
-VkDescriptorSetLayout graphics_engine_core::vk_global_desc_layout_;
 VkRenderPass          graphics_engine_core::default_render_pass_;
+
+u_ptr<graphics::graphics_model_pool> graphics_engine_core::model_pool_;
 
 graphics_engine_core::graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type)
 {
   window_ = graphics::window::create(WIDTH, HEIGHT, window_name);
   device_ = graphics::device::create(*window_, rendering_type);
   renderer_ = graphics::renderer::create(*window_, *device_);
+  model_pool_ = graphics::graphics_model_pool::create(*device_);
   init();
 }
 
@@ -86,6 +88,8 @@ void graphics_engine_core::setup_ubo()
 
 void graphics_engine_core::cleanup()
 {
+  graphics::texture_image::reset_desc_layout();
+  model_pool_.reset();
   global_pool_->free_descriptors(global_desc_sets_);
   for(auto& buffer : ubo_buffers_) buffer.reset();
   global_pool_.reset();
@@ -111,7 +115,9 @@ void graphics_engine_core::end_swap_chain_and_frame(VkCommandBuffer command_buff
 void graphics_engine_core::setup_global_shading_system_config()
 {
   default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);
-  vk_global_desc_layout_ = global_set_layout_->get_descriptor_set_layout();
+
+  // texture desc layout should be defined before shading system ctor
+  graphics::texture_image::setup_desc_layout(*device_);
 }
 
 // getter
@@ -129,5 +135,8 @@ GLFWwindow* graphics_engine_core::get_glfw_window() const { return window_->get_
 graphics::window& graphics_engine_core::get_window_r() { return *window_; }
 graphics::device& graphics_engine_core::get_device_r() { return *device_; }
 graphics::renderer& graphics_engine_core::get_renderer_r() { return *renderer_; }
+
+VkDescriptorSetLayout graphics_engine_core::get_global_desc_layout()
+{ return global_set_layout_->get_descriptor_set_layout(); }
 
 } // namespace hnll::game

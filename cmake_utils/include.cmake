@@ -33,13 +33,11 @@ endfunction()
 function(include_mac_dependencies target)
     detect_brew_prefix(BREW_PREFIX)
     setup_brew_module_directory(eigen EIGEN_DIRECTORY)
-    setup_brew_module_directory(glm GLM_DIRECTORY)
     setup_brew_module_directory(glfw GLFW_DIRECTORY)
     setup_brew_module_directory(openal-soft OPEN_AL_DIRECTORY)
     setup_brew_module_directory(googletest GOOGLE_TEST_DIRECTORY)
     target_include_directories(${target} PUBLIC
             ${EIGEN_DIRECTORY}/include
-            ${GLM_DIRECTORY}/include
             ${GLFW_DIRECTORY}/include
             ${OPEN_AL_DIRECTORY}/include
             ${GOOGLE_TEST_DIRECTORY}/include

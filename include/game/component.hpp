@@ -6,6 +6,7 @@
 
 // macro for crtp
 #define DEFINE_COMPONENT(new_comp) class new_comp : public game::component_base<new_comp>
+#define DEFINE_TEMPLATE_COMPONENT(new_comp, ...) class new_comp : public game::component_base<new_comp<__VA_ARGS__>>
 
 namespace hnll::game {
 

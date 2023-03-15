@@ -6,9 +6,9 @@
 
 namespace hnll::game {
 
-using grid_comp = dummy_renderable_comp<utils::shading_type::GRID>;
+using static_mesh_comp = renderable_comp<graphics::static_mesh>;
 
-DEFINE_SHADING_SYSTEM(grid_shading_system, grid_comp)
+DEFINE_SHADING_SYSTEM(static_mesh_shading_system, static_mesh_comp)
 {
   public:
     void render(const utils::frame_info& frame_info);

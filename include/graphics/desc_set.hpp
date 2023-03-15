@@ -3,6 +3,9 @@
 // hnll
 #include <utils/common_alias.hpp>
 
+// std
+#include <unordered_map>
+
 // lib
 #include <vulkan/vulkan.h>
 

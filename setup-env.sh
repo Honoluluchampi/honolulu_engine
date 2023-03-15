@@ -9,4 +9,6 @@ elif [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
   export VULKAN_DIR=$VULKAN_DIR/x86_64
 fi
 
+source setup-submodules.sh
+
 export MODEL_DIR=$HNLL_ENGN/models

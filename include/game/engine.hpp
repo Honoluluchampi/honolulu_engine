@@ -2,6 +2,7 @@
 
 // hnll
 #include <game/modules/graphics_engine.hpp>
+#include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/singleton.hpp>
@@ -22,6 +23,10 @@ namespace hnll {
 namespace game {
 
 class gui_engine;
+
+// model name -> model
+template <graphics::GraphicsModel M>
+using graphics_model_map = std::unordered_map<std::string, u_ptr<M>>;
 
 // common impl
 // should be wrapped by utils::singleton
@@ -78,6 +83,10 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
 
     template <Actor Act, typename... Args>
     static void add_update_target_directly(Args&&... args);
+
+    template <ShadingSystem SS, RenderableComponent RC>
+    void add_render_target(RC& rc)
+    { graphics_engine_->template add_render_target<SS>(rc); }
 
   private:
     void update();

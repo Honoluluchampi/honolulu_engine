@@ -64,7 +64,7 @@ VkRenderPass renderer::create_render_pass()
 
 std::vector<VkFramebuffer> renderer::create_frame_buffers()
 {
-  // imgui frame buffer only takes image view attachment
+  // imgui frame buffer only takes image_resource view attachment
   VkImageView attachment;
 
   VkFramebufferCreateInfo info{};
@@ -78,7 +78,7 @@ std::vector<VkFramebuffer> renderer::create_frame_buffers()
   info.height = extent.height;
   info.layers = 1;
 
-  // as many as image view count
+  // as many as image_resource view count
   auto get_image_count = swap_chain_->get_image_count();
   std::vector<VkFramebuffer> framebuffers(get_image_count);
   for (size_t i = 0; i < get_image_count; i++) {

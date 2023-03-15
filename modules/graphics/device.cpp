@@ -248,14 +248,12 @@ void device::create_logical_device()
   create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
   create_info.pQueueCreateInfos = queue_create_infos.data();
 
-  // configure device features for rasterize or ray tracing
-  // for rasterize
-  if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
-    VkPhysicalDeviceFeatures device_features = {};
-    device_features.samplerAnisotropy = VK_TRUE;
-    create_info.pEnabledFeatures = &device_features;
-  }
+  // common device features
+  VkPhysicalDeviceFeatures device_features = {};
+  device_features.samplerAnisotropy = VK_TRUE;
+  create_info.pEnabledFeatures = &device_features;
 
+  // configure device features for rasterize or ray tracing
   // for ray tracing
   if (rendering_type_ == utils::rendering_type::RAY_TRACING) {
     // enabling ray tracing extensions
