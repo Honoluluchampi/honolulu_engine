@@ -25,6 +25,8 @@ std::string create_cache_directory();
 // returns sub cache directory
 std::string create_sub_cache_directory(const std::string& _dir_name);
 
+std::vector<char> read_file_for_shader(const std::string& filepath);
+
 // 3d transformation -------------------------------------------------
 struct transform
 {

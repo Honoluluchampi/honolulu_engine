@@ -1,11 +1,9 @@
 // hnll
 #include <graphics/pipeline.hpp>
-//#include <graphics/mesh_model.hpp>
-//#include <graphics/utils.hpp>
+#include <utils/utils.hpp>
 
 // std
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
 
 namespace hnll::graphics {
@@ -163,25 +161,6 @@ u_ptr<pipeline> pipeline::create(
   return std::make_unique<pipeline>(_device, _shader_filepaths, _shader_stage_flags, _config_info);
 }
 
-std::vector<char> pipeline::read_file(const std::string& filepath)
-{
-  // construct and open
-  // immediately read as binary
-  std::ifstream file(filepath, std::ios::ate | std::ios::binary);
-
-  if (!file.is_open())
-    throw std::runtime_error("failed to open file: " + filepath);
-
-  size_t file_size = static_cast<size_t>(file.tellg());
-  std::vector<char> buffer(file_size);
-
-  file.seekg(0);
-  file.read(buffer.data(), file_size);
-  file.close();
-
-  return buffer;
-}
-
 void pipeline::create_graphics_pipeline(
   const std::vector<std::string>& _shader_filepaths,
   const std::vector<VkShaderStageFlagBits>& _shader_stage_flags,
@@ -197,7 +176,7 @@ void pipeline::create_graphics_pipeline(
   // create shader module
   shader_modules_.resize(shader_stage_count);
   for (int i = 0; i < shader_stage_count; i++) {
-    auto raw_code = read_file(_shader_filepaths[i]);
+    auto raw_code = utils::read_file_for_shader(_shader_filepaths[i]);
     shader_modules_[i] = device_.create_shader_module(raw_code);
 
     if (_shader_stage_flags[i] == VK_SHADER_STAGE_VERTEX_BIT)

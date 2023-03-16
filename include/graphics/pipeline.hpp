@@ -80,8 +80,6 @@ class pipeline
     static void default_pipeline_config_info(pipeline_config_info &config_info);
     static pipeline_config_info default_pipeline_config_info();
     static void enable_alpha_blending(pipeline_config_info& config_info);
-    // fstream can only output char not std::string
-    static std::vector<char> read_file(const std::string &filepath);
 
     // getter
     VkPipeline get_pipeline() const { return graphics_pipeline_; }
