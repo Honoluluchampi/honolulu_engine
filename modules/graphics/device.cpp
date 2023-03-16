@@ -98,18 +98,8 @@ void device::setup_device_extensions()
     available.insert(extension.extensionName);
   }
 
-  if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
-    device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-#ifndef __linux
-    device_extensions_.emplace_back("VK_KHR_portability_subset");
-#endif
-  }
-
   if (rendering_type_ == utils::rendering_type::RAY_TRACING) {
     device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
       VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -122,12 +112,18 @@ void device::setup_device_extensions()
 
   if (rendering_type_ == utils::rendering_type::MESH_SHADING) {
     device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_NV_MESH_SHADER_EXTENSION_NAME,
       VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME,
       VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
     };
   }
+
+  // common
+  device_extensions_.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  device_extensions_.emplace_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+#ifndef __linux
+    device_extensions_.emplace_back("VK_KHR_portability_subset");
+#endif
 
   std::cout << "enabled device extensions:" << std::endl;
   auto& required_extensions = device_extensions_;
@@ -256,7 +252,11 @@ void device::create_logical_device()
   // common device features
   VkPhysicalDeviceFeatures device_features = {};
   device_features.samplerAnisotropy = VK_TRUE;
-  create_info.pEnabledFeatures = &device_features;
+
+  VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore_features {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES
+  };
+  timeline_semaphore_features.timelineSemaphore = VK_TRUE;
 
   // configure device features for rasterize or ray tracing
   // for ray tracing
@@ -267,6 +267,7 @@ void device::create_logical_device()
       nullptr
     };
     enabled_buffer_device_addr.bufferDeviceAddress = VK_TRUE;
+    enabled_buffer_device_addr.pNext = &timeline_semaphore_features;
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabled_ray_tracing_pipeline {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
@@ -290,13 +291,12 @@ void device::create_logical_device()
     enabled_descriptor_indexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     enabled_descriptor_indexing.runtimeDescriptorArray = VK_TRUE;
 
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(physical_device_, &features);
+    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
     VkPhysicalDeviceFeatures2 features2 {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
     };
     features2.pNext = &enabled_descriptor_indexing;
-    features2.features = features;
+    features2.features = device_features;
 
     create_info.pNext = &features2;
     // device features are already included in features2
@@ -311,6 +311,7 @@ void device::create_logical_device()
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES
     };
     vulkan12_features.shaderInt8 = VK_TRUE;
+    vulkan12_features.pNext = &timeline_semaphore_features;
 
     VkPhysicalDeviceMaintenance4Features maintenance4_features {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES
@@ -331,12 +332,23 @@ void device::create_logical_device()
     baryFeatures.fragmentShaderBarycentric = VK_TRUE;
     baryFeatures.pNext = &mesh_features;
 
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(physical_device_, &features);
+    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
     VkPhysicalDeviceFeatures2 features2 {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
     };
     features2.pNext = &baryFeatures;
+    features2.features = device_features;
+
+    create_info.pNext = &features2;
+    create_info.pEnabledFeatures = nullptr;
+  }
+
+  if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
+    VkPhysicalDeviceFeatures2 features2 {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
+    };
+    features2.pNext = &timeline_semaphore_features;
+    features2.features = device_features;
 
     create_info.pNext = &features2;
     create_info.pEnabledFeatures = nullptr;
