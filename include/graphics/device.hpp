@@ -93,6 +93,8 @@ class device
       VkImage &image,
       VkDeviceMemory &image_memory);
 
+    VkShaderModule create_shader_module(const std::vector<char>& code);
+
     VkPhysicalDeviceProperties properties;
 
   private:

@@ -804,4 +804,19 @@ void device::create_image_with_info(
   }
 }
 
+VkShaderModule device::create_shader_module(const std::vector<char> &code)
+{
+  VkShaderModuleCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  create_info.codeSize = code.size();
+  // char to uint32_t
+  create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+  VkShaderModule ret;
+  if (vkCreateShaderModule(device_, &create_info, nullptr, &ret) != VK_SUCCESS)
+    throw std::runtime_error("failed to create shader module!");
+
+  return ret;
+}
+
 } // namespace hnll::graphics

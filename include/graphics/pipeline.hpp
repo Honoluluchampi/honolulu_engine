@@ -87,8 +87,6 @@ class pipeline
     VkPipeline get_pipeline() const { return graphics_pipeline_; }
 
   protected:
-    void create_shader_module(const std::vector<char>& code, VkShaderModule* shader_module);
-
     device& device_;
     VkPipeline graphics_pipeline_;
 

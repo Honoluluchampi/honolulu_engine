@@ -198,7 +198,7 @@ void pipeline::create_graphics_pipeline(
   shader_modules_.resize(shader_stage_count);
   for (int i = 0; i < shader_stage_count; i++) {
     auto raw_code = read_file(_shader_filepaths[i]);
-    create_shader_module(raw_code, &shader_modules_[i]);
+    shader_modules_[i] = device_.create_shader_module(raw_code);
 
     if (_shader_stage_flags[i] == VK_SHADER_STAGE_VERTEX_BIT)
       has_vertex_shader = true;
@@ -255,18 +255,6 @@ void pipeline::create_graphics_pipeline(
   if (vkCreateGraphicsPipelines(device_.get_device(), VK_NULL_HANDLE, 1,
                                 &pipeline_info, nullptr, &graphics_pipeline_) != VK_SUCCESS)
     throw std::runtime_error("failed to create graphics pipeline!");
-}
-
-void pipeline::create_shader_module(const std::vector<char>& code, VkShaderModule* shader_module)
-{
-  VkShaderModuleCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size();
-  // char to uint32_t
-  create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-  if (vkCreateShaderModule(device_.get_device(), &create_info, nullptr, shader_module) != VK_SUCCESS)
-    throw std::runtime_error("failed to create shader module!");
 }
 
 VkPipelineShaderStageCreateInfo pipeline::create_shader_stage_info(
