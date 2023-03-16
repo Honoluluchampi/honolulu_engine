@@ -9,6 +9,7 @@ set(SOURCES
     utils.cpp
     image_resource.cpp
     texture_image.cpp
+    timeline_semaphore.cpp
     graphics_models/static_mesh.cpp
     graphics_models/static_meshlet.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
