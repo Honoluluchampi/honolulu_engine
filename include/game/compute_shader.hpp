@@ -7,6 +7,8 @@
 // lib
 #include <vulkan/vulkan.h>
 
+#define DEFINE_COMPUTE_SHADER(new_shader) class new_shader : public game::compute_shader<new_shader>
+
 namespace hnll::game {
 
 template <typename Derived>
