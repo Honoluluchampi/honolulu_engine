@@ -13,38 +13,32 @@ namespace hnll::graphics {
 desc_layout::builder::builder(hnll::graphics::device &device) : device_(device) {}
 
 desc_layout::builder &desc_layout::builder::add_binding(
-  uint32_t binding,
   VkDescriptorType descriptor_type,
   VkShaderStageFlags stage_flags,
   uint32_t count)
 {
-  assert(bindings_.count(binding) == 0 && "Binding already in use");
   VkDescriptorSetLayoutBinding layout_binding{};
-  layout_binding.binding = binding;
+  layout_binding.binding = bindings_.size();
   layout_binding.descriptorType = descriptor_type;
   layout_binding.descriptorCount = count;
   layout_binding.stageFlags = stage_flags;
-  bindings_[binding] = layout_binding;
+  bindings_.emplace_back(layout_binding);
   return *this;
 }
 
-std::unique_ptr<desc_layout> desc_layout::builder::build() const
-{ return std::make_unique<desc_layout>(device_, bindings_); }
+std::unique_ptr<desc_layout> desc_layout::builder::build()
+{ return std::make_unique<desc_layout>(device_, std::move(bindings_)); }
 
 // *************** Descriptor Set Layout *********************
 
 desc_layout::desc_layout
-  (device &device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings) : device_{device}, bindings_{bindings}
+  (device &device, std::vector<VkDescriptorSetLayoutBinding>&& bindings) : device_{device}, bindings_{std::move(bindings)}
 {
-  std::vector<VkDescriptorSetLayoutBinding> set_layout_bindings{};
-  for (auto kv : bindings) {
-    set_layout_bindings.push_back(kv.second);
-  }
 
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{};
   descriptor_set_layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  descriptor_set_layout_info.bindingCount = static_cast<uint32_t>(set_layout_bindings.size());
-  descriptor_set_layout_info.pBindings = set_layout_bindings.data();
+  descriptor_set_layout_info.bindingCount = static_cast<uint32_t>(bindings_.size());
+  descriptor_set_layout_info.pBindings = bindings_.data();
 
   if (vkCreateDescriptorSetLayout(device.get_device(), &descriptor_set_layout_info, nullptr, &descriptor_set_layout_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create descriptor set layout!");

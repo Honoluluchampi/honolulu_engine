@@ -20,16 +20,19 @@ class desc_layout {
       public:
         builder(device &device);
 
-        builder &add_binding(uint32_t binding, VkDescriptorType descriptor_type, VkShaderStageFlags stage_flags, uint32_t count = 1);
-        u_ptr<desc_layout> build() const;
+        builder &add_binding(
+          VkDescriptorType descriptor_type,
+          VkShaderStageFlags stage_flags,
+          uint32_t count = 1);
+        u_ptr<desc_layout> build();
 
       private:
         device &device_;
-        std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings_{};
+        std::vector<VkDescriptorSetLayoutBinding> bindings_{};
     };
 
     // ctor dtor
-    desc_layout(device &device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+    desc_layout(device &device, std::vector<VkDescriptorSetLayoutBinding>&& bindings);
     ~desc_layout();
 
     VkDescriptorSetLayout get_descriptor_set_layout() const { return descriptor_set_layout_; }
@@ -38,7 +41,7 @@ class desc_layout {
   private:
     device &device_;
     VkDescriptorSetLayout descriptor_set_layout_;
-    std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings_;
+    std::vector<VkDescriptorSetLayoutBinding> bindings_;
 
     friend class desc_writer;
 };
@@ -95,6 +98,21 @@ class desc_writer {
     std::vector<VkWriteDescriptorSet> writes_;
 };
 
+struct desc_binding
+{
+  desc_binding(VkDescriptorType type, int count)
+  {
+    desc_type = type;
+    vk_desc_sets.resize(count);
+    desc_buffers.resize(count);
+  }
+  std::vector<VkDescriptorSet> vk_desc_sets;
+  std::vector<u_ptr<buffer>> desc_buffers;
+  VkDescriptorType desc_type;
+};
+
+
+
 class desc_set
 {
   public:
@@ -114,15 +132,13 @@ class desc_set
 
     // getter
     VkDescriptorSetLayout get_layout() const;
-    VkDescriptorSet       get_set(size_t index) const { return sets_[index]; }
+    VkDescriptorSet       get_set(size_t binding, size_t index) const
+    { return bindings_[binding].vk_desc_sets[index]; }
 
   private:
     device& device_;
-    u_ptr<desc_pool>       pool_;
     u_ptr<desc_layout> layout_;
-    std::vector<u_ptr<buffer>>   buffers_;
-    std::vector<VkDescriptorSet> sets_;
-    VkDescriptorType             type_;
+    std::vector<desc_binding> bindings_;
 };
 
 } // namespace hnll::graphics
