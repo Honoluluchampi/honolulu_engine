@@ -15,7 +15,7 @@ template <typename Derived>
 class compute_shader
 {
   public:
-    compute_shader(graphics::device& device) : device_(device)
+    explicit compute_shader(graphics::device& device) : device_(device)
     { static_cast<Derived>(this)->setup(); }
 
   protected:

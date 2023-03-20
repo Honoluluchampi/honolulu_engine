@@ -18,6 +18,7 @@ static std::vector<std::string> loading_directories {
   std::string(std::getenv("HNLL_ENGN")) + "/models/primitives",
 };
 
+std::string get_engine_root_path() { return (getenv("HNLL_ENGN")); }
 std::string get_full_path(const std::string& _filename);
 void mkdir_p(const std::string& _dir_name);
 // returns cache directory

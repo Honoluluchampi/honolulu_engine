@@ -12,6 +12,10 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
     void setup()
     {
       setup_desc_sets();
+      create_pipeline(
+        utils::get_engine_root_path() + "/examples/cloth_compute/cloth_compute.spv",
+        { desc_sets_->get_layout() }
+      );
     }
 
   private:
