@@ -55,7 +55,7 @@ class desc_pool {
         builder &add_pool_size(VkDescriptorType descriptor_type, uint32_t count);
         builder &set_pool_flags(VkDescriptorPoolCreateFlags flags);
         builder &set_max_sets(uint32_t count);
-        u_ptr<desc_pool> build() const;
+        s_ptr<desc_pool> build() const;
 
       private:
         device &device_;
@@ -100,35 +100,40 @@ class desc_writer {
 
 struct desc_binding
 {
-  desc_binding(VkDescriptorType type, int count)
+  desc_binding(VkShaderStageFlags shader_stage, VkDescriptorType type, int count)
   {
+    shader_stages = shader_stage;
     desc_type = type;
     vk_desc_sets.resize(count);
     desc_buffers.resize(count);
   }
   std::vector<VkDescriptorSet> vk_desc_sets;
   std::vector<u_ptr<buffer>> desc_buffers;
+  VkShaderStageFlags shader_stages;
   VkDescriptorType desc_type;
 };
-
 
 
 class desc_set
 {
   public:
-    static u_ptr<desc_set> create(device& _device);
+    static u_ptr<desc_set> create(device& _device, s_ptr<desc_pool> pool);
 
-    desc_set(device& _device);
+    desc_set(device& _device, s_ptr<desc_pool> pool);
     ~desc_set();
 
+    desc_set& add_binding(
+      VkShaderStageFlags shader_stages,
+      VkDescriptorType   desc_type,
+      size_t             buffer_count
+    );
     desc_set& create_pool(uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type);
-    desc_set& add_buffer(u_ptr<buffer>&& desc_buffer);
-    desc_set& add_layout(VkShaderStageFlagBits shader_stage);
+    desc_set& set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer);
     desc_set& build_sets();
 
     // buffer update
-    void write_to_buffer(size_t index, void *data);
-    void flush_buffer(size_t index);
+    void write_to_buffer(size_t binding, size_t index, void *data);
+    void flush_buffer(size_t binding, size_t index);
 
     // getter
     VkDescriptorSetLayout get_layout() const;
@@ -137,6 +142,7 @@ class desc_set
 
   private:
     device& device_;
+    s_ptr<desc_pool> pool_;
     u_ptr<desc_layout> layout_;
     std::vector<desc_binding> bindings_;
 };
