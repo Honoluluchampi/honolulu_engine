@@ -777,6 +777,35 @@ void device::copy_buffer_to_image(
   end_one_shot_commands(command_buffer);
 }
 
+std::vector<VkCommandBuffer> device::create_command_buffers(int count)
+{
+  std::vector<VkCommandBuffer> command_buffers;
+  command_buffers.resize(count);
+
+  // specify command pool and number of buffers to allocate
+  VkCommandBufferAllocateInfo alloc_info{};
+  alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  // if the allocated command buffers are primary or secondary command buffers
+  alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  alloc_info.commandPool = command_pool_;
+  alloc_info.commandBufferCount = count;
+
+  if (vkAllocateCommandBuffers(device_, &alloc_info, command_buffers.data()) != VK_SUCCESS)
+    throw std::runtime_error("failed to allocate command buffers!");
+
+  return command_buffers;
+}
+
+void device::free_command_buffers(std::vector<VkCommandBuffer> &&commands)
+{
+  vkFreeCommandBuffers(
+    device_,
+    command_pool_,
+    static_cast<float>(commands.size()),
+    commands.data());
+  commands.clear();
+}
+
 void device::create_image_with_info(
   const VkImageCreateInfo &image_info,
   VkMemoryPropertyFlags properties,

@@ -67,9 +67,6 @@ class renderer
     static void reset_frame();
 #endif
 
-    void create_command_buffers();
-    void free_command_buffers();
-
   protected:
     window& window_;
     device& device_;
