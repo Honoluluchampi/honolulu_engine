@@ -31,7 +31,7 @@ class renderer
     VkImageView  get_view(int index)  const;
     inline bool is_frame_in_progress()      const { return is_frame_started_; }
     inline swap_chain& get_swap_chain()     const { return *swap_chain_; }
-    inline VkCommandPool get_command_pool() const { return device_.get_command_pool(); }
+    inline VkCommandPool get_command_pool() const { return device_.get_graphics_command_pool(); }
 
     VkCommandBuffer get_current_command_buffer() const
     {

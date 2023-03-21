@@ -21,10 +21,20 @@ class compute_shader
   protected:
     // write this function for each compute shader
     void setup();
+
     void create_pipeline(
       const std::string& filepath,
       const std::vector<VkDescriptorSetLayout>& desc_set_layouts
     );
+
+    // compute command dispatching
+    inline void bind_pipeline(VkCommandBuffer command) { vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_); }
+
+    inline void bind_desc_sets(VkCommandBuffer command, const std::vector<VkDescriptorSet>& desc_sets)
+    { vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout_, 0, desc_sets.size(), desc_sets.data(), 0, 0); }
+
+    inline void dispatch_command(VkCommandBuffer command, int x, int y, int z)
+    { vkCmdDispatch(command, x, y, z); }
 
     VkShaderModule shader_module_;
     VkPipelineLayout pipeline_layout_;

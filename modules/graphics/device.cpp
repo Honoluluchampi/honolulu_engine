@@ -69,12 +69,13 @@ device::device(window &window, utils::rendering_type type)
   pick_physical_device();
   setup_device_extensions(); // ray tracing
   create_logical_device(); // ray tracing
-  create_command_pool();
+  graphics_command_pool_ = create_command_pool(command_type::GRAPHICS);
+  compute_command_pool_ = create_command_pool(command_type::COMPUTE);
 }
 
 device::~device()
 {
-  vkDestroyCommandPool(device_, command_pool_, nullptr);
+  vkDestroyCommandPool(device_, graphics_command_pool_, nullptr);
   // VkQueue is automatically destroyed when its device is deleted
   vkDestroyDevice(device_, nullptr);
 
@@ -392,17 +393,19 @@ void device::create_logical_device()
 
 // Command pools manage the memory that is used to store the buffers
 // and command buffers are allocated from them.
-void device::create_command_pool()
+VkCommandPool device::create_command_pool(command_type type)
 {
-  queue_family_indices get_queue_family_indices = find_physical_queue_families();
-
   VkCommandPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.queueFamilyIndex = get_queue_family_indices.graphics_family_.value();
   pool_info.flags =
     VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-  if (vkCreateCommandPool(device_, &pool_info, nullptr, &command_pool_) != VK_SUCCESS) {
+  if (type == command_type::GRAPHICS)
+    pool_info.queueFamilyIndex = queue_family_indices_.graphics_family_.value();
+  if (type == command_type::COMPUTE)
+    pool_info.queueFamilyIndex = queue_family_indices_.compute_family_.value();
+
+  if (vkCreateCommandPool(device_, &pool_info, nullptr, &graphics_command_pool_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
   }
 }
@@ -706,7 +709,7 @@ VkCommandBuffer device::begin_one_shot_commands()
   VkCommandBufferAllocateInfo allocate_info{};
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = command_pool_;
+  allocate_info.commandPool = graphics_command_pool_;
   allocate_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
@@ -732,7 +735,7 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer)
   vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
   vkQueueWaitIdle(graphics_queue_);
 
-  vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+  vkFreeCommandBuffers(device_, graphics_command_pool_, 1, &command_buffer);
 }
 
 void device::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)
@@ -777,7 +780,7 @@ void device::copy_buffer_to_image(
   end_one_shot_commands(command_buffer);
 }
 
-std::vector<VkCommandBuffer> device::create_command_buffers(int count)
+std::vector<VkCommandBuffer> device::create_command_buffers(int count, command_type type)
 {
   std::vector<VkCommandBuffer> command_buffers;
   command_buffers.resize(count);
@@ -787,8 +790,12 @@ std::vector<VkCommandBuffer> device::create_command_buffers(int count)
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   // if the allocated command buffers are primary or secondary command buffers
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  alloc_info.commandPool = command_pool_;
   alloc_info.commandBufferCount = count;
+
+  if (type == command_type::GRAPHICS)
+    alloc_info.commandPool = graphics_command_pool_;
+  if (type == command_type::COMPUTE)
+    alloc_info.commandPool = compute_command_pool_;
 
   if (vkAllocateCommandBuffers(device_, &alloc_info, command_buffers.data()) != VK_SUCCESS)
     throw std::runtime_error("failed to allocate command buffers!");
@@ -800,7 +807,7 @@ void device::free_command_buffers(std::vector<VkCommandBuffer> &&commands)
 {
   vkFreeCommandBuffers(
     device_,
-    command_pool_,
+    graphics_command_pool_,
     static_cast<float>(commands.size()),
     commands.data());
   commands.clear();

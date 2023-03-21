@@ -38,6 +38,8 @@ struct queue_family_indices
     (compute_family_  != std::nullopt); };
 };
 
+enum class command_type { GRAPHICS, COMPUTE };
+
 class device
 {
   public:
@@ -60,13 +62,14 @@ class device
     { return std::make_unique<device>(window, type); }
 
     // getter
-    VkCommandPool         get_command_pool()         { return command_pool_; }
+    VkCommandPool         get_graphics_command_pool()         { return graphics_command_pool_; }
     VkInstance            get_instance()             { return instance_; }
     VkPhysicalDevice      get_physical_device()      { return physical_device_; }
     VkDevice              get_device()               { return device_; }
     VkSurfaceKHR          get_surface()              { return surface_; }
     VkQueue               get_graphics_queue()       { return graphics_queue_; }
     VkQueue               get_present_queue()        { return present_queue_; }
+    VkQueue               get_compute_queue()        { return compute_queue_; }
     queue_family_indices  get_queue_family_indices() { return queue_family_indices_; }
     utils::rendering_type get_rendering_type() const { return rendering_type_; }
 
@@ -87,7 +90,7 @@ class device
     void copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
     void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layer_count);
 
-    std::vector<VkCommandBuffer> create_command_buffers(int count);
+    std::vector<VkCommandBuffer> create_command_buffers(int count, command_type type);
     void free_command_buffers(std::vector<VkCommandBuffer>&& commands);
 
     void create_image_with_info(
@@ -108,7 +111,7 @@ class device
     void create_surface();
     void pick_physical_device();
     void create_logical_device();
-    void create_command_pool();
+    VkCommandPool create_command_pool(command_type type);
 
     // helper functions
     bool is_device_suitable(VkPhysicalDevice device);
@@ -128,7 +131,8 @@ class device
     VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
     VkInstance instance_;
     VkSurfaceKHR surface_;
-    VkCommandPool command_pool_;
+    VkCommandPool graphics_command_pool_;
+    VkCommandPool compute_command_pool_;
     VkQueue graphics_queue_;
     VkQueue present_queue_;
     VkQueue compute_queue_;

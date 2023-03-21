@@ -16,7 +16,7 @@ renderer::renderer(window& window, device& device, bool recreate_from_scratch)
 {
   // recreate swap chain dependent objects
   if (recreate_from_scratch) recreate_swap_chain();
-  command_buffers_ = device.create_command_buffers(swap_chain::MAX_FRAMES_IN_FLIGHT);
+  command_buffers_ = device.create_command_buffers(swap_chain::MAX_FRAMES_IN_FLIGHT, command_type::GRAPHICS);
 }
 
 renderer::~renderer()

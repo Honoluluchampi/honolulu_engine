@@ -8,12 +8,13 @@ namespace hnll::game {
 
 physics_engine::physics_engine(graphics::device &device) : device_(device)
 {
-  create_command_buffers();
+  command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  compute_queue_ = device.get_compute_queue();
 }
 
 physics_engine::~physics_engine()
 {
-  free_command_buffers();
+  device_.free_command_buffers(std::move(command_buffers_));
 }
 
 void physics_engine::submit_async_work()
@@ -21,30 +22,24 @@ void physics_engine::submit_async_work()
 
 }
 
-void physics_engine::create_command_buffers()
+void physics_engine::begin_command_recording()
 {
-  command_buffers_.resize(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
+  VkCommandBufferBeginInfo begin_info{};
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-  // specify command pool and number of buffers to allocate
-  VkCommandBufferAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  // if the allocated command buffers are primary or secondary command buffers
-  alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  alloc_info.commandPool = device_.get_command_pool();
-  alloc_info.commandBufferCount = static_cast<uint32_t>(command_buffers_.size());
-
-  if (vkAllocateCommandBuffers(device_.get_device(), &alloc_info, command_buffers_.data()) != VK_SUCCESS)
-    throw std::runtime_error("failed to allocate command buffers!");
+  if (vkBeginCommandBuffer(command_buffers_[current_command_index_], &begin_info) != VK_SUCCESS) {
+    throw std::runtime_error("failed to begin recording command buffer!");
+  }
 }
 
-void physics_engine::free_command_buffers()
+void physics_engine::end_command_recording()
 {
-  vkFreeCommandBuffers(
-    device_.get_device(),
-    device_.get_command_pool(),
-    static_cast<float>(command_buffers_.size()),
-    command_buffers_.data());
-  command_buffers_.clear();
+  if (vkEndCommandBuffer(command_buffers_[current_command_index_]) != VK_SUCCESS) {
+    throw std::runtime_error("failed to record command buffer!");
+  }
+
+  current_command_index_ = ++current_command_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
+                           ? 0 : current_command_index_;
 }
 
 } // namespace hnll::game
