@@ -59,7 +59,7 @@ void physics_engine::submit_command()
   };
 
   VkCommandBufferSubmitInfoKHR command_buffer_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR };
-  command_buffer_info.commandBuffer = command_buffer->vk_command_buffer;
+  command_buffer_info.commandBuffer = command_buffers_[current_command_index_];
 
   VkSubmitInfo2KHR submit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR };
   submit_info.waitSemaphoreInfoCount = has_wait_semaphore ? 1 : 0;
@@ -69,10 +69,8 @@ void physics_engine::submit_command()
   submit_info.commandBufferInfoCount = 1;
   submit_info.pCommandBufferInfos = &command_buffer_info;
 
-  queue_submit2(compute_queue_, 1, &submit_info, VK_NULL_HANDLE);
-
   // submit the command buffer to the graphics queue with fence
-  if (vkQueueSubmit(compute_queue_, 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
+  if (vkQueueSubmit2(compute_queue_, 1, &submit_info, nullptr) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
 
 }

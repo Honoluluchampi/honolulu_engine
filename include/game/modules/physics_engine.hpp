@@ -28,7 +28,7 @@ class physics_engine
 
     void submit_command();
 
-    VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
+    inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
 
   private:
     graphics::device& device_;
