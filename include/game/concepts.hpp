@@ -22,6 +22,8 @@ requires(const T a) { T::get_shading_type(); a.is_textured(); };
 
 namespace game {
 
+struct physics_frame_info;
+
 template <typename T>
 concept Updatable = requires (T a, const float& dt) { a.update(dt); };
 
@@ -52,6 +54,11 @@ template <typename T>
 concept ShadingSystem =
 requires(T a, const utils::frame_info& frame_info) { a.render(frame_info); } &&
 requires(T, graphics::device& device) { T::create(device); };
+
+template <typename T>
+concept ComputeShader = requires (T t, const physics_frame_info& info) {
+  t.render(info);
+};
 
 using component_id = unsigned int;
 using actor_id     = unsigned int;

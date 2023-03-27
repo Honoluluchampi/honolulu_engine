@@ -17,9 +17,12 @@ physics_engine::~physics_engine()
   device_.free_command_buffers(std::move(command_buffers_));
 }
 
-void physics_engine::submit_async_work()
+void physics_engine::render()
 {
+  begin_command_recording();
 
+  end_command_recording();
+  submit_command();
 }
 
 void physics_engine::begin_command_recording()
@@ -78,7 +81,6 @@ void physics_engine::submit_command()
   // submit the command buffer to the graphics queue with fence
   if (vkQueueSubmit2(compute_queue_, 1, &submit_info, nullptr) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
-
 }
 
 } // namespace hnll::game

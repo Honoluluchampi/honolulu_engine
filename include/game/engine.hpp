@@ -2,6 +2,7 @@
 
 // hnll
 #include <game/modules/graphics_engine.hpp>
+#include <game/modules/physics_engine.hpp>
 #include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/rendering_utils.hpp>
@@ -103,6 +104,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
     static actor_map update_target_actors_;
+
+    u_ptr<physics_engine> physics_engine_;
 };
 
 // impl
@@ -145,6 +148,7 @@ ENGN_API void ENGN_TYPE::update()
 
 ENGN_API void ENGN_TYPE::render()
 {
+  physics_engine_->render();
   graphics_engine_->render(core_.get_viewer_info());
   core_.render_gui();
 }
