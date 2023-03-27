@@ -48,24 +48,30 @@ void physics_engine::submit_command()
 
   auto vk_semaphore = semaphore_->get_semaphore();
   // wait for previous frame's compute submission
-  VkSemaphoreSubmitInfoKHR wait_semaphores[]{
-    { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, nullptr, vk_semaphore, last_semaphore_value_, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR, 0 }
-  };
+  VkSemaphoreSubmitInfoKHR wait_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
+  wait_semaphore.pNext = nullptr;
+  wait_semaphore.semaphore = vk_semaphore;
+  wait_semaphore.value = last_semaphore_value_;
+  wait_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+  wait_semaphore.deviceIndex = 0;
 
   last_semaphore_value_++;
 
-  VkSemaphoreSubmitInfoKHR signal_semaphores[]{
-    { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, nullptr, vk_semaphore, last_semaphore_value_, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR, 0 },
-  };
+  VkSemaphoreSubmitInfoKHR signal_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
+  signal_semaphore.pNext = nullptr;
+  signal_semaphore.semaphore = vk_semaphore;
+  signal_semaphore.value = last_semaphore_value_;
+  signal_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+  signal_semaphore.deviceIndex = 0;
 
   VkCommandBufferSubmitInfoKHR command_buffer_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR };
   command_buffer_info.commandBuffer = command_buffers_[current_command_index_];
 
   VkSubmitInfo2KHR submit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR };
   submit_info.waitSemaphoreInfoCount = has_wait_semaphore ? 1 : 0;
-  submit_info.pWaitSemaphoreInfos = wait_semaphores;
+  submit_info.pWaitSemaphoreInfos = &wait_semaphore;
   submit_info.signalSemaphoreInfoCount = 1;
-  submit_info.pSignalSemaphoreInfos = signal_semaphores;
+  submit_info.pSignalSemaphoreInfos = &signal_semaphore;
   submit_info.commandBufferInfoCount = 1;
   submit_info.pCommandBufferInfos = &command_buffer_info;
 
