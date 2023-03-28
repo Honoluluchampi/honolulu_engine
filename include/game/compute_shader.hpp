@@ -2,6 +2,7 @@
 
 // hnll
 #include <graphics/device.hpp>
+#include <physics/utils.hpp>
 #include <utils/utils.hpp>
 
 // lib
@@ -11,12 +12,6 @@
 
 namespace hnll::game {
 
-struct physics_frame_info
-{
-  VkCommandBuffer buffer;
-  float dt;
-};
-
 template <typename Derived>
 class compute_shader
 {
@@ -24,7 +19,8 @@ class compute_shader
     explicit compute_shader(graphics::device& device) : device_(device)
     { static_cast<Derived>(this)->setup(); }
 
-    void render(const physics_frame_info& info);
+    // for physics simulation
+    void render(const physics::frame_info& info);
 
   protected:
     // write this function for each compute shader

@@ -13,9 +13,18 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
     {
       setup_desc_sets();
       create_pipeline(
-        utils::get_engine_root_path() + "/examples/cloth_compute/cloth_compute.spv",
+        utils::get_engine_root_path() + "/modules/physics/compute_shaders/cloth_compute.spv",
         { desc_sets_->get_layout() }
       );
+    }
+
+    void render(const physics::frame_info& info)
+    {
+      auto& command = info.command_buffer;
+
+      bind_pipeline(command);
+      bind_desc_sets(command, {desc_sets_->get_set(0, 0)});
+      dispatch_command(command, 3, 1, 1);
     }
 
   private:
