@@ -2,7 +2,7 @@
 
 // hnll
 #include <game/modules/graphics_engine.hpp>
-#include <game/modules/physics_engine.hpp>
+#include <game/modules/compute_engine.hpp>
 #include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/rendering_utils.hpp>

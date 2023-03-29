@@ -19,6 +19,10 @@ class compute_shader
     explicit compute_shader(graphics::device& device) : device_(device)
     { static_cast<Derived>(this)->setup(); }
 
+    template <typename... Args>
+    static u_ptr<Derived> create(graphics::device& device, Args... args)
+    { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
+
     // for physics simulation
     void render(const physics::frame_info& info);
 

@@ -1,51 +1,89 @@
+#pragma once
+
 // hnll
-#include <game/modules/physics_engine.hpp>
+#include <utils/common_alias.hpp>
+#include <game/concepts.hpp>
 #include <graphics/device.hpp>
-#include <graphics/timeline_semaphore.hpp>
 #include <graphics/swap_chain.hpp>
 
-namespace hnll::game {
+// std
+#include <vector>
 
-physics_engine::physics_engine(graphics::device &device) : device_(device)
+// std
+#include <variant>
+// lib
+#include <vulkan/vulkan.h>
+
+namespace hnll {
+
+namespace graphics { class device; class timeline_semaphore; }
+
+namespace game {
+
+template <ComputeShader... C>
+class compute_engine
+{
+    using shader_map = std::unordered_map<uint32_t, std::variant<u_ptr<C>...>>;
+  public:
+    explicit compute_engine(graphics::device& device);
+    ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_)); }
+
+    void render();
+
+    inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
+
+  private:
+    void submit_command();
+
+    template <ComputeShader Head, ComputeShader... Rest> void add_shader();
+    void add_shader(){}
+
+    graphics::device& device_;
+
+    VkQueue compute_queue_;
+
+    std::vector<VkCommandBuffer> command_buffers_;
+    int current_command_index_ = 0;
+    bool is_frame_started_ = false;
+
+    uint64_t last_semaphore_value_ = 0;
+    u_ptr<graphics::timeline_semaphore> semaphore_;
+
+    shader_map shaders_;
+};
+
+#define CMPT_ENGN_API  template<ComputeShader... CS>
+#define CMPT_ENGN_TYPE compute_engine<CS...>
+
+CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device) : device_(device)
 {
   command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   compute_queue_ = device.get_compute_queue();
 }
 
-physics_engine::~physics_engine()
+CMPT_ENGN_API void CMPT_ENGN_TYPE::render()
 {
-  device_.free_command_buffers(std::move(command_buffers_));
-}
-
-void physics_engine::render()
-{
-  begin_command_recording();
-
-  end_command_recording();
-  submit_command();
-}
-
-void physics_engine::begin_command_recording()
-{
+  // begin command recording
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
   if (vkBeginCommandBuffer(command_buffers_[current_command_index_], &begin_info) != VK_SUCCESS) {
     throw std::runtime_error("failed to begin recording command buffer!");
   }
-}
 
-void physics_engine::end_command_recording()
-{
+  // visit all active shaders
+
   if (vkEndCommandBuffer(command_buffers_[current_command_index_]) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
 
   current_command_index_ = ++current_command_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
                            ? 0 : current_command_index_;
+
+  submit_command();
 }
 
-void physics_engine::submit_command()
+CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
 {
   bool has_wait_semaphore = last_semaphore_value_ > 0;
 
@@ -83,4 +121,14 @@ void physics_engine::submit_command()
     throw std::runtime_error("failed to submit draw command buffer!");
 }
 
-} // namespace hnll::game
+CMPT_ENGN_API template <ComputeShader Head, ComputeShader... Rest>
+void CMPT_ENGN_TYPE::add_shader()
+{
+  auto system = Head::create(device_);
+  shaders_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
+
+  if constexpr (sizeof...(Rest) >= 1)
+    add_shading_system<Rest...>();
+}
+
+}} // namespace hnll::physics
