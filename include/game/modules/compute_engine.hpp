@@ -31,7 +31,9 @@ class compute_engine
 
     void render();
 
+    // getter
     inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
+    inline graphics::timeline_semaphore& get_semaphore_r() { return *semaphore_; }
 
   private:
     void submit_command();
@@ -87,7 +89,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
 {
   bool has_wait_semaphore = semaphore_->get_last_semaphore_value() > 0;
 
-  auto vk_semaphore = semaphore_->get_semaphore();
+  auto vk_semaphore = semaphore_->get_vk_semaphore();
   // wait for previous frame's compute submission
   VkSemaphoreSubmitInfoKHR wait_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   wait_semaphore.pNext = nullptr;

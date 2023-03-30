@@ -10,6 +10,8 @@ namespace hnll::graphics {
 #define HVE_RENDER_PASS_ID 0
 #define GUI_RENDER_PASS_ID 1
 
+class timeline_semaphore;
+
 class swap_chain {
   public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -48,7 +50,10 @@ class swap_chain {
 
     VkFormat find_depth_format();
     VkResult acquire_next_image(uint32_t *image_index);
-    VkResult submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index);
+    VkResult submit_command_buffers(
+      const VkCommandBuffer *buffers,
+      uint32_t *image_index,
+      timeline_semaphore& compute_semaphore);
 
     // swap chain validation whether its compatible with the render_pass
     bool compare_swap_chain_formats(const swap_chain& swap_chain) const

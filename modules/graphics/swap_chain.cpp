@@ -1,5 +1,6 @@
 //hnll
 #include <graphics/swap_chain.hpp>
+#include <graphics/timeline_semaphore.hpp>
 
 // std
 #include <array>
@@ -95,7 +96,10 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
   return result;
 }
 
-VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index)
+VkResult swap_chain::submit_command_buffers(
+  const VkCommandBuffer *buffers,
+  uint32_t *image_index,
+  timeline_semaphore& compute_semaphore)
 {
   // specify a timeout in nanoseconds for an image
   auto timeout = UINT64_MAX;
@@ -105,37 +109,87 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
   // mark the image as now being in use by this frame
   images_in_flight_[*image_index] = in_flight_fences_[current_frame_];
 
+  // describe wait semaphores
+  VkSemaphoreSubmitInfoKHR wait_semaphores[] {
+    { // image available semaphore
+      VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+      nullptr,
+      image_available_semaphores_[current_frame_],
+      0,
+      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
+      0
+    },
+    { // compute semaphore
+      VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+      nullptr,
+      compute_semaphore.get_vk_semaphore(),
+      compute_semaphore.get_last_semaphore_value(),
+      VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR,
+      0
+    }
+  };
+
   //submitting the command buffer
-  VkSubmitInfo submit_info{};
+  VkSubmitInfo2KHR submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  // the index of wait_semaphores corresponds to the index of wait_stages
-  VkSemaphore wait_semaphores[] = {image_available_semaphores_[current_frame_]};
-  // which stage of the pipeline to wait
-  VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  submit_info.waitSemaphoreCount = 1;
-  submit_info.pWaitSemaphores = wait_semaphores;
-  submit_info.pWaitDstStageMask = wait_stages;
+  submit_info.waitSemaphoreInfoCount = 2;
+  submit_info.pWaitSemaphoreInfos = wait_semaphores;
   // which command buffers to actually submit for execution
   // should submit the command buffer that binds the swap chain image
   // we just acquired as color attachiment.
 
   // TODO : configure renderer count in a systematic way
 #ifdef IMGUI_DISABLED
-  submit_info.commandBufferCount = 1;
+  VkCommandBufferSubmitInfoKHR command_buffers[] {
+    {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+      nullptr,
+      buffers[0],
+      0
+    },
+  };
+
+  submit_info.commandBufferInfoCount = 1;
+  submit_info.pCommandBufferInfos = command_buffers;
 #else
-  submit_info.commandBufferCount = 2;
+  VkCommandBufferSubmitInfoKHR command_buffers[] {
+    {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+      nullptr,
+      buffers[0],
+      0
+    },
+    {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+      nullptr,
+      buffers[1],
+      0
+    }
+  };
+
+  submit_info.commandBufferInfoCount = 2;
+  submit_info.pCommandBufferInfos = command_buffers;
 #endif
-  submit_info.pCommandBuffers = buffers;
-  // specify which semaphores to signal once the comand buffer have finished execution
-  VkSemaphore signal_semaphores[] = {render_finished_semaphores_[current_frame_]};
-  submit_info.signalSemaphoreCount = 1;
-  submit_info.pSignalSemaphores = signal_semaphores;
+  // specify which semaphores to signal once the command buffer have finished execution
+  VkSemaphoreSubmitInfoKHR signal_semaphores[] {
+    {
+      VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+      nullptr,
+      render_finished_semaphores_[current_frame_],
+      0,
+      VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR,
+      0
+    }
+  };
+
+  submit_info.signalSemaphoreInfoCount = 1;
+  submit_info.pSignalSemaphoreInfos = signal_semaphores;
 
   // need to be manually restore the fence to the unsignaled state
   vkResetFences(device_.get_device(), 1, &in_flight_fences_[current_frame_]);
 
   // submit the command buffer to the graphics queue with fence
-  if (vkQueueSubmit(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
+  if (vkQueueSubmit2KHR(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
 
   // configure subpass dependencies in VkRenderPassFacotry::create_render_pass
@@ -146,7 +200,7 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
   present_info.waitSemaphoreCount = 1;
-  present_info.pWaitSemaphores = signal_semaphores;
+  present_info.pWaitSemaphores = &render_finished_semaphores_[current_frame_];
 
   VkSwapchainKHR swapChains[] = {swap_chain_};
   present_info.swapchainCount = 1;

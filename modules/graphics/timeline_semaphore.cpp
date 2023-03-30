@@ -28,14 +28,4 @@ timeline_semaphore::timeline_semaphore(hnll::graphics::device &device) : device_
 timeline_semaphore::~timeline_semaphore()
 { vkDestroySemaphore(device_.get_device(), vk_timeline_semaphore_, nullptr); }
 
-void timeline_semaphore::wait_on_cpu()
-{
-
-}
-
-void timeline_semaphore::wait_on_gpu()
-{
-
-}
-
 } // namespace hnll::graphics

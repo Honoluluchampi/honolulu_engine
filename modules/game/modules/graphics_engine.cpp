@@ -110,7 +110,10 @@ void graphics_engine_core::begin_swap_chain_render_pass(VkCommandBuffer command_
 { renderer_->begin_swap_chain_render_pass(command_buffer, HVE_RENDER_PASS_ID); }
 
 void graphics_engine_core::end_swap_chain_and_frame(VkCommandBuffer command_buffer)
-{ renderer_->end_swap_chain_render_pass(command_buffer); renderer_->end_frame(); }
+{
+  renderer_->end_swap_chain_render_pass(command_buffer);
+  renderer_->end_frame();
+}
 
 void graphics_engine_core::setup_global_shading_system_config()
 {
