@@ -5,6 +5,7 @@
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/swap_chain.hpp>
+#include <graphics/timeline_semaphore.hpp>
 
 // std
 #include <vector>

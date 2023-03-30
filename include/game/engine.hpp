@@ -18,6 +18,7 @@
 #define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors>
 #define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
 #define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
+#define SELECT_COMPUTE_SHADER(name, ...) using name = game::compute_shader_list<__VA_ARGS__>
 
 namespace hnll {
 
@@ -67,10 +68,11 @@ class engine_core
 // for multiple template parameter packs
 template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
+template <ComputeShader... C> struct compute_shader_list {};
 template <class Derived, typename... T> class engine_base;
 
-template <class Derived, ShadingSystem... S, Actor... A>
-class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
+template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
+class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 {
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
@@ -105,7 +107,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
     u_ptr<graphics_engine<S...>> graphics_engine_;
     static actor_map update_target_actors_;
 
-    u_ptr<physics_engine> physics_engine_;
+    u_ptr<compute_engine<C...>> compute_engine_;
 };
 
 // impl
