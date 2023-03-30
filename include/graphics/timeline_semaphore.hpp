@@ -23,10 +23,14 @@ class timeline_semaphore
 
     // getter
     VkSemaphore get_semaphore() { return vk_timeline_semaphore_; }
+    inline uint64_t get_last_semaphore_value() { return last_semaphore_value_; }
 
+    // setter
+    inline void increment_semaphore_value() { last_semaphore_value_++; }
   private:
     device& device_;
     VkSemaphore vk_timeline_semaphore_;
+    uint64_t last_semaphore_value_ = 0;
 };
 
 } // namespace hnll::utils

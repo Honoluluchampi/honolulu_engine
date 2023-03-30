@@ -47,7 +47,6 @@ class compute_engine
     int current_command_index_ = 0;
     bool is_frame_started_ = false;
 
-    uint64_t last_semaphore_value_ = 0;
     u_ptr<graphics::timeline_semaphore> semaphore_;
 
     shader_map shaders_;
@@ -86,23 +85,23 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::render()
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
 {
-  bool has_wait_semaphore = last_semaphore_value_ > 0;
+  bool has_wait_semaphore = semaphore_->get_last_semaphore_value() > 0;
 
   auto vk_semaphore = semaphore_->get_semaphore();
   // wait for previous frame's compute submission
   VkSemaphoreSubmitInfoKHR wait_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   wait_semaphore.pNext = nullptr;
   wait_semaphore.semaphore = vk_semaphore;
-  wait_semaphore.value = last_semaphore_value_;
+  wait_semaphore.value = semaphore_->get_last_semaphore_value();
   wait_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   wait_semaphore.deviceIndex = 0;
 
-  last_semaphore_value_++;
+  semaphore_->increment_semaphore_value();
 
   VkSemaphoreSubmitInfoKHR signal_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   signal_semaphore.pNext = nullptr;
   signal_semaphore.semaphore = vk_semaphore;
-  signal_semaphore.value = last_semaphore_value_;
+  signal_semaphore.value = semaphore_->get_last_semaphore_value();
   signal_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   signal_semaphore.deviceIndex = 0;
 
