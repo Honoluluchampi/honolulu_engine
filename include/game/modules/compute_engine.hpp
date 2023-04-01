@@ -26,14 +26,13 @@ class compute_engine
 {
     using shader_map = std::unordered_map<uint32_t, std::variant<u_ptr<C>...>>;
   public:
-    explicit compute_engine(graphics::device& device);
+    explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
     ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_)); }
 
     void render();
 
     // getter
     inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
-    inline graphics::timeline_semaphore& get_semaphore_r() { return *semaphore_; }
 
   private:
     void submit_command();
@@ -49,7 +48,8 @@ class compute_engine
     int current_command_index_ = 0;
     bool is_frame_started_ = false;
 
-    u_ptr<graphics::timeline_semaphore> semaphore_;
+    // ref to swap_chain::compute_semaphore
+    graphics::timeline_semaphore& semaphore_;
 
     shader_map shaders_;
 };
@@ -57,7 +57,8 @@ class compute_engine
 #define CMPT_ENGN_API  template<ComputeShader... CS>
 #define CMPT_ENGN_TYPE compute_engine<CS...>
 
-CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device) : device_(device)
+CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics::timeline_semaphore& semaphore)
+ : device_(device), semaphore_(semaphore)
 {
   command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   compute_queue_ = device.get_compute_queue();
@@ -87,23 +88,23 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::render()
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
 {
-  bool has_wait_semaphore = semaphore_->get_last_semaphore_value() > 0;
+  bool has_wait_semaphore = semaphore_.get_last_semaphore_value() > 0;
 
-  auto vk_semaphore = semaphore_->get_vk_semaphore();
+  auto vk_semaphore = semaphore_.get_vk_semaphore();
   // wait for previous frame's compute submission
   VkSemaphoreSubmitInfoKHR wait_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   wait_semaphore.pNext = nullptr;
   wait_semaphore.semaphore = vk_semaphore;
-  wait_semaphore.value = semaphore_->get_last_semaphore_value();
+  wait_semaphore.value = semaphore_.get_last_semaphore_value();
   wait_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   wait_semaphore.deviceIndex = 0;
 
-  semaphore_->increment_semaphore_value();
+  semaphore_.increment_semaphore_value();
 
   VkSemaphoreSubmitInfoKHR signal_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   signal_semaphore.pNext = nullptr;
   signal_semaphore.semaphore = vk_semaphore;
-  signal_semaphore.value = semaphore_->get_last_semaphore_value();
+  signal_semaphore.value = semaphore_.get_last_semaphore_value();
   signal_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   signal_semaphore.deviceIndex = 0;
 

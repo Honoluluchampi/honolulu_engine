@@ -138,6 +138,8 @@ GLFWwindow* graphics_engine_core::get_glfw_window() const { return window_->get_
 graphics::window& graphics_engine_core::get_window_r() { return *window_; }
 graphics::device& graphics_engine_core::get_device_r() { return *device_; }
 graphics::renderer& graphics_engine_core::get_renderer_r() { return *renderer_; }
+graphics::timeline_semaphore& graphics_engine_core::get_compute_semaphore_r()
+{ return renderer_->get_swap_chain_r().get_compute_semaphore_r(); }
 
 VkDescriptorSetLayout graphics_engine_core::get_global_desc_layout()
 { return global_set_layout_->get_descriptor_set_layout(); }

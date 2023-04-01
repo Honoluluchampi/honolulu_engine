@@ -98,8 +98,7 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
 
 VkResult swap_chain::submit_command_buffers(
   const VkCommandBuffer *buffers,
-  uint32_t *image_index,
-  timeline_semaphore& compute_semaphore)
+  uint32_t *image_index)
 {
   // specify a timeout in nanoseconds for an image
   auto timeout = UINT64_MAX;
@@ -122,8 +121,8 @@ VkResult swap_chain::submit_command_buffers(
     { // compute semaphore
       VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
       nullptr,
-      compute_semaphore.get_vk_semaphore(),
-      compute_semaphore.get_last_semaphore_value(),
+      compute_semaphore_->get_vk_semaphore(),
+      compute_semaphore_->get_last_semaphore_value(),
       VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR,
       0
     }
@@ -215,6 +214,9 @@ VkResult swap_chain::submit_command_buffers(
 
   return result;
 }
+
+void swap_chain::add_compute_semaphore()
+{ compute_semaphore_ = timeline_semaphore::create(device_); }
 
 void swap_chain::create_swap_chain()
 {

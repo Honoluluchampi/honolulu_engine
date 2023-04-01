@@ -111,8 +111,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 };
 
 // impl
-#define ENGN_API template <class Derived, ShadingSystem... S, Actor... A>
-#define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>>
+#define ENGN_API template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
+#define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>
 
 // static members
 ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::update_target_actors_;
@@ -122,6 +122,14 @@ ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rend
    graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
 {
   graphics_engine_ = graphics_engine<S...>::create(application_name, rendering_type);
+
+  // only if any compute shader is defined
+  if constexpr (sizeof...(C) >= 1) {
+    compute_engine_ = compute_engine<C...>::create(
+      graphics_engine_core_.get_device_r(),
+      graphics_engine_core_.get_compute_semaphore_r()
+    );
+  }
 }
 
 ENGN_API void ENGN_TYPE::run()

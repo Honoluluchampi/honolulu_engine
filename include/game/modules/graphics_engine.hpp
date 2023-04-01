@@ -27,6 +27,7 @@ namespace graphics {
   class desc_layout;
   class desc_pool;
   class buffer;
+  class timeline_semaphore;
 }
 
 namespace utils {
@@ -65,6 +66,7 @@ class graphics_engine_core
     graphics::window& get_window_r();
     graphics::device& get_device_r();
     graphics::renderer& get_renderer_r();
+    graphics::timeline_semaphore& get_compute_semaphore_r();
 
     static VkDescriptorSetLayout get_global_desc_layout();
     static VkRenderPass get_default_render_pass() { return default_render_pass_; }

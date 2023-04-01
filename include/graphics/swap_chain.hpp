@@ -46,14 +46,13 @@ class swap_chain {
     const VkFence& get_current_in_flight_fence() const { return in_flight_fences_[current_frame_]; }
     const VkFence& get_current_images_in_flight_fence() const { return images_in_flight_[current_frame_]; }
 
+    timeline_semaphore& get_compute_semaphore_r() { return *compute_semaphore_; }
+
     float extent_aspect_ratio() { return static_cast<float>(swap_chain_extent_.width) / static_cast<float>(swap_chain_extent_.height); }
 
     VkFormat find_depth_format();
     VkResult acquire_next_image(uint32_t *image_index);
-    VkResult submit_command_buffers(
-      const VkCommandBuffer *buffers,
-      uint32_t *image_index,
-      timeline_semaphore& compute_semaphore);
+    VkResult submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index);
 
     // swap chain validation whether its compatible with the render_pass
     bool compare_swap_chain_formats(const swap_chain& swap_chain) const
@@ -74,6 +73,8 @@ class swap_chain {
       multiple_frame_buffers_[render_pass_id] = std::forward<VFB>(frame_buffers);
     }
 #endif
+
+    void add_compute_semaphore();
 
   private:
     void init();
@@ -131,6 +132,7 @@ class swap_chain {
     VkSwapchainKHR    swap_chain_;
     u_ptr<swap_chain> old_swap_chain_;
 
+    u_ptr<timeline_semaphore> compute_semaphore_;
     // an image has been acquired and is ready for rendering
     std::vector<VkSemaphore> image_available_semaphores_;
     // rendering has finished and presentation can be happened
