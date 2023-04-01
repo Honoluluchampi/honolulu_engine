@@ -27,7 +27,7 @@ void grid_shading_system::setup()
   );
 }
 
-void grid_shading_system::render(const utils::frame_info &frame_info)
+void grid_shading_system::render(const utils::graphics_frame_info &frame_info)
 {
   pipeline_->bind(frame_info.command_buffer);
 

@@ -70,13 +70,4 @@ struct frustum_info
   alignas(16) vec3 near_n;
   alignas(16) vec3 far_n;
 };
-
-
-struct frame_info
-{
-  int frame_index;
-  VkCommandBuffer command_buffer;
-  VkDescriptorSet global_descriptor_set;
-  frustum_info    view_frustum;
-};
 } // namespace hnll::utils

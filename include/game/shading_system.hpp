@@ -33,7 +33,7 @@ class shading_system {
     shading_system(shading_system &&) = default;
     shading_system &operator=(shading_system &&) = default;
 
-    void render(const utils::frame_info &frame_info);
+    void render(const utils::graphics_frame_info &frame_info);
 
     void add_render_target(rc_id id, RC& target) { targets_.emplace(id, target); }
     void remove_render_target(rc_id id) { targets_.erase(id); }

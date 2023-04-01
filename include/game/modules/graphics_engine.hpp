@@ -6,6 +6,7 @@
 #include <graphics/graphics_model_pool.hpp>
 #include <utils/common_alias.hpp>
 #include <utils/singleton.hpp>
+#include <utils/frame_info.hpp>
 
 // std
 #include <map>
@@ -105,7 +106,7 @@ class graphics_engine
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
 
-    void render(const utils::viewer_info& viewer_info);
+    void render(const utils::game_frame_info& frame_info);
 
     template <ShadingSystem Head, ShadingSystem... Rest> void add_shading_system();
     void add_shading_system(){}
@@ -137,22 +138,22 @@ GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_nam
   add_shading_system<S...>();
 }
 
-GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::viewer_info& viewer_info)
+GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_info)
 {
   if (auto command_buffer = core_.begin_frame()) {
     int frame_index = core_.get_frame_index();
 
     // update
     utils::global_ubo ubo;
-    ubo.projection   = viewer_info.projection;
-    ubo.view         = viewer_info.view;
-    ubo.inverse_view = viewer_info.inverse_view;
+    ubo.projection   = frame_info.viewer_info.projection;
+    ubo.view         = frame_info.viewer_info.view;
+    ubo.inverse_view = frame_info.viewer_info.inverse_view;
     // temp
     ubo.point_lights[0] = {{0.f, -6.f, 0.f, 0.f}, { 1.f, 1.f, 1.f, 1.f}};
     ubo.lights_count = 1;
     ubo.ambient_light_color = { 0.6f, 0.6f, 0.6f, 0.6f };
 
-    utils::frame_info frame_info{
+    utils::graphics_frame_info frame_info{
       frame_index,
       command_buffer,
       core_.update_ubo(ubo, frame_index),
