@@ -198,69 +198,73 @@ void desc_writer::overwrite(VkDescriptorSet &set)
 
 
 // ************************* desc set ***********************************************************
-u_ptr<desc_set> desc_set::create(device& _device, s_ptr<desc_pool> pool)
-{ return std::make_unique<desc_set>(_device, pool); }
-
-desc_set::desc_set(device &_device, s_ptr<desc_pool> pool)
- : device_(_device), pool_(pool) {}
-
-desc_set::~desc_set()
+desc_sets::desc_sets(device &device, const s_ptr<desc_pool> &pool, std::vector<desc_set_info> set_infos)
+  : device_(device), pool_(pool)
 {
-  for (auto& binding : bindings_) pool_->free_descriptors(binding.vk_desc_sets); }
+  size_t set_count = set_infos.size();
+  vk_desc_sets_.resize(set_count);
+  buffers_.resize(set_count);
+  layouts_.resize(set_count);
 
-desc_set& desc_set::create_pool(
-  uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type)
-{
-  pool_ = desc_pool::builder(device_)
-    .set_max_sets(max_sets)
-    .add_pool_size(descriptor_type, desc_set_count)
-    .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-    .build();
 
-  return *this;
 }
 
-desc_set& desc_set::add_binding(
-  VkShaderStageFlags shader_stages,
-  VkDescriptorType desc_type,
-  size_t buffer_count)
-{ bindings_.push_back(desc_binding(shader_stages, desc_type, buffer_count)); }
-
-desc_set& desc_set::set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer)
-{ bindings_[binding].desc_buffers[index] = std::move(desc_buffer); return *this; }
-
-desc_set& desc_set::build_sets()
-{
-  // build layout
-  auto builder = desc_layout::builder(device_);
-  for (auto& binding : bindings_) {
-    builder.add_binding(binding.desc_type, binding.shader_stages);
-  }
-  layout_ = builder.build();
-
-  // build raw desc sets
-  for (auto& binding : bindings_) {
-    auto set_count = binding.desc_buffers.size();
-
-    for (int i = 0; i < set_count; i++) {
-      auto buffer_info = binding.desc_buffers[i]->desc_info();
-      desc_writer(*layout_, *pool_)
-        .write_buffer(i, &buffer_info)
-        .build(binding.vk_desc_sets[i]);
-    }
-  }
-  return *this;
-}
-
-// buffer update
-void desc_set::write_to_buffer(size_t binding, size_t index, void *data)
-{ bindings_[binding].desc_buffers[index]->write_to_buffer(data); }
-
-void desc_set::flush_buffer(size_t binding, size_t index)
-{ bindings_[binding].desc_buffers[index]->flush(); }
-
-// getter
-VkDescriptorSetLayout desc_set::get_layout() const
-{ return layout_->get_descriptor_set_layout(); }
+desc_sets::~desc_sets()
+{ pool_->free_descriptors(vk_desc_sets_); }
+//
+//desc_set& desc_set::create_pool(
+//  uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type)
+//{
+//  pool_ = desc_pool::builder(device_)
+//    .set_max_sets(max_sets)
+//    .add_pool_size(descriptor_type, desc_set_count)
+//    .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+//    .build();
+//
+//  return *this;
+//}
+//
+//desc_set& desc_set::add_binding(
+//  VkShaderStageFlags shader_stages,
+//  VkDescriptorType desc_type,
+//  size_t buffer_count)
+//{ bindings_.push_back(desc_binding(shader_stages, desc_type, buffer_count)); }
+//
+//desc_set& desc_set::set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer)
+//{ bindings_[binding].desc_buffers[index] = std::move(desc_buffer); return *this; }
+//
+//desc_set& desc_set::build_sets()
+//{
+//  // build layout
+//  auto builder = desc_layout::builder(device_);
+//  for (auto& binding : bindings_) {
+//    builder.add_binding(binding.desc_type, binding.shader_stages);
+//  }
+//  layout_ = builder.build();
+//
+//  // build raw desc sets
+//  for (auto& binding : bindings_) {
+//    auto set_count = binding.desc_buffers.size();
+//
+//    for (int i = 0; i < set_count; i++) {
+//      auto buffer_info = binding.desc_buffers[i]->desc_info();
+//      desc_writer(*layout_, *pool_)
+//        .write_buffer(i, &buffer_info)
+//        .build(binding.vk_desc_sets[i]);
+//    }
+//  }
+//  return *this;
+//}
+//
+//// buffer update
+//void desc_set::write_to_buffer(size_t binding, size_t index, void *data)
+//{ bindings_[binding].desc_buffers[index]->write_to_buffer(data); }
+//
+//void desc_set::flush_buffer(size_t binding, size_t index)
+//{ bindings_[binding].desc_buffers[index]->flush(); }
+//
+//// getter
+//VkDescriptorSetLayout desc_set::get_layout() const
+//{ return layout_->get_descriptor_set_layout(); }
 
 } // namespace hnll::graphics

@@ -98,53 +98,78 @@ class desc_writer {
     std::vector<VkWriteDescriptorSet> writes_;
 };
 
-struct desc_binding
+struct binding_info
 {
-  desc_binding(VkShaderStageFlags shader_stage, VkDescriptorType type, int count)
-  {
-    shader_stages = shader_stage;
-    desc_type = type;
-    vk_desc_sets.resize(count);
-    desc_buffers.resize(count);
-  }
-  std::vector<VkDescriptorSet> vk_desc_sets;
-  std::vector<u_ptr<buffer>> desc_buffers;
+  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type, int count)
+  { shader_stages = shader_stage; desc_type = type; buffer_count = count; }
+
   VkShaderStageFlags shader_stages;
   VkDescriptorType desc_type;
+  int buffer_count = 1;
 };
 
+// contains single set, multiple bindings
+struct desc_set_info
+{
+  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type, int buffer_count)
+  { bindings_.emplace_back(stage, type, buffer_count); }
 
-class desc_set
+  std::vector<binding_info> bindings_;
+};
+
+// contains multiple sets
+struct desc_sets
 {
   public:
-    static u_ptr<desc_set> create(device& _device, s_ptr<desc_pool> pool);
+    static u_ptr<desc_sets> create(device& device, const s_ptr<desc_pool>& pool, std::vector<desc_set_info> set_infos)
+    { return std::make_unique<desc_sets>(device, pool, set_infos); }
 
-    desc_set(device& _device, s_ptr<desc_pool> pool);
-    ~desc_set();
+    desc_sets(
+      device& device,
+      const s_ptr<desc_pool>& pool,
+      std::vector<desc_set_info> set_infos);
 
-    desc_set& add_binding(
-      VkShaderStageFlags shader_stages,
-      VkDescriptorType   desc_type,
-      size_t             buffer_count
-    );
-    desc_set& create_pool(uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type);
-    desc_set& set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer);
-    desc_set& build_sets();
-
-    // buffer update
-    void write_to_buffer(size_t binding, size_t index, void *data);
-    void flush_buffer(size_t binding, size_t index);
-
-    // getter
-    VkDescriptorSetLayout get_layout() const;
-    VkDescriptorSet       get_set(size_t binding, size_t index) const
-    { return bindings_[binding].vk_desc_sets[index]; }
+    ~desc_sets();
 
   private:
     device& device_;
     s_ptr<desc_pool> pool_;
-    u_ptr<desc_layout> layout_;
-    std::vector<desc_binding> bindings_;
+    std::vector<VkDescriptorSet> vk_desc_sets_;
+    std::vector<u_ptr<buffer>> buffers_;
+    std::vector<u_ptr<desc_layout>> layouts_;
 };
+
+//class desc_set
+//{
+//  public:
+//    static u_ptr<desc_set> create(device& _device, s_ptr<desc_pool> pool);
+//
+//    desc_set(device& _device, s_ptr<desc_pool> pool);
+//    ~desc_set();
+//
+//    desc_set& add_binding(
+//      VkShaderStageFlags shader_stages,
+//      VkDescriptorType   desc_type,
+//      size_t             buffer_count
+//    );
+//    desc_set& create_pool(uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type);
+//    desc_set& set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer);
+//    desc_set& build_sets();
+//
+//    // buffer update
+//    void write_to_buffer(size_t binding, size_t index, void *data);
+//    void flush_buffer(size_t binding, size_t index);
+//
+//    // getter
+//    VkDescriptorSetLayout get_layout() const;
+//    VkDescriptorSet       get_set(size_t binding, size_t index) const
+//    { return bindings_[binding].vk_desc_sets[index]; }
+//
+//  private:
+//    device& device_;
+//    s_ptr<desc_pool> pool_;
+//    u_ptr<desc_layout> layout_;
+//    std::vector<desc_binding> bindings_;
+//};
 
 } // namespace hnll::graphics

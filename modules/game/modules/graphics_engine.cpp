@@ -18,7 +18,7 @@ u_ptr<graphics::device>   graphics_engine_core::device_;
 u_ptr<graphics::renderer> graphics_engine_core::renderer_;
 
 u_ptr<graphics::desc_layout>         graphics_engine_core::global_set_layout_;
-u_ptr<graphics::desc_pool>           graphics_engine_core::global_pool_;
+s_ptr<graphics::desc_pool>           graphics_engine_core::global_pool_;
 std::vector<u_ptr<graphics::buffer>> graphics_engine_core::ubo_buffers_;
 std::vector<VkDescriptorSet>         graphics_engine_core::global_desc_sets_;
 
@@ -56,6 +56,9 @@ void graphics_engine_core::setup_ubo()
     .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
     .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, graphics::swap_chain::MAX_FRAMES_IN_FLIGHT)
     .build();
+
+  // build desc sets
+  global_desc_sets_ = graphics::desc_set::create(*device_, global_pool_);
 
   ubo_buffers_.resize(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
   // creating ubo for each frame version
