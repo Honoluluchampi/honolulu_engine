@@ -131,7 +131,20 @@ struct desc_sets
 
     ~desc_sets();
 
+    // getter
+    std::vector<VkDescriptorSetLayout> get_vk_layouts() const;
+    const std::vector<VkDescriptorSet>& get_vk_desc_sets() const { return vk_desc_sets_; }
+
+    // setter
+    void set_buffer(int set, int binding, int index, u_ptr<buffer>&& desc_buffer);
+
+    // buffer update
+    void write_to_buffer(int set, int binding, int index, void *data);
+    void flush_buffer(int set, int binding, int index);
+
   private:
+    void build_layouts(const std::vector<desc_set_info>& set_infos);
+
     device& device_;
     s_ptr<desc_pool> pool_;
     std::vector<VkDescriptorSet> vk_desc_sets_;
@@ -146,26 +159,7 @@ struct desc_sets
 //  public:
 //    static u_ptr<desc_set> create(device& _device, s_ptr<desc_pool> pool);
 //
-//    desc_set(device& _device, s_ptr<desc_pool> pool);
-//    ~desc_set();
-//
-//    desc_set& add_binding(
-//      VkShaderStageFlags shader_stages,
-//      VkDescriptorType   desc_type,
-//      size_t             buffer_count
-//    );
-//    desc_set& create_pool(uint32_t max_sets, uint32_t desc_set_count, VkDescriptorType descriptor_type);
-//    desc_set& set_buffer(size_t binding, size_t index, u_ptr<buffer>&& desc_buffer);
 //    desc_set& build_sets();
-//
-//    // buffer update
-//    void write_to_buffer(size_t binding, size_t index, void *data);
-//    void flush_buffer(size_t binding, size_t index);
-//
-//    // getter
-//    VkDescriptorSetLayout get_layout() const;
-//    VkDescriptorSet       get_set(size_t binding, size_t index) const
-//    { return bindings_[binding].vk_desc_sets[index]; }
 //
 //  private:
 //    device& device_;
