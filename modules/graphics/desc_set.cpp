@@ -196,6 +196,8 @@ void desc_writer::overwrite(VkDescriptorSet &set)
   vkUpdateDescriptorSets(pool_.device_.get_device(), writes_.size(), writes_.data(), 0, nullptr);
 }
 
+inline int calc_buffer_offset(int set, int binding, int index)
+{ return (set << 10) + (binding << 5) + index; }
 
 // ************************* desc set ***********************************************************
 desc_sets::desc_sets(device &device, const s_ptr<desc_pool> &pool, std::vector<desc_set_info> set_infos)
@@ -203,10 +205,22 @@ desc_sets::desc_sets(device &device, const s_ptr<desc_pool> &pool, std::vector<d
 {
   size_t set_count = set_infos.size();
   vk_desc_sets_.resize(set_count);
-  buffers_.resize(set_count);
   layouts_.resize(set_count);
 
+  int buffer_count = 0;
 
+  for (int set = 0; set < set_count; set++) {
+    size_t binding_count = set_infos[set].bindings_.size();
+    for (int binding = 0; binding < binding_count; binding++) {
+      size_t count = set_infos[set].bindings_[binding].buffer_count;
+      for (int index = 0; index < count; count++) {
+        int key = calc_buffer_offset(set, binding, index);
+        buffer_count_offsets_[key] = buffer_count++;
+      }
+    }
+  }
+
+  buffers_.resize(buffer_count);
 }
 
 desc_sets::~desc_sets()

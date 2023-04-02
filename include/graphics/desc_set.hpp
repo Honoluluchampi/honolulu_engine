@@ -137,6 +137,8 @@ struct desc_sets
     std::vector<VkDescriptorSet> vk_desc_sets_;
     std::vector<u_ptr<buffer>> buffers_;
     std::vector<u_ptr<desc_layout>> layouts_;
+    // buffer count offsets for each desc set
+    std::unordered_map<int, int> buffer_count_offsets_;
 };
 
 //class desc_set
