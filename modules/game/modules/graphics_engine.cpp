@@ -60,10 +60,14 @@ void graphics_engine_core::setup_ubo()
   // enable ubo to be referenced by all stages of a graphics pipeline
   global_set_info.add_binding(
     VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_MESH_BIT_NV,
-    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
+    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  global_set_info.is_frame_buffered_ = true;
 
-  global_desc_sets_ = graphics::desc_sets::create(*device_, global_pool_, {global_set_info});
+  global_desc_sets_ = graphics::desc_sets::create(
+    *device_,
+    global_pool_,
+    {global_set_info},
+    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
 
   // creating ubo for each frame version
   for (int i = 0; i < graphics::swap_chain::MAX_FRAMES_IN_FLIGHT; i++) {
@@ -123,7 +127,7 @@ VkDescriptorSet graphics_engine_core::update_ubo(const utils::global_ubo& ubo, i
 {
   global_desc_sets_->write_to_buffer(0, 0, frame_index, (void *)&ubo);
   global_desc_sets_->flush_buffer(0, 0, frame_index);
-  return global_desc_sets_->get_vk_desc_sets()[frame];
+  return global_desc_sets_->get_vk_desc_sets(frame_index)[0];
 }
 
 GLFWwindow* graphics_engine_core::get_glfw_window() const { return window_->get_glfw_window(); }
@@ -135,6 +139,6 @@ graphics::timeline_semaphore& graphics_engine_core::get_compute_semaphore_r()
 { return renderer_->get_swap_chain_r().get_compute_semaphore_r(); }
 
 VkDescriptorSetLayout graphics_engine_core::get_global_desc_layout()
-{ return global_set_layout_->get_descriptor_set_layout(); }
+{ return global_desc_sets_->get_vk_layouts()[0]; }
 
 } // namespace hnll::game
