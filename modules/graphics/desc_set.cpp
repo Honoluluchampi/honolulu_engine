@@ -222,28 +222,11 @@ desc_sets::desc_sets(device &device, const s_ptr<desc_pool> &pool, std::vector<d
   buffers_.resize(buffer_count);
 
   build_layouts(set_infos);
+  build_sets(set_infos);
 }
 
 desc_sets::~desc_sets()
 { pool_->free_descriptors(vk_desc_sets_); }
-
-//desc_set& desc_set::build_sets()
-
-//
-//  // build raw desc sets
-//  for (auto& binding : bindings_) {
-//    auto set_count = binding.desc_buffers.size();
-//
-//    for (int i = 0; i < set_count; i++) {
-//      auto buffer_info = binding.desc_buffers[i]->desc_info();
-//      desc_writer(*layout_, *pool_)
-//        .write_buffer(i, &buffer_info)
-//        .build(binding.vk_desc_sets[i]);
-//    }
-//  }
-//  return *this;
-//}
-//
 
 void desc_sets::build_layouts(const std::vector<desc_set_info>&set_infos)
 {
@@ -256,12 +239,29 @@ void desc_sets::build_layouts(const std::vector<desc_set_info>&set_infos)
   }
 }
 
+void desc_sets::build_sets(const std::vector<desc_set_info> &set_infos)
+{
+  // build raw desc sets
+  for (int set_id = 0; set_id < set_infos.size(); set_id++) {
+    auto& bindings = set_infos[set_id].bindings_;
+    for (int binding_id = 0; binding_id < bindings.size(); binding_id++) {
+      auto& binding = bindings[binding_id];
+      for (int id = 0; id < binding.buffer_count; id++) {
+        auto buffer_info = get_buffer_r(set_id, binding_id, id).desc_info();
+        desc_writer(*layouts_[set_id], *pool_)
+        .write_buffer(binding_id, &buffer_info)
+        .build(vk_desc_sets_[set_id]);
+      }
+    }
+  }
+}
+
 // buffer update
 void desc_sets::write_to_buffer(int set, int binding, int index, void *data)
-{ buffers_[buffer_count_offsets_[calc_buffer_offset(set, binding, index)]]->write_to_buffer(data); }
+{ get_buffer_r(set, binding, index).write_to_buffer(data); }
 
 void desc_sets::flush_buffer(int set, int binding, int index)
-{ buffers_[buffer_count_offsets_[calc_buffer_offset(set, binding, index)]]->flush(); }
+{ get_buffer_r(set, binding, index).flush(); }
 
 // getter
 std::vector<VkDescriptorSetLayout> desc_sets::get_vk_layouts() const
@@ -269,6 +269,11 @@ std::vector<VkDescriptorSetLayout> desc_sets::get_vk_layouts() const
   std::vector<VkDescriptorSetLayout> ret;
   for (auto& layout : layouts_) { ret.emplace_back(layout->get_descriptor_set_layout()); }
   return ret;
+}
+
+buffer& desc_sets::get_buffer_r(int set, int binding, int index)
+{
+  return *buffers_[buffer_count_offsets_[calc_buffer_offset(set, binding, index)]];
 }
 
 } // namespace hnll::graphics

@@ -144,6 +144,9 @@ struct desc_sets
 
   private:
     void build_layouts(const std::vector<desc_set_info>& set_infos);
+    void build_sets(const std::vector<desc_set_info>& set_infos);
+
+    buffer& get_buffer_r(int set, int binding, int index);
 
     device& device_;
     s_ptr<desc_pool> pool_;
