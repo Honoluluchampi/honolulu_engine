@@ -196,37 +196,52 @@ void desc_writer::overwrite(VkDescriptorSet &set)
   vkUpdateDescriptorSets(pool_.device_.get_device(), writes_.size(), writes_.data(), 0, nullptr);
 }
 
-inline int calc_buffer_offset(int set, int binding, int index)
-{ return (set << 10) + (binding << 5) + index; }
+inline int calc_buffer_offset(int set, int binding, int frame)
+{ return (set << 10) + (frame << 5) + binding; }
+
+inline int calc_desc_set_offset(int set, int frame)
+{ return (set << 5) + frame; }
 
 // ************************* desc set ***********************************************************
-desc_sets::desc_sets(device &device, const s_ptr<desc_pool> &pool, std::vector<desc_set_info>&& set_infos)
+desc_sets::desc_sets(
+  device &device,
+  const s_ptr<desc_pool> &pool,
+  std::vector<desc_set_info>&& set_infos,
+  int frame_count)
   : device_(device), pool_(pool)
 {
   set_infos_ = std::move(set_infos);
-  calc_buffer_count_offsets();
+  frame_count_ = frame_count;
+  calc_resource_counts();
   build_layouts();
 }
 
 desc_sets::~desc_sets()
 { pool_->free_descriptors(vk_desc_sets_); }
 
-void desc_sets::calc_buffer_count_offsets()
+void desc_sets::calc_resource_counts()
 {
+  // calc buffer count and desc sets count
   int buffer_count = 0;
+  int desc_set_count = 0;
 
   for (int set = 0; set < set_infos_.size(); set++) {
-    size_t binding_count = set_infos_[set].bindings_.size();
-    for (int binding = 0; binding < binding_count; binding++) {
-      size_t count = set_infos_[set].bindings_[binding].buffer_count;
-      for (int index = 0; index < count; count++) {
-        int key = calc_buffer_offset(set, binding, index);
-        buffer_count_offsets_[key] = buffer_count++;
+    int resource_count = set_infos_[set].is_frame_buffered_ ? frame_count_ : 1;
+    for (int frame = 0; frame < resource_count; frame++) {
+      // update buffer count
+      size_t binding_count = set_infos_[set].bindings_.size();
+      for (int binding = 0; binding < binding_count; binding++) {
+        int key = calc_buffer_offset(set, binding, frame);
+        buffer_offset_dict_[key] = buffer_count++;
       }
+      // update desc set count
+      int key = calc_desc_set_offset(set, frame);
+      desc_set_offset_dict_[key] = desc_set_count++;
     }
   }
 
   buffers_.resize(buffer_count);
+  vk_desc_sets_.resize(desc_set_count);
 }
 
 void desc_sets::build_layouts()
@@ -246,22 +261,19 @@ void desc_sets::build()
 
   // build raw desc sets
   for (int set_id = 0; set_id < set_infos_.size(); set_id++) {
-    auto& bindings = set_infos_[set_id].bindings_;
-
-    for (int binding_id = 0; binding_id < bindings.size(); binding_id++) {
-      auto& binding = bindings[binding_id];
-
-      for (int id = 0; id < binding.buffer_count; id++) {
-        auto buffer_info = get_buffer_r(set_id, binding_id, id).desc_info();
+    int resource_count = set_infos_[set_id].is_frame_buffered_ ? frame_count_ : 1;
+    for (int frame = 0; frame < resource_count; frame++) {
+      // build for each frame
+      auto& bindings = set_infos_[set_id].bindings_;
+      for (int binding_id = 0; binding_id < bindings.size(); binding_id++) {
+        auto& binding = bindings[binding_id];
+        auto buffer_info = get_buffer_r(set_id, binding_id, frame).desc_info();
         desc_writer(*layouts_[set_id], *pool_)
-        .write_buffer(binding_id, &buffer_info)
-        .build(vk_desc_sets_[set_id]);
+          .write_buffer(binding_id, &buffer_info)
+          .build(get_vk_desc_set_r(set_id, frame));
       }
     }
   }
-
-  set_infos_.resize(0);
-  set_infos_.clear();
 }
 
 // buffer update
@@ -280,8 +292,28 @@ std::vector<VkDescriptorSetLayout> desc_sets::get_vk_layouts() const
 }
 
 buffer& desc_sets::get_buffer_r(int set, int binding, int index)
+{ return *buffers_[buffer_offset_dict_[calc_buffer_offset(set, binding, index)]]; }
+
+VkDescriptorSet desc_sets::get_vk_desc_set(int set, int frame)
+{ return vk_desc_sets_[desc_set_offset_dict_[calc_desc_set_offset(set, frame)]]; }
+
+VkDescriptorSet& desc_sets::get_vk_desc_set_r(int set, int frame)
+{ return vk_desc_sets_[desc_set_offset_dict_[calc_desc_set_offset(set, frame)]]; }
+
+std::vector<VkDescriptorSet> desc_sets::get_vk_desc_sets(int frame)
 {
-  return *buffers_[buffer_count_offsets_[calc_buffer_offset(set, binding, index)]];
+  std::vector<VkDescriptorSet> ret;
+  for (int set_id = 0; set_id < set_infos_.size(); set_id++) {
+    if (set_infos_[set_id].is_frame_buffered_)
+      ret.emplace_back(get_vk_desc_set(set_id, frame));
+    else
+      ret.emplace_back(get_vk_desc_set(set_id, 0));
+  }
+  return ret;
 }
+
+// setter
+void desc_sets::set_buffer(int set, int binding, int frame, u_ptr<buffer> &&desc_buffer)
+{ buffers_[buffer_offset_dict_[calc_buffer_offset(set, binding, frame)]] = std::move(desc_buffer); }
 
 } // namespace hnll::graphics

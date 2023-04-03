@@ -24,8 +24,8 @@ namespace graphics {
   class device;
   class renderer;
   class swap_chain;
-  class desc_layout;
   class desc_pool;
+  class desc_sets;
   class buffer;
   class timeline_semaphore;
 }
@@ -84,10 +84,8 @@ class graphics_engine_core
     static u_ptr<graphics::renderer> renderer_;
 
     // global config for shading system
-    static u_ptr<graphics::desc_layout>  global_set_layout_;
     static s_ptr<graphics::desc_pool>           global_pool_;
-    static std::vector<u_ptr<graphics::buffer>> ubo_buffers_;
-    static std::vector<VkDescriptorSet>         global_desc_sets_;
+    static u_ptr<graphics::desc_sets>           global_desc_sets_;
 
     static VkRenderPass default_render_pass_;
 

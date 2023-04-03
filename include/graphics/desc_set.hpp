@@ -100,34 +100,39 @@ class desc_writer {
 
 struct binding_info
 {
-  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type, int count)
-  { shader_stages = shader_stage; desc_type = type; buffer_count = count; }
+  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type)
+  { shader_stages = shader_stage; desc_type = type; }
 
   VkShaderStageFlags shader_stages;
   VkDescriptorType desc_type;
-  int buffer_count = 1;
 };
 
 // contains single set, multiple bindings
 struct desc_set_info
 {
-  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type, int buffer_count)
-  { bindings_.emplace_back(stage, type, buffer_count); }
+  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type)
+  { bindings_.emplace_back(stage, type); }
 
   std::vector<binding_info> bindings_;
+  bool is_frame_buffered_ = false;
 };
 
 // contains multiple sets
 struct desc_sets
 {
   public:
-    static u_ptr<desc_sets> create(device& device, const s_ptr<desc_pool>& pool, std::vector<desc_set_info>&& set_infos)
-    { return std::make_unique<desc_sets>(device, pool, std::move(set_infos)); }
+    static u_ptr<desc_sets> create(
+      device& device,
+      const s_ptr<desc_pool>& pool,
+      std::vector<desc_set_info>&& set_infos,
+      int frame_count)
+    { return std::make_unique<desc_sets>(device, pool, std::move(set_infos), frame_count); }
 
     desc_sets(
       device& device,
       const s_ptr<desc_pool>& pool,
-      std::vector<desc_set_info>&& set_infos);
+      std::vector<desc_set_info>&& set_infos,
+      int frame_count);
 
     ~desc_sets();
 
@@ -136,20 +141,22 @@ struct desc_sets
 
     // getter
     std::vector<VkDescriptorSetLayout> get_vk_layouts() const;
-    const std::vector<VkDescriptorSet>& get_vk_desc_sets() const { return vk_desc_sets_; }
+    std::vector<VkDescriptorSet> get_vk_desc_sets(int frame);
 
     // setter
-    void set_buffer(int set, int binding, int index, u_ptr<buffer>&& desc_buffer);
+    void set_buffer(int set, int binding, int frame, u_ptr<buffer>&& desc_buffer);
 
     // buffer update
-    void write_to_buffer(int set, int binding, int index, void *data);
-    void flush_buffer(int set, int binding, int index);
+    void write_to_buffer(int set, int binding, int frame, void *data);
+    void flush_buffer(int set, int binding, int frame);
 
   private:
-    void calc_buffer_count_offsets();
+    void calc_resource_counts();
     void build_layouts();
 
-    buffer& get_buffer_r(int set, int binding, int index);
+    buffer& get_buffer_r(int set, int binding, int frame);
+    VkDescriptorSet get_vk_desc_set(int set, int frame);
+    VkDescriptorSet& get_vk_desc_set_r(int set, int frame);
 
     device& device_;
     s_ptr<desc_pool> pool_;
@@ -157,7 +164,10 @@ struct desc_sets
     std::vector<u_ptr<buffer>> buffers_;
     std::vector<u_ptr<desc_layout>> layouts_;
     // buffer count offsets for each desc set
-    std::unordered_map<int, int> buffer_count_offsets_;
+    std::unordered_map<int, int> buffer_offset_dict_;
+    std::unordered_map<int, int> desc_set_offset_dict_;
+
+    int frame_count_ = 1;
 
     // deleted after build
     std::vector<desc_set_info> set_infos_;
