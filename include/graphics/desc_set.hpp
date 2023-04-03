@@ -121,15 +121,18 @@ struct desc_set_info
 struct desc_sets
 {
   public:
-    static u_ptr<desc_sets> create(device& device, const s_ptr<desc_pool>& pool, std::vector<desc_set_info> set_infos)
-    { return std::make_unique<desc_sets>(device, pool, set_infos); }
+    static u_ptr<desc_sets> create(device& device, const s_ptr<desc_pool>& pool, std::vector<desc_set_info>&& set_infos)
+    { return std::make_unique<desc_sets>(device, pool, std::move(set_infos)); }
 
     desc_sets(
       device& device,
       const s_ptr<desc_pool>& pool,
-      std::vector<desc_set_info> set_infos);
+      std::vector<desc_set_info>&& set_infos);
 
     ~desc_sets();
+
+    // build sets after setting buffers
+    void build();
 
     // getter
     std::vector<VkDescriptorSetLayout> get_vk_layouts() const;
@@ -143,8 +146,8 @@ struct desc_sets
     void flush_buffer(int set, int binding, int index);
 
   private:
-    void build_layouts(const std::vector<desc_set_info>& set_infos);
-    void build_sets(const std::vector<desc_set_info>& set_infos);
+    void calc_buffer_count_offsets();
+    void build_layouts();
 
     buffer& get_buffer_r(int set, int binding, int index);
 
@@ -155,20 +158,9 @@ struct desc_sets
     std::vector<u_ptr<desc_layout>> layouts_;
     // buffer count offsets for each desc set
     std::unordered_map<int, int> buffer_count_offsets_;
-};
 
-//class desc_set
-//{
-//  public:
-//    static u_ptr<desc_set> create(device& _device, s_ptr<desc_pool> pool);
-//
-//    desc_set& build_sets();
-//
-//  private:
-//    device& device_;
-//    s_ptr<desc_pool> pool_;
-//    u_ptr<desc_layout> layout_;
-//    std::vector<desc_binding> bindings_;
-//};
+    // deleted after build
+    std::vector<desc_set_info> set_infos_;
+};
 
 } // namespace hnll::graphics
