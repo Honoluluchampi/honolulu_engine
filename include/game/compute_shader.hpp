@@ -4,6 +4,7 @@
 #include <graphics/device.hpp>
 #include <physics/utils.hpp>
 #include <utils/utils.hpp>
+#include <utils/frame_info.hpp>
 
 // lib
 #include <vulkan/vulkan.h>
@@ -24,7 +25,7 @@ class compute_shader
     { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
 
     // for physics simulation
-    void render(const physics::frame_info& info);
+    void render(const utils::physics_frame_info& info);
 
   protected:
     // write this function for each compute shader

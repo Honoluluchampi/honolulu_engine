@@ -16,4 +16,10 @@ struct graphics_frame_info {
   frustum_info view_frustum;
 };
 
+struct physics_frame_info {
+  int frame_index;
+  VkCommandBuffer command_buffer;
+  float dt;
+};
+
 }
