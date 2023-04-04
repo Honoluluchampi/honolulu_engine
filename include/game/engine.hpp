@@ -15,7 +15,8 @@
 #include <GLFW/glfw3.h>
 
 // macro for crtp
-#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors>
+#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors, game::dummy_compute_shader_list>
+#define DEFINE_ENGINE_WITH_COMPUTE(new_engine, shading_systems, actors, compute_shaders) class new_engine : public game::engine_base<new_engine, shading_systems, actors, compute_shaders>
 #define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
 #define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(name, ...) using name = game::compute_shader_list<__VA_ARGS__>
@@ -69,6 +70,7 @@ class engine_core
 template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
 template <ComputeShader... C> struct compute_shader_list {};
+using dummy_compute_shader_list = compute_shader_list<>;
 template <class Derived, typename... T> class engine_base;
 
 template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
@@ -112,7 +114,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
 // impl
 #define ENGN_API template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
-#define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>
+#define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 
 // static members
 ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::update_target_actors_;
@@ -158,7 +160,7 @@ ENGN_API void ENGN_TYPE::update()
 
 ENGN_API void ENGN_TYPE::render()
 {
-  physics_engine_->render();
+  if constexpr (sizeof...(C) >= 1) compute_engine_->render();
   graphics_engine_->render(core_.get_viewer_info());
   core_.render_gui();
 }

@@ -7,7 +7,10 @@
 
 namespace hnll {
 
-namespace utils { class graphics_frame_info; }
+namespace utils {
+  class graphics_frame_info;
+  class physics_frame_info;
+}
 
 namespace graphics {
 
@@ -56,7 +59,7 @@ requires(T a, const utils::graphics_frame_info& frame_info) { a.render(frame_inf
 requires(T, graphics::device& device) { T::create(device); };
 
 template <typename T>
-concept ComputeShader = requires (T t, const physics_frame_info& info) {
+concept ComputeShader = requires (T t, const utils::physics_frame_info& info) {
   t.render(info);
 };
 

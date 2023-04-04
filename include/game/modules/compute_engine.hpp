@@ -54,6 +54,8 @@ class compute_engine
     shader_map shaders_;
 };
 
+template <> class compute_engine<> {};
+
 #define CMPT_ENGN_API  template<ComputeShader... CS>
 #define CMPT_ENGN_TYPE compute_engine<CS...>
 

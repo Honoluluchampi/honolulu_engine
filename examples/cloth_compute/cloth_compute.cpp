@@ -1,5 +1,8 @@
 // hnll
+#include <game/engine.hpp>
 #include <game/compute_shader.hpp>
+#include <game/shading_systems/grid_shading_system.hpp>
+#include <game/shading_systems/static_mesh_shading_system.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
 #include <graphics/swap_chain.hpp>
@@ -69,5 +72,19 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
     u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
 };
+
+SELECT_SHADING_SYSTEM(graphics_shaders, game::grid_shading_system, game::static_mesh_shading_system);
+SELECT_ACTOR(actors);
+SELECT_COMPUTE_SHADER(compute_shaders, cloth_compute_shader);
+
+DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
+{
+
+};
+
+int main()
+{
+
+}
 
 }
