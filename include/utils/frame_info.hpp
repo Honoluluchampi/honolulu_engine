@@ -6,7 +6,7 @@ namespace hnll::utils {
 
 struct game_frame_info {
   uint64_t compute_semaphore_value = 0;
-  const viewer_info &viewer_info;
+  const viewer_info& view;
 };
 
 struct graphics_frame_info {

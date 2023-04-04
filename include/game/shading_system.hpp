@@ -24,9 +24,8 @@ class shading_system {
     { static_cast<Derived*>(this)->setup(); }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
-    template <typename... Args>
-    static u_ptr<Derived> create(graphics::device& device, Args... args)
-    { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
+    static u_ptr<Derived> create(graphics::device& device)
+    { return std::make_unique<Derived>(device); }
 
     shading_system(const shading_system &) = delete;
     shading_system &operator=(const shading_system &) = delete;

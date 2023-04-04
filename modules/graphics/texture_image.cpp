@@ -27,7 +27,6 @@ void texture_image::setup_desc_layout(device& device)
 {
   desc_layout_ = graphics::desc_layout::builder(device)
     .add_binding(
-      0,
       VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
       VK_SHADER_STAGE_FRAGMENT_BIT)
     .build();
@@ -43,7 +42,7 @@ VkDescriptorImageInfo texture_image::get_image_info() const
   return image_info;
 }
 
-VkDescriptorSetLayout texture_image::get_desc_layout()
+VkDescriptorSetLayout texture_image::get_vk_desc_layout()
 { return desc_layout_->get_descriptor_set_layout(); }
 
 void texture_image::create_sampler()
@@ -86,7 +85,6 @@ void texture_image::create_sampler()
 void texture_image::create_desc_set()
 {
   desc_pool_ = desc_pool::builder(device_)
-    .set_max_sets(1)
     .add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
     .build();
 

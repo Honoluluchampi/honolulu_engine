@@ -17,8 +17,6 @@
 
 namespace hnll {
 
-namespace graphics { class device; class timeline_semaphore; }
-
 namespace game {
 
 template <ComputeShader... C>
@@ -26,6 +24,8 @@ class compute_engine
 {
     using shader_map = std::unordered_map<uint32_t, std::variant<u_ptr<C>...>>;
   public:
+    static u_ptr<compute_engine<C...>> create(graphics::device& device, graphics::timeline_semaphore& semaphore)
+    { return std::make_unique<compute_engine<C...>>(device, semaphore); }
     explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
     ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_)); }
 
@@ -133,7 +133,7 @@ void CMPT_ENGN_TYPE::add_shader()
   shaders_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
 
   if constexpr (sizeof...(Rest) >= 1)
-    add_shading_system<Rest...>();
+    add_shader<Rest...>();
 }
 
 }} // namespace hnll::physics

@@ -16,7 +16,7 @@ class graphics_model
     static utils::shading_type get_shading_type() { return type; }
     inline bool is_textured() const { return is_textured_; }
     inline VkDescriptorSet get_texture_desc_set()
-    { return texture_image_->get_desc_set(); }
+    { return texture_image_->get_vk_desc_set(); }
 
     // setter
     void set_texture(u_ptr<texture_image>&& texture)

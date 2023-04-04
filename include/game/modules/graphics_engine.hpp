@@ -145,9 +145,9 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 
     // update
     utils::global_ubo ubo;
-    ubo.projection   = frame_info.viewer_info.projection;
-    ubo.view         = frame_info.viewer_info.view;
-    ubo.inverse_view = frame_info.viewer_info.inverse_view;
+    ubo.projection   = frame_info.view.projection;
+    ubo.view         = frame_info.view.view;
+    ubo.inverse_view = frame_info.view.inverse_view;
     // temp
     ubo.point_lights[0] = {{0.f, -6.f, 0.f, 0.f}, { 1.f, 1.f, 1.f, 1.f}};
     ubo.lights_count = 1;

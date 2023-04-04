@@ -79,7 +79,10 @@ SELECT_COMPUTE_SHADER(compute_shaders, cloth_compute_shader);
 
 DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
 {
+  public:
+    cloth_compute() {}
 
+  private:
 };
 
 int main()

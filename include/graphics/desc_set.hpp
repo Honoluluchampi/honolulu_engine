@@ -111,7 +111,10 @@ struct binding_info
 struct desc_set_info
 {
   desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type)
-  { bindings_.emplace_back(stage, type); }
+  {
+    bindings_.emplace_back(stage, type);
+    return *this;
+  }
 
   std::vector<binding_info> bindings_;
   bool is_frame_buffered_ = false;

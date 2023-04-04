@@ -161,7 +161,9 @@ ENGN_API void ENGN_TYPE::update()
 ENGN_API void ENGN_TYPE::render()
 {
   if constexpr (sizeof...(C) >= 1) compute_engine_->render();
-  graphics_engine_->render(core_.get_viewer_info());
+
+  utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
+  graphics_engine_->render(game_frame_info);
   core_.render_gui();
 }
 
