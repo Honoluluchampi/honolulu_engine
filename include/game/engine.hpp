@@ -71,12 +71,13 @@ template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
 template <ComputeShader... C> struct compute_shader_list {};
 using dummy_compute_shader_list = compute_shader_list<>;
+using no_actor = actor_list<>;
 template <class Derived, typename... T> class engine_base;
 
 template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
 class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 {
-    using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
+    using actor_map = std::unordered_map<uint32_t, std::variant<std::monostate, u_ptr<A>...>>;
   public:
     engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
     ~engine_base(){}
@@ -117,7 +118,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 #define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 
 // static members
-ENGN_API std::unordered_map<uint32_t, std::variant<u_ptr<A>...>> ENGN_TYPE::update_target_actors_;
+ENGN_API ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
  : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),

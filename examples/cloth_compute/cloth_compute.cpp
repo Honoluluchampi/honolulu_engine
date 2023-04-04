@@ -74,10 +74,9 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 };
 
 SELECT_SHADING_SYSTEM(graphics_shaders, game::grid_shading_system, game::static_mesh_shading_system);
-SELECT_ACTOR(actors);
 SELECT_COMPUTE_SHADER(compute_shaders, cloth_compute_shader);
 
-DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
+DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, game::no_actor, compute_shaders)
 {
   public:
     cloth_compute() {}

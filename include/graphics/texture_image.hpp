@@ -27,7 +27,7 @@ class texture_image
     // getter
     VkDescriptorImageInfo get_image_info() const;
     static VkDescriptorSetLayout get_vk_desc_layout();
-    VkDescriptorSet get_vk_desc_set();
+    inline VkDescriptorSet get_vk_desc_set() { return desc_set_; }
 
     static void reset_desc_layout();
 
@@ -37,8 +37,8 @@ class texture_image
 
     device& device_;
     u_ptr<image_resource> image_;
-    s_ptr<desc_pool>   desc_pool_;
-    u_ptr<desc_sets>   desc_sets_;
+    s_ptr<desc_pool>  desc_pool_;
+    VkDescriptorSet   desc_set_;
     VkSampler sampler_;
 
     static u_ptr<desc_layout> desc_layout_;
