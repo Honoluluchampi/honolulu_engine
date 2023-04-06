@@ -91,7 +91,7 @@ class device
     void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layer_count);
 
     std::vector<VkCommandBuffer> create_command_buffers(int count, command_type type);
-    void free_command_buffers(std::vector<VkCommandBuffer>&& commands);
+    void free_command_buffers(std::vector<VkCommandBuffer>&& commands, command_type type);
 
     void create_image_with_info(
       const VkImageCreateInfo &image_info,

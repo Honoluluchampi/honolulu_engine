@@ -27,7 +27,7 @@ class compute_engine
     static u_ptr<compute_engine<C...>> create(graphics::device& device, graphics::timeline_semaphore& semaphore)
     { return std::make_unique<compute_engine<C...>>(device, semaphore); }
     explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
-    ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_)); }
+    ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE); }
 
     void render();
 

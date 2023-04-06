@@ -21,7 +21,7 @@ renderer::renderer(window& window, device& device, bool recreate_from_scratch)
 
 renderer::~renderer()
 {
-  device_.free_command_buffers(std::move(command_buffers_));
+  device_.free_command_buffers(std::move(command_buffers_), command_type::GRAPHICS);
   swap_chain_.reset();
 }
 

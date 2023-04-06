@@ -76,6 +76,7 @@ device::device(window &window, utils::rendering_type type)
 device::~device()
 {
   vkDestroyCommandPool(device_, graphics_command_pool_, nullptr);
+  vkDestroyCommandPool(device_, compute_command_pool_, nullptr);
   // VkQueue is automatically destroyed when its device is deleted
   vkDestroyDevice(device_, nullptr);
 
@@ -405,9 +406,12 @@ VkCommandPool device::create_command_pool(command_type type)
   if (type == command_type::COMPUTE)
     pool_info.queueFamilyIndex = queue_family_indices_.compute_family_.value();
 
-  if (vkCreateCommandPool(device_, &pool_info, nullptr, &graphics_command_pool_) != VK_SUCCESS) {
+  VkCommandPool pool;
+  if (vkCreateCommandPool(device_, &pool_info, nullptr, &pool) != VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
   }
+
+  return pool;
 }
 
 void device::create_surface() { window_.create_window_surface(instance_, &surface_); }
@@ -803,13 +807,22 @@ std::vector<VkCommandBuffer> device::create_command_buffers(int count, command_t
   return command_buffers;
 }
 
-void device::free_command_buffers(std::vector<VkCommandBuffer> &&commands)
+void device::free_command_buffers(std::vector<VkCommandBuffer> &&commands, command_type type)
 {
-  vkFreeCommandBuffers(
-    device_,
-    graphics_command_pool_,
-    static_cast<float>(commands.size()),
-    commands.data());
+  if (type == command_type::GRAPHICS) {
+    vkFreeCommandBuffers(
+      device_,
+      graphics_command_pool_,
+      static_cast<float>(commands.size()),
+      commands.data());
+  }
+  if (type == command_type::COMPUTE) {
+    vkFreeCommandBuffers(
+      device_,
+      compute_command_pool_,
+      static_cast<float>(commands.size()),
+      commands.data());
+  }
   commands.clear();
 }
 
