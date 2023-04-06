@@ -53,7 +53,7 @@ std::string create_sub_cache_directory(const std::string& _dir_name)
   return cache_directory;
 }
 
-std::vector<char> read_file(const std::string& filepath)
+std::vector<char> read_file_for_shader(const std::string& filepath)
 {
   // construct and open
   // immediately read as binary

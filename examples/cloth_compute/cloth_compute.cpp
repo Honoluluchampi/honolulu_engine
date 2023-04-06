@@ -84,9 +84,10 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, game::no_actor, comp
   private:
 };
 
+}
+
 int main()
 {
-
-}
+  hnll::cloth_compute engine;
 
 }
