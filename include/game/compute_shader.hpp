@@ -23,6 +23,13 @@ class compute_shader
     static u_ptr<Derived> create(graphics::device& device, Args... args)
     { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
 
+    ~compute_shader()
+    {
+      vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr);
+      vkDestroyPipeline(device_.get_device(), pipeline_, nullptr);
+      vkDestroyShaderModule(device_.get_device(), shader_module_, nullptr);
+    }
+
     // for physics simulation
     void render(const utils::physics_frame_info& info);
 

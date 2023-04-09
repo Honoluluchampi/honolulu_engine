@@ -15,6 +15,15 @@ swap_chain::swap_chain(device &device, VkExtent2D extent, u_ptr<swap_chain>&& pr
   : device_{device}, window_extent_{extent}, old_swap_chain_(std::move(previous))
 {
   init();
+
+  // derive compute semaphore
+  if (old_swap_chain_ != nullptr) {
+    compute_semaphore_ = old_swap_chain_->move_compute_semaphore();
+  }
+  else {
+    compute_semaphore_ = timeline_semaphore::create(device_);
+  }
+
   // clean up old swap chain since it's no longer needed
   old_swap_chain_.reset();
 }
@@ -214,9 +223,6 @@ VkResult swap_chain::submit_command_buffers(
 
   return result;
 }
-
-void swap_chain::add_compute_semaphore()
-{ compute_semaphore_ = timeline_semaphore::create(device_); }
 
 void swap_chain::create_swap_chain()
 {
@@ -445,6 +451,9 @@ void swap_chain::reset_render_pass(int render_pass_id)
     vkDestroyRenderPass(device_.get_device(), multiple_render_pass_[render_pass_id], nullptr);
   }
 }
+
+u_ptr<timeline_semaphore>&& swap_chain::move_compute_semaphore()
+{ return std::move(compute_semaphore_); }
 
 void swap_chain::create_depth_resources()
 {

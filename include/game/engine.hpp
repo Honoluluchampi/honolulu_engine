@@ -103,8 +103,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void update_this(const float& dt) {}
 
     // common part
-    engine_core& core_;
     graphics_engine_core& graphics_engine_core_;
+    engine_core& core_;
 
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
@@ -121,8 +121,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 ENGN_API ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
- : core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type)),
-   graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
+   core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type))
 {
   graphics_engine_ = graphics_engine<S...>::create(application_name, rendering_type);
 
@@ -155,8 +155,10 @@ ENGN_API void ENGN_TYPE::update()
   core_.set_old_time(std::move(new_time));
 
   static_cast<Derived*>(this)->update_this(dt);
-  for (auto& a : update_target_actors_)
-    std::visit([&dt](auto& actor) { actor->update(dt); }, a.second);
+  if constexpr (sizeof...(A) >= 1) {
+    for (auto &a: update_target_actors_)
+      std::visit([&dt](auto &actor) { actor->update(dt); }, a.second);
+  }
 }
 
 ENGN_API void ENGN_TYPE::render()

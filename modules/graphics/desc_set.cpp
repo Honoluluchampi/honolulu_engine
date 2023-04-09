@@ -217,7 +217,9 @@ desc_sets::desc_sets(
 }
 
 desc_sets::~desc_sets()
-{ pool_->free_descriptors(vk_desc_sets_); }
+{
+  pool_->free_descriptors(vk_desc_sets_);
+}
 
 void desc_sets::calc_resource_counts()
 {

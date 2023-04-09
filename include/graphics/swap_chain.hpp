@@ -93,6 +93,8 @@ class swap_chain {
     void reset_render_pass(int render_pass_id);
 #endif
 
+    u_ptr<timeline_semaphore>&& move_compute_semaphore();
+
     // Helper functions
     VkSurfaceFormatKHR choose_swap_surface_format(
       const std::vector<VkSurfaceFormatKHR> &available_formats);

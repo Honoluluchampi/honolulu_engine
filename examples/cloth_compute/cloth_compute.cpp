@@ -90,4 +90,8 @@ int main()
 {
   hnll::cloth_compute engine;
 
+  try { engine.run(); }
+  catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+  }
 }
