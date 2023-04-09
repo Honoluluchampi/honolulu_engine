@@ -123,6 +123,7 @@ void device::setup_device_extensions()
   // common
   device_extensions_.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   device_extensions_.emplace_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+  device_extensions_.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 #ifndef __linux
     device_extensions_.emplace_back("VK_KHR_portability_subset");
 #endif
@@ -255,10 +256,16 @@ void device::create_logical_device()
   VkPhysicalDeviceFeatures device_features = {};
   device_features.samplerAnisotropy = VK_TRUE;
 
+  VkPhysicalDeviceSynchronization2Features synchronization_2_features {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES
+  };
+  synchronization_2_features.synchronization2 = VK_TRUE;
+
   VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore_features {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES
   };
   timeline_semaphore_features.timelineSemaphore = VK_TRUE;
+  timeline_semaphore_features.pNext = &synchronization_2_features;
 
   // configure device features for rasterize or ray tracing
   // for ray tracing
