@@ -19,7 +19,7 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
     {
       setup_desc_sets();
       create_pipeline(
-        utils::get_engine_root_path() + "/modules/physics/compute_shaders/cloth_compute.spv",
+        utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
         { desc_sets_->get_vk_layouts()[0] }
       );
     }
