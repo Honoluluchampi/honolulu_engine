@@ -106,6 +106,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     graphics_engine_core& graphics_engine_core_;
     engine_core& core_;
 
+    float dt_;
+
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
     static actor_map update_target_actors_;
@@ -151,19 +153,19 @@ ENGN_API void ENGN_TYPE::update()
   // calc delta time
   std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();;
   const auto& old_time = core_.get_old_time();
-  auto dt = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
+  dt_ = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
   core_.set_old_time(std::move(new_time));
 
-  static_cast<Derived*>(this)->update_this(dt);
+  static_cast<Derived*>(this)->update_this(dt_);
   if constexpr (sizeof...(A) >= 1) {
     for (auto &a: update_target_actors_)
-      std::visit([&dt](auto &actor) { actor->update(dt); }, a.second);
+      std::visit([this](auto &actor) { actor->update(this->dt_); }, a.second);
   }
 }
 
 ENGN_API void ENGN_TYPE::render()
 {
-  if constexpr (sizeof...(C) >= 1) compute_engine_->render();
+  if constexpr (sizeof...(C) >= 1) compute_engine_->render(dt_);
 
   utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
   graphics_engine_->render(game_frame_info);

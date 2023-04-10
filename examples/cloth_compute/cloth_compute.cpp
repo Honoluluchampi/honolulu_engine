@@ -12,6 +12,9 @@ namespace hnll {
 DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 {
   public:
+    cloth_compute_shader(graphics::device& device) : game::compute_shader<cloth_compute_shader>(device)
+    { setup(); }
+
     void setup()
     {
       setup_desc_sets();
@@ -21,7 +24,7 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
       );
     }
 
-    void render(const utils::physics_frame_info& info)
+    void render(const utils::compute_frame_info& info)
     {
       auto& command = info.command_buffer;
 

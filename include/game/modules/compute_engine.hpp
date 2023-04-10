@@ -29,10 +29,10 @@ class compute_engine
     explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
     ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE); }
 
-    void render();
+    void render(float dt);
 
     // getter
-    inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_command_index_]; }
+    inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_frame_index_]; }
 
   private:
     void submit_command();
@@ -45,7 +45,7 @@ class compute_engine
     VkQueue compute_queue_;
 
     std::vector<VkCommandBuffer> command_buffers_;
-    int current_command_index_ = 0;
+    int current_frame_index_ = 0;
     bool is_frame_started_ = false;
 
     // ref to swap_chain::compute_semaphore
@@ -64,26 +64,37 @@ CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics:
 {
   command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   compute_queue_ = device.get_compute_queue();
+
+  add_shader<CS...>();
 }
 
-CMPT_ENGN_API void CMPT_ENGN_TYPE::render()
+CMPT_ENGN_API void CMPT_ENGN_TYPE::render(float dt)
 {
   // begin command recording
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-  if (vkBeginCommandBuffer(command_buffers_[current_command_index_], &begin_info) != VK_SUCCESS) {
+  utils::compute_frame_info frame_info = {
+      current_frame_index_,
+      command_buffers_[current_frame_index_],
+      dt
+  };
+
+  if (vkBeginCommandBuffer(command_buffers_[current_frame_index_], &begin_info) != VK_SUCCESS) {
     throw std::runtime_error("failed to begin recording command buffer!");
   }
 
   // visit all active shaders
+  for (auto &shader : shaders_) {
+    std::visit([&frame_info](auto &shader) { shader->render(frame_info); }, shader.second);
+  }
 
-  if (vkEndCommandBuffer(command_buffers_[current_command_index_]) != VK_SUCCESS) {
+  if (vkEndCommandBuffer(command_buffers_[current_frame_index_]) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
 
-  current_command_index_ = ++current_command_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
-                           ? 0 : current_command_index_;
+  current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
+                           ? 0 : current_frame_index_;
 
   submit_command();
 }
@@ -111,7 +122,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
   signal_semaphore.deviceIndex = 0;
 
   VkCommandBufferSubmitInfoKHR command_buffer_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR };
-  command_buffer_info.commandBuffer = command_buffers_[current_command_index_];
+  command_buffer_info.commandBuffer = command_buffers_[current_frame_index_];
 
   VkSubmitInfo2KHR submit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR };
   submit_info.waitSemaphoreInfoCount = has_wait_semaphore ? 1 : 0;
@@ -130,7 +141,8 @@ CMPT_ENGN_API template <ComputeShader Head, ComputeShader... Rest>
 void CMPT_ENGN_TYPE::add_shader()
 {
   auto system = Head::create(device_);
-  shaders_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
+  static uint32_t shader_id = 0;
+  shaders_[shader_id++] = std::move(system);
 
   if constexpr (sizeof...(Rest) >= 1)
     add_shader<Rest...>();
