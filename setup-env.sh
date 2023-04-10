@@ -10,5 +10,6 @@ elif [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
 fi
 
 source setup-submodules.sh
+source setup-shaders.sh
 
 export MODEL_DIR=$HNLL_ENGN/models
