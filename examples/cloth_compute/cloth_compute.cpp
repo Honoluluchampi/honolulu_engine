@@ -55,15 +55,22 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
         {set_info},
         graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
 
+      // create initial data
+      std::array<vertex, 3> vertices = {
+          vec3{1.f, -1.f, 0.f},
+          vec3{-1.f, -1.f, 0.f},
+          vec3{0.f, -1.f, 0.f}
+      };
+
       // assign buffer
       for (int i = 0; i < frame_in_flight; i++) {
-        auto new_buffer = graphics::buffer::create(
+        auto new_buffer = graphics::buffer::create_with_staging(
           device_,
           sizeof(vertex) * 3,
           1,
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-          nullptr
+          vertices.data()
         );
         desc_sets_->set_buffer(0, 0, i, std::move(new_buffer));
       }

@@ -139,7 +139,7 @@ VkResult swap_chain::submit_command_buffers(
 
   //submitting the command buffer
   VkSubmitInfo2KHR submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
   submit_info.waitSemaphoreInfoCount = 2;
   submit_info.pWaitSemaphoreInfos = wait_semaphores;
   // which command buffers to actually submit for execution
@@ -196,7 +196,8 @@ VkResult swap_chain::submit_command_buffers(
   // need to be manually restore the fence to the unsignaled state
   vkResetFences(device_.get_device(), 1, &in_flight_fences_[current_frame_]);
 
-  // submit the command buffer to the graphics queue with fenceif (vkQueueSubmit2KHR(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
+  // submit the command buffer to the graphics queue with fence
+  if (vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
 
   // configure subpass dependencies in VkRenderPassFacotry::create_render_pass

@@ -93,10 +93,10 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::render(float dt)
     throw std::runtime_error("failed to record command buffer!");
   }
 
+  submit_command();
+
   current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
                            ? 0 : current_frame_index_;
-
-  submit_command();
 }
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
