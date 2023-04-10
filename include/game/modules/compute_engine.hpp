@@ -35,7 +35,9 @@ class compute_engine
     inline VkCommandBuffer get_current_command_buffer() const { return command_buffers_[current_frame_index_]; }
 
   private:
+    void begin_frame();
     void submit_command();
+    void end_frame();
 
     template <ComputeShader Head, ComputeShader... Rest> void add_shader();
     void add_shader(){}
@@ -45,6 +47,8 @@ class compute_engine
     VkQueue compute_queue_;
 
     std::vector<VkCommandBuffer> command_buffers_;
+    std::vector<uint64_t> semaphore_value_cache_;
+
     int current_frame_index_ = 0;
     bool is_frame_started_ = false;
 
@@ -63,6 +67,8 @@ CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics:
  : device_(device), semaphore_(semaphore)
 {
   command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  semaphore_value_cache_.resize(command_buffers_.size(), 0);
+
   compute_queue_ = device.get_compute_queue();
 
   add_shader<CS...>();
@@ -70,9 +76,7 @@ CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics:
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::render(float dt)
 {
-  // begin command recording
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_frame();
 
   utils::compute_frame_info frame_info = {
       current_frame_index_,
@@ -80,23 +84,34 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::render(float dt)
       dt
   };
 
-  if (vkBeginCommandBuffer(command_buffers_[current_frame_index_], &begin_info) != VK_SUCCESS) {
-    throw std::runtime_error("failed to begin recording command buffer!");
-  }
-
   // visit all active shaders
   for (auto &shader : shaders_) {
     std::visit([&frame_info](auto &shader) { shader->render(frame_info); }, shader.second);
   }
 
-  if (vkEndCommandBuffer(command_buffers_[current_frame_index_]) != VK_SUCCESS) {
-    throw std::runtime_error("failed to record command buffer!");
+  end_frame();
+}
+
+CMPT_ENGN_API void CMPT_ENGN_TYPE::begin_frame()
+{
+  // wait until the previous current_frame_index's compute is finished
+  VkSemaphoreWaitInfo wait_info;
+  wait_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+  wait_info.pNext = nullptr;
+  wait_info.flags = VK_SEMAPHORE_WAIT_ANY_BIT;
+  wait_info.semaphoreCount = 1;
+  wait_info.pSemaphores = semaphore_.get_vk_semaphore_r();
+  wait_info.pValues = &semaphore_value_cache_[current_frame_index_];
+
+  vkWaitSemaphores(device_.get_device(), &wait_info, std::numeric_limits<uint64_t>::max());
+
+  // begin command recording
+  VkCommandBufferBeginInfo begin_info{};
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+  if (vkBeginCommandBuffer(command_buffers_[current_frame_index_], &begin_info) != VK_SUCCESS) {
+    throw std::runtime_error("failed to begin recording command buffer!");
   }
-
-  submit_command();
-
-  current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
-                           ? 0 : current_frame_index_;
 }
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
@@ -121,6 +136,8 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
   signal_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   signal_semaphore.deviceIndex = 0;
 
+  semaphore_value_cache_[current_frame_index_] = semaphore_.get_last_semaphore_value();
+
   VkCommandBufferSubmitInfoKHR command_buffer_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR };
   command_buffer_info.commandBuffer = command_buffers_[current_frame_index_];
 
@@ -135,6 +152,18 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
   // submit the command buffer to the graphics queue with fence
   if (vkQueueSubmit2(compute_queue_, 1, &submit_info, nullptr) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
+}
+
+CMPT_ENGN_API void CMPT_ENGN_TYPE::end_frame()
+{
+  if (vkEndCommandBuffer(command_buffers_[current_frame_index_]) != VK_SUCCESS) {
+    throw std::runtime_error("failed to record command buffer!");
+  }
+
+  submit_command();
+
+  current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
+                         ? 0 : current_frame_index_;
 }
 
 CMPT_ENGN_API template <ComputeShader Head, ComputeShader... Rest>

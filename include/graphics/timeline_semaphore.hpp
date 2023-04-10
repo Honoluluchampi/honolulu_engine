@@ -20,6 +20,7 @@ class timeline_semaphore
 
     // getter
     VkSemaphore     get_vk_semaphore() { return vk_timeline_semaphore_; }
+    VkSemaphore*    get_vk_semaphore_r() { return &vk_timeline_semaphore_; }
     inline uint64_t get_last_semaphore_value() { return last_semaphore_value_; }
 
     inline bool has_work() const { return has_work_; }
