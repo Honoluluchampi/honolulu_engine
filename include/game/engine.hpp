@@ -80,7 +80,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     using actor_map = std::unordered_map<uint32_t, std::variant<std::monostate, u_ptr<A>...>>;
   public:
     engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
-    ~engine_base(){}
+    virtual ~engine_base(){}
 
     void run();
 
@@ -110,9 +110,9 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
     // parametric part
     u_ptr<graphics_engine<S...>> graphics_engine_;
-    static actor_map update_target_actors_;
-
     u_ptr<compute_engine<C...>> compute_engine_;
+
+    static actor_map update_target_actors_;
 };
 
 // impl
@@ -165,7 +165,8 @@ ENGN_API void ENGN_TYPE::update()
 
 ENGN_API void ENGN_TYPE::render()
 {
-  if constexpr (sizeof...(C) >= 1) compute_engine_->render(dt_);
+  if constexpr (sizeof...(C) >= 1)
+    compute_engine_->render(dt_);
 
   utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
   graphics_engine_->render(game_frame_info);
@@ -175,6 +176,7 @@ ENGN_API void ENGN_TYPE::render()
 ENGN_API void ENGN_TYPE::cleanup()
 {
   graphics_engine_.reset();
+  compute_engine_.reset();
   utils::singleton_deleter::delete_reversely();
 }
 
