@@ -69,12 +69,14 @@ device::device(window &window, utils::rendering_type type)
   pick_physical_device();
   setup_device_extensions(); // ray tracing
   create_logical_device(); // ray tracing
-  create_command_pool();
+  graphics_command_pool_ = create_command_pool(command_type::GRAPHICS);
+  compute_command_pool_ = create_command_pool(command_type::COMPUTE);
 }
 
 device::~device()
 {
-  vkDestroyCommandPool(device_, command_pool_, nullptr);
+  vkDestroyCommandPool(device_, graphics_command_pool_, nullptr);
+  vkDestroyCommandPool(device_, compute_command_pool_, nullptr);
   // VkQueue is automatically destroyed when its device is deleted
   vkDestroyDevice(device_, nullptr);
 
@@ -98,18 +100,8 @@ void device::setup_device_extensions()
     available.insert(extension.extensionName);
   }
 
-  if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
-    device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-#ifndef __linux
-    device_extensions_.emplace_back("VK_KHR_portability_subset");
-#endif
-  }
-
   if (rendering_type_ == utils::rendering_type::RAY_TRACING) {
     device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
       VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -122,12 +114,19 @@ void device::setup_device_extensions()
 
   if (rendering_type_ == utils::rendering_type::MESH_SHADING) {
     device_extensions_ = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_NV_MESH_SHADER_EXTENSION_NAME,
       VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME,
       VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
     };
   }
+
+  // common
+  device_extensions_.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  device_extensions_.emplace_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+  device_extensions_.emplace_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+#ifndef __linux
+    device_extensions_.emplace_back("VK_KHR_portability_subset");
+#endif
 
   std::cout << "enabled device extensions:" << std::endl;
   auto& required_extensions = device_extensions_;
@@ -226,8 +225,13 @@ void device::create_logical_device()
   // create a set of all unique queue families that are necessary for required queues
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   // if queue families are the same, handle for those queues are also same
-  std::set<uint32_t> unique_queue_families = {indices.graphics_family_.value(), indices.present_family_.value()};
+  std::set<uint32_t> unique_queue_families = {
+    indices.graphics_family_.value(),
+    indices.present_family_.value(),
+    indices.compute_family_.value(),
+  };
 
+  // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
   for (uint32_t queue_family : unique_queue_families) {
     // VkDeviceQueueCreateInfo descrives the number of queues we want for a single queue family
@@ -251,7 +255,17 @@ void device::create_logical_device()
   // common device features
   VkPhysicalDeviceFeatures device_features = {};
   device_features.samplerAnisotropy = VK_TRUE;
-  create_info.pEnabledFeatures = &device_features;
+
+  VkPhysicalDeviceSynchronization2Features synchronization_2_features {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES
+  };
+  synchronization_2_features.synchronization2 = VK_TRUE;
+
+  VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore_features {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES
+  };
+  timeline_semaphore_features.timelineSemaphore = VK_TRUE;
+  timeline_semaphore_features.pNext = &synchronization_2_features;
 
   // configure device features for rasterize or ray tracing
   // for ray tracing
@@ -262,6 +276,7 @@ void device::create_logical_device()
       nullptr
     };
     enabled_buffer_device_addr.bufferDeviceAddress = VK_TRUE;
+    enabled_buffer_device_addr.pNext = &timeline_semaphore_features;
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabled_ray_tracing_pipeline {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
@@ -285,13 +300,12 @@ void device::create_logical_device()
     enabled_descriptor_indexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     enabled_descriptor_indexing.runtimeDescriptorArray = VK_TRUE;
 
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(physical_device_, &features);
+    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
     VkPhysicalDeviceFeatures2 features2 {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
     };
     features2.pNext = &enabled_descriptor_indexing;
-    features2.features = features;
+    features2.features = device_features;
 
     create_info.pNext = &features2;
     // device features are already included in features2
@@ -306,6 +320,7 @@ void device::create_logical_device()
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES
     };
     vulkan12_features.shaderInt8 = VK_TRUE;
+    vulkan12_features.pNext = &timeline_semaphore_features;
 
     VkPhysicalDeviceMaintenance4Features maintenance4_features {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES
@@ -326,12 +341,23 @@ void device::create_logical_device()
     baryFeatures.fragmentShaderBarycentric = VK_TRUE;
     baryFeatures.pNext = &mesh_features;
 
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(physical_device_, &features);
+    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
     VkPhysicalDeviceFeatures2 features2 {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
     };
     features2.pNext = &baryFeatures;
+    features2.features = device_features;
+
+    create_info.pNext = &features2;
+    create_info.pEnabledFeatures = nullptr;
+  }
+
+  if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
+    VkPhysicalDeviceFeatures2 features2 {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
+    };
+    features2.pNext = &timeline_semaphore_features;
+    features2.features = device_features;
 
     create_info.pNext = &features2;
     create_info.pEnabledFeatures = nullptr;
@@ -358,7 +384,15 @@ void device::create_logical_device()
   // retrieve queue handles for each queue family
   // simply use index 0, because were only creating a single queue from  this family
   vkGetDeviceQueue(device_, indices.graphics_family_.value(), 0, &graphics_queue_);
-  vkGetDeviceQueue(device_, indices.present_family_.value(), 0, &present_queue_);
+  vkGetDeviceQueue(device_, indices.present_family_.value(),  0, &present_queue_);
+  vkGetDeviceQueue(device_, indices.compute_family_.value(),  0, &compute_queue_);
+
+  if (indices.graphics_family_.value() == indices.compute_family_.value()) {
+    std::cout << "same queue family for compute and graphics." << std::endl;
+  }
+  else {
+    std::cout << "dedicated compute queue family detected." << std::endl;
+  }
 
   if (rendering_type_ == utils::rendering_type::MESH_SHADING || rendering_type_ == utils::rendering_type::RAY_TRACING) {
     load_VK_EXTENSIONS(instance_, vkGetInstanceProcAddr, device_, vkGetDeviceProcAddr);
@@ -367,19 +401,24 @@ void device::create_logical_device()
 
 // Command pools manage the memory that is used to store the buffers
 // and command buffers are allocated from them.
-void device::create_command_pool()
+VkCommandPool device::create_command_pool(command_type type)
 {
-  queue_family_indices get_queue_family_indices = find_physical_queue_families();
-
   VkCommandPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.queueFamilyIndex = get_queue_family_indices.graphics_family_.value();
   pool_info.flags =
     VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-  if (vkCreateCommandPool(device_, &pool_info, nullptr, &command_pool_) != VK_SUCCESS) {
+  if (type == command_type::GRAPHICS)
+    pool_info.queueFamilyIndex = queue_family_indices_.graphics_family_.value();
+  if (type == command_type::COMPUTE)
+    pool_info.queueFamilyIndex = queue_family_indices_.compute_family_.value();
+
+  VkCommandPool pool;
+  if (vkCreateCommandPool(device_, &pool_info, nullptr, &pool) != VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
   }
+
+  return pool;
 }
 
 void device::create_surface() { window_.create_window_surface(instance_, &surface_); }
@@ -534,6 +573,7 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
 
   // check whether at least one queue_family support VK_QUEUEGRAPHICS_BIT
   int i = 0;
+  int compute_graphics_common_index;
   for (const auto &queue_family : queue_families) {
     // same i for presentFamily and graphicsFamily improves the performance
     // graphics: No DRI3 support detected - required for presentation
@@ -546,10 +586,24 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
     if (queue_family.queueCount > 0 && present_support) {
       indices.present_family_ = i;
     }
+
+    // for async compute
+    if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+      // prefer different queue from graphics
+      if (indices.graphics_family_ != i && !indices.compute_family_.has_value()) {
+        indices.compute_family_ = i;
+      }
+      else
+        compute_graphics_common_index = i;
+    }
     if (indices.is_complete()) {
       break;
     }
     i++;
+  }
+
+  if (!indices.compute_family_.has_value()) {
+    indices.compute_family_ = compute_graphics_common_index;
   }
 
   queue_family_indices_ = indices;
@@ -666,7 +720,7 @@ VkCommandBuffer device::begin_one_shot_commands()
   VkCommandBufferAllocateInfo allocate_info{};
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = command_pool_;
+  allocate_info.commandPool = graphics_command_pool_;
   allocate_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
@@ -692,7 +746,7 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer)
   vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
   vkQueueWaitIdle(graphics_queue_);
 
-  vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+  vkFreeCommandBuffers(device_, graphics_command_pool_, 1, &command_buffer);
 }
 
 void device::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)
@@ -737,6 +791,48 @@ void device::copy_buffer_to_image(
   end_one_shot_commands(command_buffer);
 }
 
+std::vector<VkCommandBuffer> device::create_command_buffers(int count, command_type type)
+{
+  std::vector<VkCommandBuffer> command_buffers;
+  command_buffers.resize(count);
+
+  // specify command pool and number of buffers to allocate
+  VkCommandBufferAllocateInfo alloc_info{};
+  alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  // if the allocated command buffers are primary or secondary command buffers
+  alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  alloc_info.commandBufferCount = count;
+
+  if (type == command_type::GRAPHICS)
+    alloc_info.commandPool = graphics_command_pool_;
+  if (type == command_type::COMPUTE)
+    alloc_info.commandPool = compute_command_pool_;
+
+  if (vkAllocateCommandBuffers(device_, &alloc_info, command_buffers.data()) != VK_SUCCESS)
+    throw std::runtime_error("failed to allocate command buffers!");
+
+  return command_buffers;
+}
+
+void device::free_command_buffers(std::vector<VkCommandBuffer> &&commands, command_type type)
+{
+  if (type == command_type::GRAPHICS) {
+    vkFreeCommandBuffers(
+      device_,
+      graphics_command_pool_,
+      static_cast<float>(commands.size()),
+      commands.data());
+  }
+  if (type == command_type::COMPUTE) {
+    vkFreeCommandBuffers(
+      device_,
+      compute_command_pool_,
+      static_cast<float>(commands.size()),
+      commands.data());
+  }
+  commands.clear();
+}
+
 void device::create_image_with_info(
   const VkImageCreateInfo &image_info,
   VkMemoryPropertyFlags properties,
@@ -762,6 +858,21 @@ void device::create_image_with_info(
   if (vkBindImageMemory(device_, image, image_memory, 0) != VK_SUCCESS) {
     throw std::runtime_error("failed to bind image memory!");
   }
+}
+
+VkShaderModule device::create_shader_module(const std::vector<char> &code)
+{
+  VkShaderModuleCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  create_info.codeSize = code.size();
+  // char to uint32_t
+  create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+  VkShaderModule ret;
+  if (vkCreateShaderModule(device_, &create_info, nullptr, &ret) != VK_SUCCESS)
+    throw std::runtime_error("failed to create shader module!");
+
+  return ret;
 }
 
 } // namespace hnll::graphics

@@ -4,15 +4,13 @@
 #include <game/shading_system.hpp>
 #include <game/renderable_component.hpp>
 
-namespace hnll::game {
+namespace hnll::physics {
 
-using static_mesh_comp = renderable_comp<graphics::static_mesh>;
-
-DEFINE_SHADING_SYSTEM(static_mesh_shading_system, static_mesh_comp)
+DEFINE_SHADING_SYSTEM(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>)
 {
   public:
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 };
 
-} // namespace hnll::game
+} // namespace hnll::physics

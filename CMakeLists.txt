@@ -17,6 +17,7 @@ add_library(hnll_engine STATIC ${GAME_SOURCES})
 add_subdirectory(modules/graphics)
 add_subdirectory(modules/gui)
 add_subdirectory(modules/geometry)
+add_subdirectory(modules/physics)
 add_subdirectory(modules/utils)
 
 include($ENV{HNLL_ENGN}/cmake_utils/include.cmake)

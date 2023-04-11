@@ -15,15 +15,18 @@ namespace hnll::utils {
 // model loading ----------------------------------------------------
 static std::vector<std::string> loading_directories {
   std::string(std::getenv("HNLL_ENGN")) + "/models/characters",
-  std::string(std::getenv("HNLL_ENGN")) + "/models/primitives",
+  std::string(std::getenv("HNLL_ENGN")) + "/models/primitives"
 };
 
+inline std::string get_engine_root_path() { return (getenv("HNLL_ENGN")); }
 std::string get_full_path(const std::string& _filename);
 void mkdir_p(const std::string& _dir_name);
 // returns cache directory
 std::string create_cache_directory();
 // returns sub cache directory
 std::string create_sub_cache_directory(const std::string& _dir_name);
+
+std::vector<char> read_file_for_shader(const std::string& filepath);
 
 // 3d transformation -------------------------------------------------
 struct transform

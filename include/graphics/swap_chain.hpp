@@ -10,6 +10,8 @@ namespace hnll::graphics {
 #define HVE_RENDER_PASS_ID 0
 #define GUI_RENDER_PASS_ID 1
 
+class timeline_semaphore;
+
 class swap_chain {
   public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -44,6 +46,8 @@ class swap_chain {
     const VkFence& get_current_in_flight_fence() const { return in_flight_fences_[current_frame_]; }
     const VkFence& get_current_images_in_flight_fence() const { return images_in_flight_[current_frame_]; }
 
+    timeline_semaphore& get_compute_semaphore_r() { return *compute_semaphore_; }
+
     float extent_aspect_ratio() { return static_cast<float>(swap_chain_extent_.width) / static_cast<float>(swap_chain_extent_.height); }
 
     VkFormat find_depth_format();
@@ -70,6 +74,8 @@ class swap_chain {
     }
 #endif
 
+    void add_compute_semaphore();
+
   private:
     void init();
     void create_swap_chain();
@@ -86,6 +92,8 @@ class swap_chain {
     void reset_frame_buffers(int render_pass_id);
     void reset_render_pass(int render_pass_id);
 #endif
+
+    u_ptr<timeline_semaphore>&& move_compute_semaphore();
 
     // Helper functions
     VkSurfaceFormatKHR choose_swap_surface_format(
@@ -126,6 +134,7 @@ class swap_chain {
     VkSwapchainKHR    swap_chain_;
     u_ptr<swap_chain> old_swap_chain_;
 
+    u_ptr<timeline_semaphore> compute_semaphore_;
     // an image has been acquired and is ready for rendering
     std::vector<VkSemaphore> image_available_semaphores_;
     // rendering has finished and presentation can be happened

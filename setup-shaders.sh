@@ -29,3 +29,16 @@ for extension in ${extensions[@]}
         ${COMPILER} -S ${extension} ${FILE} --target-env ${TARGET_ENV} -o ${OUTPUTDIR}/${FILENAME}.spv
     done
 done
+
+# for physics compute shader
+COMPILER=${VULKAN_DIR}/bin/glslc
+SHADERDIR=${HNLL_ENGN}/modules/physics/shaders/compute_shader
+OUTPUTDIR=${HNLL_ENGN}/modules/physics/shaders/spv
+
+mkdir -p ${OUTPUTDIR}
+
+for FILE in ${SHADERDIR}/*.*
+  do
+    FILENAME=$(basename ${FILE})
+    ${COMPILER} $FILE -o ${OUTPUTDIR}/${FILENAME}.spv
+done

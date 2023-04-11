@@ -11,7 +11,7 @@ namespace hnll::graphics {
 class device;
 class desc_pool;
 class desc_layout;
-class desc_set;
+class desc_sets;
 class image_resource;
 
 class texture_image
@@ -26,8 +26,8 @@ class texture_image
 
     // getter
     VkDescriptorImageInfo get_image_info() const;
-    static VkDescriptorSetLayout get_desc_layout();
-    inline VkDescriptorSet get_desc_set() { return desc_set_; }
+    static VkDescriptorSetLayout get_vk_desc_layout();
+    inline VkDescriptorSet get_vk_desc_set() { return desc_set_; }
 
     static void reset_desc_layout();
 
@@ -37,8 +37,8 @@ class texture_image
 
     device& device_;
     u_ptr<image_resource> image_;
-    u_ptr<desc_pool>   desc_pool_;
-    VkDescriptorSet    desc_set_;
+    s_ptr<desc_pool>  desc_pool_;
+    VkDescriptorSet   desc_set_;
     VkSampler sampler_;
 
     static u_ptr<desc_layout> desc_layout_;

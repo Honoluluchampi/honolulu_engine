@@ -59,7 +59,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   info.Allocator = nullptr;
   // TODO : make minImageCount consistent with hve
   info.MinImageCount = 2;
-  info.ImageCount = renderer_up_->get_swap_chain().get_image_count();
+  info.ImageCount = renderer_up_->get_swap_chain_r().get_image_count();
   info.CheckVkResultFn = nullptr;
 
   // make sure to create render pass before this function

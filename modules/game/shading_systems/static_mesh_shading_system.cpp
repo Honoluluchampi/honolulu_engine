@@ -20,7 +20,7 @@ void static_mesh_shading_system::setup()
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{
       graphics_engine_core::get_global_desc_layout(),
-      graphics::texture_image::get_desc_layout()
+      graphics::texture_image::get_vk_desc_layout()
     }
   );
 
@@ -38,7 +38,7 @@ void static_mesh_shading_system::setup()
   );
 }
 
-void static_mesh_shading_system::render(const utils::frame_info& frame_info)
+void static_mesh_shading_system::render(const utils::graphics_frame_info& frame_info)
 {
   pipeline_->bind(frame_info.command_buffer);
 

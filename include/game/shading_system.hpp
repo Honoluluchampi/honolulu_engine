@@ -20,20 +20,19 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    shading_system(graphics::device& device)
-     : device_(device) { static_cast<Derived*>(this)->setup(); }
+    shading_system(graphics::device& device) : device_(device)
+    { static_cast<Derived*>(this)->setup(); }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
-    template <typename... Args>
-    static u_ptr<Derived> create(graphics::device& device, Args... args)
-    { return std::make_unique<Derived>(device, std::forward<Args>(args)...); }
+    static u_ptr<Derived> create(graphics::device& device)
+    { return std::make_unique<Derived>(device); }
 
     shading_system(const shading_system &) = delete;
     shading_system &operator=(const shading_system &) = delete;
     shading_system(shading_system &&) = default;
     shading_system &operator=(shading_system &&) = default;
 
-    void render(const utils::frame_info &frame_info);
+    void render(const utils::graphics_frame_info &frame_info);
 
     void add_render_target(rc_id id, RC& target) { targets_.emplace(id, target); }
     void remove_render_target(rc_id id) { targets_.erase(id); }

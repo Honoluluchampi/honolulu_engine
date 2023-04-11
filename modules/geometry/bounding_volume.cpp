@@ -7,7 +7,7 @@ u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3>& ver
 {
   // TODO : compute convex-hull
   auto convex_hull = vertices;
-  double minx = convex_hull[0].x(),
+  float minx = convex_hull[0].x(),
     maxx = convex_hull[0].x(),
     miny = convex_hull[0].y(),
     maxy = convex_hull[0].y(),

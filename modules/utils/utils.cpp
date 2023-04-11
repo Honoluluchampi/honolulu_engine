@@ -4,6 +4,7 @@
 // std
 #include <filesystem>
 #include <sys/stat.h>
+#include <fstream>
 
 namespace hnll::utils {
 
@@ -50,6 +51,25 @@ std::string create_sub_cache_directory(const std::string& _dir_name)
   mkdir_p(cache_directory);
 
   return cache_directory;
+}
+
+std::vector<char> read_file_for_shader(const std::string& filepath)
+{
+  // construct and open
+  // immediately read as binary
+  std::ifstream file(filepath, std::ios::ate | std::ios::binary);
+
+  if (!file.is_open())
+    throw std::runtime_error("failed to open file: " + filepath);
+
+  size_t file_size = static_cast<size_t>(file.tellg());
+  std::vector<char> buffer(file_size);
+
+  file.seekg(0);
+  file.read(buffer.data(), file_size);
+  file.close();
+
+  return buffer;
 }
 
 // 3d transformation ---------------------------------------------------------------
