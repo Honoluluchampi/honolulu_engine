@@ -15,10 +15,10 @@ DEFINE_SHADING_SYSTEM(cloth_compute_shading_system, game::dummy_renderable_comp<
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 
-    void add_cloth(u_ptr<mass_spring_cloth>&& cloth);
+    void add_cloth(s_ptr<mass_spring_cloth>&& cloth);
 
   private:
-//    std::unordered_map<uint32_t, u_ptr<mass_spring_cloth>> clothes_;
+    std::unordered_map<uint32_t, s_ptr<mass_spring_cloth>> clothes_;
 };
 
 } // namespace hnll::physics

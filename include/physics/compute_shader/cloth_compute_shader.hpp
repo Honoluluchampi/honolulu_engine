@@ -5,13 +5,9 @@
 
 namespace hnll {
 
-namespace graphics {
-  class buffer;
-  class desc_sets;
-  class desc_pool;
-}
-
 namespace physics {
+
+class mass_spring_cloth;
 
 DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 {
@@ -22,18 +18,11 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 
     void render(const utils::compute_frame_info &info);
 
+    // setter
+    static void add_cloth(const s_ptr<mass_spring_cloth>& cloth);
+
   private:
-    struct vertex
-    {
-      alignas(16) vec3 position;
-      alignas(16) vec3 normal;
-    };
-
-    void setup_desc_sets();
-
-    std::vector<u_ptr<graphics::buffer>> mesh_buffers_;
-    u_ptr<graphics::desc_sets> desc_sets_;
-    s_ptr<graphics::desc_pool> desc_pool_;
+    static std::unordered_map<uint32_t, s_ptr<mass_spring_cloth>> clothes_;
 };
 
 }} // namespace hnll::physics

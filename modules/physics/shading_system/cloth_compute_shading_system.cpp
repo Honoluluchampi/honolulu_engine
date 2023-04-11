@@ -11,10 +11,13 @@ void cloth_compute_shading_system::setup()
 {
   shading_type_ = utils::shading_type::MESH;
 
+  mass_spring_cloth::set_vk_desc_layout(device_);
+
   pipeline_layout_ = create_pipeline_layout_without_push(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{
-      game::graphics_engine_core::get_global_desc_layout()
+      game::graphics_engine_core::get_global_desc_layout(),
+      mass_spring_cloth::get_vk_desc_layout()
     }
   );
 
@@ -36,8 +39,7 @@ void cloth_compute_shading_system::render(const utils::graphics_frame_info& fram
   pipeline_->bind(frame_info.command_buffer);
 }
 
-void cloth_compute_shading_system::add_cloth(u_ptr<mass_spring_cloth> &&cloth)
-{ //clothes_[cloth->get_id()] = std::move(cloth);
-  }
+void cloth_compute_shading_system::add_cloth(s_ptr<mass_spring_cloth> &&cloth)
+{ clothes_[cloth->get_id()] = std::move(cloth); }
 
 } // namespace hnll::physics
