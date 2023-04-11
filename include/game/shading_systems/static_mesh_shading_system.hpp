@@ -11,7 +11,7 @@ using static_mesh_comp = renderable_comp<graphics::static_mesh>;
 DEFINE_SHADING_SYSTEM(static_mesh_shading_system, static_mesh_comp)
 {
   public:
-    explicit static_mesh_shading_system(graphics::device& device);
+    DEFAULT_SHADING_SYSTEM_CTOR(static_mesh_shading_system, static_mesh_comp);
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 };

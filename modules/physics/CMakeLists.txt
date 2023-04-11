@@ -1,5 +1,6 @@
 set(SOURCES
-        shading_system/cloth_compute.cpp
+        shading_system/cloth_compute_shading_system.cpp
+        compute_shader/cloth_compute_shader.cpp
         )
 
 add_library(hnll_physics STATIC ${SOURCES})

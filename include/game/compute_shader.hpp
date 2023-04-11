@@ -9,6 +9,8 @@
 #include <vulkan/vulkan.h>
 
 #define DEFINE_COMPUTE_SHADER(new_shader) class new_shader : public game::compute_shader<new_shader>
+#define DEFAULT_COMPUTE_SHADER_CTOR(new_shader) explicit new_shader(graphics::device& device)
+#define DEFAULT_COMPUTE_SHADER_CTOR_IMPL(shader) shader::shader(graphics::device& device) : game::compute_shader<shader>(device) { }
 
 namespace hnll::game {
 
@@ -16,7 +18,7 @@ template <typename Derived>
 class compute_shader
 {
   public:
-    explicit compute_shader(graphics::device& device) : device_(device) {}
+    explicit compute_shader(graphics::device& device) : device_(device) { static_cast<Derived*>(this)->setup(); }
     static u_ptr<Derived> create(graphics::device& device)
     { return std::make_unique<Derived>(device); }
 
@@ -40,7 +42,8 @@ class compute_shader
     );
 
     // compute command dispatching
-    inline void bind_pipeline(VkCommandBuffer command) { vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_); }
+    inline void bind_pipeline(VkCommandBuffer command)
+    { vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_); }
 
     inline void bind_desc_sets(VkCommandBuffer command, const std::vector<VkDescriptorSet>& desc_sets)
     { vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout_, 0, desc_sets.size(), desc_sets.data(), 0, 0); }

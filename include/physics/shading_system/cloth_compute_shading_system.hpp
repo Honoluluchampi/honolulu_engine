@@ -11,13 +11,14 @@ class mass_spring_cloth;
 DEFINE_SHADING_SYSTEM(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>)
 {
   public:
+    DEFAULT_SHADING_SYSTEM_CTOR(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 
-    void add_cloth()
+    void add_cloth(u_ptr<mass_spring_cloth>&& cloth);
 
   private:
-    std::vector<mass_spring_cloth> cloth_list_;
+//    std::unordered_map<uint32_t, u_ptr<mass_spring_cloth>> clothes_;
 };
 
 } // namespace hnll::physics

@@ -10,6 +10,8 @@
 #include <unordered_map>
 
 #define DEFINE_SHADING_SYSTEM(new_system, rc) class new_system : public game::shading_system<new_system, rc>
+#define DEFAULT_SHADING_SYSTEM_CTOR(system, rc) explicit system(graphics::device &device)
+#define DEFAULT_SHADING_SYSTEM_CTOR_IMPL(system, rc) system::system(graphics::device &device) : game::shading_system<system, rc>(device) {}
 
 namespace hnll {
 

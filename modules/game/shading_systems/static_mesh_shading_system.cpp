@@ -12,8 +12,7 @@ struct mesh_push_constant
   mat4 normal_matrix;
 };
 
-static_mesh_shading_system::static_mesh_shading_system(graphics::device &device) : game::shading_system<static_mesh_shading_system, static_mesh_comp>(device)
-{}
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(static_mesh_shading_system, static_mesh_comp);
 
 void static_mesh_shading_system::setup()
 {

@@ -1,8 +1,11 @@
 // hnll
 #include <game/modules/graphics_engine.hpp>
-#include <physics/shading_system/cloth_compute.hpp>
+#include <physics/mass_spring_cloth.hpp>
+#include <physics/shading_system/cloth_compute_shading_system.hpp>
 
 namespace hnll::physics {
+
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
 
 void cloth_compute_shading_system::setup()
 {
@@ -31,7 +34,10 @@ void cloth_compute_shading_system::setup()
 void cloth_compute_shading_system::render(const utils::graphics_frame_info& frame_info)
 {
   pipeline_->bind(frame_info.command_buffer);
-
-
 }
+
+void cloth_compute_shading_system::add_cloth(u_ptr<mass_spring_cloth> &&cloth)
+{ //clothes_[cloth->get_id()] = std::move(cloth);
+  }
+
 } // namespace hnll::physics
