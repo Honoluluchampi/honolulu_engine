@@ -21,11 +21,12 @@ class mass_spring_cloth
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
 
-    static VkDescriptorSetLayout get_vk_desc_layout() { return vk_desc_layout_; }
+    static VkDescriptorSetLayout get_vk_desc_layout();
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame_index);
 
     // setter
-    static void set_vk_desc_layout(graphics::device& device);
+    static void set_desc_layout(graphics::device& device);
+    static void reset_desc_layout(graphics::device& device);
 
   private:
     void setup_desc_sets(graphics::device& device);
@@ -35,7 +36,7 @@ class mass_spring_cloth
     u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
 
-    static VkDescriptorSetLayout vk_desc_layout_;
+    static u_ptr<graphics::desc_layout> desc_layout_;
 };
 
 } // namespace hnll::physics

@@ -13,7 +13,7 @@ DEFAULT_COMPUTE_SHADER_CTOR_IMPL(cloth_compute_shader);
 
 void cloth_compute_shader::setup()
 {
-  mass_spring_cloth::set_vk_desc_layout(device_);
+  mass_spring_cloth::set_desc_layout(device_);
   create_pipeline(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
     { mass_spring_cloth::get_vk_desc_layout() }

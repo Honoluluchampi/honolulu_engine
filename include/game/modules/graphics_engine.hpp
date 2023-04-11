@@ -64,7 +64,7 @@ class graphics_engine_core
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
     graphics::window& get_window_r();
-    graphics::device& get_device_r();
+    static graphics::device& get_device_r();
     graphics::renderer& get_renderer_r();
     graphics::timeline_semaphore& get_compute_semaphore_r();
 

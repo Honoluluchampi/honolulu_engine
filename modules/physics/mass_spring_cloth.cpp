@@ -1,13 +1,14 @@
 // hnll
 #include <physics/mass_spring_cloth.hpp>
 #include <physics/compute_shader/cloth_compute_shader.hpp>
+#include <physics/shading_system/cloth_compute_shading_system.hpp>
 #include <graphics/desc_set.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/buffer.hpp>
 
 namespace hnll::physics {
 
-VkDescriptorSetLayout mass_spring_cloth::vk_desc_layout_ = VK_NULL_HANDLE;
+u_ptr<graphics::desc_layout> mass_spring_cloth::desc_layout_ = nullptr;
 
 s_ptr<mass_spring_cloth> mass_spring_cloth::create(graphics::device& device)
 {
@@ -15,6 +16,7 @@ s_ptr<mass_spring_cloth> mass_spring_cloth::create(graphics::device& device)
 
   // add to shaders
   cloth_compute_shader::add_cloth(ret);
+  cloth_compute_shading_system::add_cloth(ret);
 
   return ret;
 }
@@ -71,15 +73,17 @@ void mass_spring_cloth::setup_desc_sets(graphics::device& device)
   desc_sets_->build();
 }
 
-void mass_spring_cloth::set_vk_desc_layout(graphics::device& device)
+VkDescriptorSetLayout mass_spring_cloth::get_vk_desc_layout()
+{ return desc_layout_->get_descriptor_set_layout(); }
+
+void mass_spring_cloth::set_desc_layout(graphics::device& device)
 {
-  if (vk_desc_layout_ == VK_NULL_HANDLE) {
-    auto desc_layout = graphics::desc_layout::builder(device)
+  if (desc_layout_ == nullptr) {
+    desc_layout_ = graphics::desc_layout::builder(device)
       .add_binding(
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT)
       .build();
-    vk_desc_layout_ = desc_layout->get_descriptor_set_layout();
   }
 }
 

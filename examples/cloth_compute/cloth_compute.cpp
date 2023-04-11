@@ -3,6 +3,7 @@
 #include <game/actors/default_camera.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
 #include <game/shading_systems/static_mesh_shading_system.hpp>
+#include <physics/mass_spring_cloth.hpp>
 #include <physics/compute_shader/cloth_compute_shader.hpp>
 #include <physics/shading_system/cloth_compute_shading_system.hpp>
 
@@ -20,9 +21,14 @@ SELECT_COMPUTE_SHADER(compute_shaders, physics::cloth_compute_shader);
 DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
 {
   public:
-    cloth_compute() { add_update_target_directly<game::default_camera>(); }
+    cloth_compute()
+    {
+      add_update_target_directly<game::default_camera>();
+      cloth_ = physics::mass_spring_cloth::create(game::graphics_engine_core::get_device_r());
+    }
     ~cloth_compute() {}
   private:
+    s_ptr<physics::mass_spring_cloth> cloth_;
 };
 
 }
