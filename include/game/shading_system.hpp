@@ -68,6 +68,15 @@ class shading_system {
       graphics::pipeline_config_info config_info
     );
 
+    u_ptr<graphics::pipeline> create_pipeline(
+      VkPipelineLayout pipeline_layout,
+      VkRenderPass render_pass,
+      const std::vector<std::string>& shaders_directories,
+      const std::vector<std::string>& shader_filenames,
+      const std::vector<VkShaderStageFlagBits>& shader_stage_flags,
+      graphics::pipeline_config_info config_info
+    );
+
     // vulkan objects
     graphics::device &device_;
     u_ptr<graphics::pipeline> pipeline_;
@@ -142,6 +151,32 @@ SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
   std::vector<std::string> shader_paths;
   for (const auto& name : shader_filenames) {
     shader_paths.emplace_back(directory + name);
+  }
+
+  config_info.pipeline_layout = pipeline_layout;
+  config_info.render_pass     = render_pass;
+
+  return graphics::pipeline::create(
+    device_,
+    shader_paths,
+    shader_stage_flags,
+    config_info
+  );
+}
+
+SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
+  VkPipelineLayout                   pipeline_layout,
+  VkRenderPass                       render_pass,
+  const std::vector<std::string>&           shaders_directories,
+  const std::vector<std::string>&           shader_filenames,
+  const std::vector<VkShaderStageFlagBits>& shader_stage_flags,
+  graphics::pipeline_config_info     config_info)
+{
+  assert(shaders_directories.size() == shader_filenames.size() && "shader directories and filenames do not correspond to each other");
+
+  std::vector<std::string> shader_paths;
+  for (int i = 0; i < shaders_directories.size(); i++) {
+    shader_paths.emplace_back(std::string(std::getenv("HNLL_ENGN")) + shaders_directories[i] + shader_filenames[i]);
   }
 
   config_info.pipeline_layout = pipeline_layout;

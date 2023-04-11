@@ -42,3 +42,13 @@ for FILE in ${SHADERDIR}/*.*
     FILENAME=$(basename ${FILE})
     ${COMPILER} $FILE -o ${OUTPUTDIR}/${FILENAME}.spv
 done
+
+SHADERDIR=${HNLL_ENGN}/modules/physics/shaders/vertex_shader
+
+mkdir -p ${OUTPUTDIR}
+
+for FILE in ${SHADERDIR}/*.*
+  do
+    FILENAME=$(basename ${FILE})
+    ${COMPILER} $FILE -o ${OUTPUTDIR}/${FILENAME}.spv
+done

@@ -24,7 +24,7 @@ void cloth_compute_shading_system::setup()
     pipeline_layout_,
     game::graphics_engine_core::get_default_render_pass(),
     // TODO : configure different shader directories for each shaders
-    "/modules/graphics/shaders/spv",
+    std::vector<std::string>{ "/modules/physics/shaders/spv/", "/modules/graphics/shaders/spv/" },
     { "cloth_compute.vert.spv", "simple_shader.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
     pipeline_config_info
