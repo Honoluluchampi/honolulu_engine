@@ -77,7 +77,7 @@ template <class Derived, typename... T> class engine_base;
 template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
 class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 {
-    using actor_map = std::unordered_map<uint32_t, std::variant<std::monostate, u_ptr<A>...>>;
+    using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
     engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
     virtual ~engine_base(){}

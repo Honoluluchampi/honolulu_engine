@@ -1,5 +1,6 @@
 // hnll
 #include <game/engine.hpp>
+#include <game/actors/default_camera.hpp>
 #include <game/compute_shader.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
 #include <game/shading_systems/static_mesh_shading_system.hpp>
@@ -46,7 +47,9 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 
       // build desc sets
       graphics::desc_set_info set_info;
-      set_info.add_binding(VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+      set_info.add_binding(
+          VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
       set_info.is_frame_buffered_ = true;
 
       desc_sets_ = graphics::desc_sets::create(
@@ -84,12 +87,13 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 };
 
 SELECT_SHADING_SYSTEM(graphics_shaders, game::grid_shading_system, game::static_mesh_shading_system);
+SELECT_ACTOR(actors, game::default_camera);
 SELECT_COMPUTE_SHADER(compute_shaders, cloth_compute_shader);
 
-DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, game::no_actor, compute_shaders)
+DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
 {
   public:
-    cloth_compute() {}
+    cloth_compute() { add_update_target_directly<game::default_camera>(); }
     ~cloth_compute() {}
   private:
 };

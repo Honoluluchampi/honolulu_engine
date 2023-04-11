@@ -83,7 +83,7 @@ desc_pool::desc_pool(device &device, uint32_t max_sets, VkDescriptorPoolCreateFl
   descriptor_pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
   descriptor_pool_info.pPoolSizes = pool_sizes.data();
   descriptor_pool_info.maxSets = max_sets;
-  descriptor_pool_info.flags = pool_flags || VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  descriptor_pool_info.flags = pool_flags | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
   if (vkCreateDescriptorPool(device_.get_device(), &descriptor_pool_info, nullptr, &descriptor_pool_) !=
       VK_SUCCESS) {
