@@ -13,6 +13,7 @@ DEFINE_COMPUTE_SHADER(cloth_compute_shader)
 {
   public:
     DEFAULT_COMPUTE_SHADER_CTOR(cloth_compute_shader);
+    ~cloth_compute_shader();
 
     void setup();
 

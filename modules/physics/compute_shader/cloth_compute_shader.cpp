@@ -11,9 +11,15 @@ std::unordered_map<uint32_t, s_ptr<mass_spring_cloth>> cloth_compute_shader::clo
 
 DEFAULT_COMPUTE_SHADER_CTOR_IMPL(cloth_compute_shader);
 
+cloth_compute_shader::~cloth_compute_shader()
+{
+  clothes_.clear();
+  mass_spring_cloth::reset_desc_layout();
+}
+
 void cloth_compute_shader::setup()
 {
-  mass_spring_cloth::set_desc_layout(device_);
+  mass_spring_cloth::set_desc_layout();
   create_pipeline(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
     { mass_spring_cloth::get_vk_desc_layout() }

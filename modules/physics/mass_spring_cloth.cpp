@@ -10,9 +10,9 @@ namespace hnll::physics {
 
 u_ptr<graphics::desc_layout> mass_spring_cloth::desc_layout_ = nullptr;
 
-s_ptr<mass_spring_cloth> mass_spring_cloth::create(graphics::device& device)
+s_ptr<mass_spring_cloth> mass_spring_cloth::create()
 {
-  auto ret = std::make_shared<mass_spring_cloth>(device);
+  auto ret = std::make_shared<mass_spring_cloth>();
 
   // add to shaders
   cloth_compute_shader::add_cloth(ret);
@@ -21,19 +21,19 @@ s_ptr<mass_spring_cloth> mass_spring_cloth::create(graphics::device& device)
   return ret;
 }
 
-mass_spring_cloth::mass_spring_cloth(graphics::device& device)
+mass_spring_cloth::mass_spring_cloth() : device_(game::graphics_engine_core::get_device_r())
 {
   static uint32_t id = 0;
   cloth_id_ = id++;
 
-  setup_desc_sets(device);
+  setup_desc_sets();
 }
 
-void mass_spring_cloth::setup_desc_sets(graphics::device& device)
+void mass_spring_cloth::setup_desc_sets()
 {
   int frame_in_flight = graphics::swap_chain::MAX_FRAMES_IN_FLIGHT;
   // pool
-  desc_pool_ = graphics::desc_pool::builder(device)
+  desc_pool_ = graphics::desc_pool::builder(device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_in_flight)
     .build();
 
@@ -45,7 +45,7 @@ void mass_spring_cloth::setup_desc_sets(graphics::device& device)
   set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
-    device,
+    device_,
     desc_pool_,
     {set_info},
     graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
@@ -60,7 +60,7 @@ void mass_spring_cloth::setup_desc_sets(graphics::device& device)
   // assign buffer
   for (int i = 0; i < frame_in_flight; i++) {
     auto new_buffer = graphics::buffer::create_with_staging(
-      device,
+      device_,
       sizeof(vertex) * 3,
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -76,9 +76,10 @@ void mass_spring_cloth::setup_desc_sets(graphics::device& device)
 VkDescriptorSetLayout mass_spring_cloth::get_vk_desc_layout()
 { return desc_layout_->get_descriptor_set_layout(); }
 
-void mass_spring_cloth::set_desc_layout(graphics::device& device)
+void mass_spring_cloth::set_desc_layout()
 {
   if (desc_layout_ == nullptr) {
+    auto& device = game::graphics_engine_core::get_device_r();
     desc_layout_ = graphics::desc_layout::builder(device)
       .add_binding(
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -86,6 +87,9 @@ void mass_spring_cloth::set_desc_layout(graphics::device& device)
       .build();
   }
 }
+
+void mass_spring_cloth::reset_desc_layout()
+{ desc_layout_.reset(); }
 
 std::vector<VkDescriptorSet> mass_spring_cloth::get_vk_desc_sets(int frame_index)
 { return desc_sets_->get_vk_desc_sets(frame_index); }

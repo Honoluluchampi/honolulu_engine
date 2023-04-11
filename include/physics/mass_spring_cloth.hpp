@@ -15,8 +15,8 @@ struct vertex
 class mass_spring_cloth
 {
   public:
-    static s_ptr<mass_spring_cloth>create(graphics::device& device);
-    mass_spring_cloth(graphics::device& device);
+    static s_ptr<mass_spring_cloth>create();
+    mass_spring_cloth();
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
@@ -25,12 +25,14 @@ class mass_spring_cloth
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame_index);
 
     // setter
-    static void set_desc_layout(graphics::device& device);
-    static void reset_desc_layout(graphics::device& device);
+    static void set_desc_layout();
+    static void reset_desc_layout();
 
   private:
-    void setup_desc_sets(graphics::device& device);
+    void setup_desc_sets();
 
+    // ref to graphics_engine_core::device
+    graphics::device& device_;
     uint32_t cloth_id_;
 
     u_ptr<graphics::desc_sets> desc_sets_;

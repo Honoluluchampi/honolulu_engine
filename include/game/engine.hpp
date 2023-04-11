@@ -94,10 +94,14 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
+  protected:
+    // cleaning method of each specific application
+    void cleanup() {}
+
   private:
     void update();
     void render();
-    void cleanup();
+    void cleanup_common();
 
     // for each specific engine
     void update_this(const float& dt) {}
@@ -145,7 +149,7 @@ ENGN_API void ENGN_TYPE::run()
     render();
   }
   graphics_engine_core_.wait_idle();
-  cleanup();
+  cleanup_common();
 }
 
 ENGN_API void ENGN_TYPE::update()
@@ -173,8 +177,9 @@ ENGN_API void ENGN_TYPE::render()
   core_.render_gui();
 }
 
-ENGN_API void ENGN_TYPE::cleanup()
+ENGN_API void ENGN_TYPE::cleanup_common()
 {
+  static_cast<Derived*>(this)->cleanup();
   graphics_engine_.reset();
   compute_engine_.reset();
   utils::singleton_deleter::delete_reversely();

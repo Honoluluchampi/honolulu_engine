@@ -11,7 +11,6 @@ namespace hnll {
 
 SELECT_SHADING_SYSTEM(graphics_shaders,
   game::grid_shading_system,
-  game::static_mesh_shading_system,
   physics::cloth_compute_shading_system);
 
 SELECT_ACTOR(actors, game::default_camera);
@@ -24,9 +23,11 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shad
     cloth_compute()
     {
       add_update_target_directly<game::default_camera>();
-      cloth_ = physics::mass_spring_cloth::create(game::graphics_engine_core::get_device_r());
+      cloth_ = physics::mass_spring_cloth::create();
     }
     ~cloth_compute() {}
+
+    void cleanup() { cloth_.reset(); }
   private:
     s_ptr<physics::mass_spring_cloth> cloth_;
 };

@@ -10,6 +10,7 @@ layout(location = 2) out vec3 frag_normal_world;
 
 struct vertex {
  vec3 position;
+ vec3 normal;
 };
 
 layout(set = 1, binding = 0) buffer Vertex {
