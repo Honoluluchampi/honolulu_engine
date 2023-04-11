@@ -20,7 +20,7 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    shading_system(graphics::device& device) : device_(device)
+    explicit shading_system(graphics::device& device) : device_(device)
     { static_cast<Derived*>(this)->setup(); }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 

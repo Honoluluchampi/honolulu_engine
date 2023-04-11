@@ -11,6 +11,7 @@ using grid_comp = dummy_renderable_comp<utils::shading_type::GRID>;
 DEFINE_SHADING_SYSTEM(grid_shading_system, grid_comp)
 {
   public:
+    explicit grid_shading_system(graphics::device& device);
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 };

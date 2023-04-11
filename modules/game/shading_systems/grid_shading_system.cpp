@@ -3,6 +3,9 @@
 
 namespace hnll::game {
 
+grid_shading_system::grid_shading_system(graphics::device &device) : game::shading_system<grid_shading_system, grid_comp>(device)
+{}
+
 void grid_shading_system::setup()
 {
   shading_type_ = utils::shading_type::GRID;
