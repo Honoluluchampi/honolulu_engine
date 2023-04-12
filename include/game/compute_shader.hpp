@@ -36,6 +36,7 @@ class compute_shader
     // write this function for each compute shader
     void setup();
 
+    template<typename PushConstant>
     void create_pipeline(
       const std::string& filepath,
       const std::vector<VkDescriptorSetLayout>& desc_set_layouts
@@ -51,6 +52,10 @@ class compute_shader
     inline void dispatch_command(VkCommandBuffer command, int x, int y, int z)
     { vkCmdDispatch(command, x, y, z); }
 
+    template <typename PushConstant>
+    inline void bind_push(VkCommandBuffer command, VkShaderStageFlagBits stages, PushConstant push)
+    { vkCmdPushConstants(command, pipeline_layout_, stages, 0,sizeof(PushConstant),&push); }
+
     VkShaderModule shader_module_;
     VkPipelineLayout pipeline_layout_;
     VkPipeline pipeline_;
@@ -61,7 +66,7 @@ class compute_shader
 #define CS_API template <typename Derived>
 #define CS_TYPE compute_shader<Derived>
 
-CS_API void CS_TYPE::create_pipeline(
+CS_API template <typename PushConstant> void CS_TYPE::create_pipeline(
   const std::string &filepath,
   const std::vector<VkDescriptorSetLayout> &desc_set_layouts)
 {
@@ -75,11 +80,19 @@ CS_API void CS_TYPE::create_pipeline(
   shader_stage_info.module = shader_module_;
   shader_stage_info.pName = "main";
 
+  // configure push constant
+  VkPushConstantRange push{};
+  push.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+  push.offset = 0;
+  push.size = sizeof(PushConstant);
+
   // create pipeline layout
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = desc_set_layouts.size();
   pipelineLayoutInfo.pSetLayouts = desc_set_layouts.data();
+  pipelineLayoutInfo.pushConstantRangeCount = 1;
+  pipelineLayoutInfo.pPushConstantRanges = &push;
 
   if (vkCreatePipelineLayout(device_.get_device(), &pipelineLayoutInfo, nullptr, &pipeline_layout_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create compute pipeline layout!");

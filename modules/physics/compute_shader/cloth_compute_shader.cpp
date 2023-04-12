@@ -4,6 +4,7 @@
 #include <graphics/swap_chain.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
+#include "../common/cloth_push.h"
 
 namespace hnll::physics {
 
@@ -20,7 +21,7 @@ cloth_compute_shader::~cloth_compute_shader()
 void cloth_compute_shader::setup()
 {
   mass_spring_cloth::set_desc_layout();
-  create_pipeline(
+  create_pipeline<cloth_push>(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
     { mass_spring_cloth::get_vk_desc_layout() }
   );
@@ -32,8 +33,12 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
 
   bind_pipeline(command);
 
+  cloth_push push;
+  push.dt = info.dt;
+
   for (auto& cloth_kv : clothes_) {
     auto& cloth = cloth_kv.second;
+    bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
     bind_desc_sets(command, {cloth->get_vk_desc_sets(info.frame_index)});
     dispatch_command(command, 3, 1, 1);
   }
