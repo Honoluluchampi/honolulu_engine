@@ -114,16 +114,22 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
     {set_info},
     utils::FRAMES_IN_FLIGHT);
 
+  vertex_info v_info {
+    x_grid_,
+    y_grid_,
+    mesh.data()
+  };
+
   // assign buffer
   for (int i = 0; i < frame_in_flight; i++) {
     // vertex buffer
     auto vertex_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(vertex) * mesh.size(),
+      sizeof(v_info),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      mesh.data()
+      &v_info
     );
     desc_sets_->set_buffer(0, 0, i, std::move(vertex_buffer));
 

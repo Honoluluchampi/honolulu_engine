@@ -16,15 +16,15 @@ SELECT_ACTOR(actors, game::default_camera);
 
 SELECT_COMPUTE_SHADER(compute_shaders, physics::cloth_compute_shader);
 
-DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shaders)
+DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_shaders)
 {
   public:
-    cloth_compute()
+    cloth_simulation()
     {
       add_update_target_directly<game::default_camera>();
-      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
+      cloth_ = physics::mass_spring_cloth::create(4, 4, 5, 5);
     }
-    ~cloth_compute() {}
+    ~cloth_simulation() {}
 
     void cleanup() { cloth_.reset(); }
   private:
@@ -35,7 +35,7 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shad
 
 int main()
 {
-  hnll::cloth_compute engine;
+  hnll::cloth_simulation engine;
 
   try { engine.run(); }
   catch (const std::exception &e) {

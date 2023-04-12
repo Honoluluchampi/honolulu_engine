@@ -14,8 +14,10 @@ struct vertex {
 };
 
 layout(set = 1, binding = 0) buffer Vertex {
+  int x_grid,
+  int y_grid,
   vertex vert[];
-};
+} v_info;
 
 layout(set = 1, binding = 1) readonly buffer Index {
   uint indices[];
@@ -23,10 +25,11 @@ layout(set = 1, binding = 1) readonly buffer Index {
 
 void main()
 {
-    vec4 pos_world = vec4(vert[indices[gl_VertexIndex]].position, 1.0);
-    gl_Position = ubo.projection * ubo.view * pos_world;
+  current_vertex = v_info.vert[indices[gl_VertexIndex]];
+  vec4 pos_world = vec4(current_vertex.position, 1.0);
+  gl_Position = ubo.projection * ubo.view * pos_world;
 
-    frag_normal_world = vec3(0.0, 0.0, -1.0);
-    frag_pos_world = pos_world.xyz;
-    frag_color = vec3(0.0, 0.4, 0.8);
+  frag_normal_world = vec3(0.0, 0.0, -1.0);
+  frag_pos_world = pos_world.xyz;
+  frag_color = vec3(0.0, 0.4, 0.8);
 }

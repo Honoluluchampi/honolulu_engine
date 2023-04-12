@@ -12,6 +12,13 @@ struct vertex
   alignas(16) vec3 normal;
 };
 
+struct vertex_info
+{
+  int x_grid;
+  int y_grid;
+  vertex* vertices;
+};
+
 class mass_spring_cloth
 {
   public:
