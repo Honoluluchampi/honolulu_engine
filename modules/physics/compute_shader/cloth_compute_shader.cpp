@@ -4,9 +4,11 @@
 #include <graphics/swap_chain.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
-#include "../common/cloth_push.h"
 
 namespace hnll::physics {
+
+// shared with shaders
+#include "../common/cloth_config.h"
 
 std::unordered_map<uint32_t, s_ptr<mass_spring_cloth>> cloth_compute_shader::clothes_;
 
@@ -40,7 +42,11 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
     auto& cloth = cloth_kv.second;
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
     bind_desc_sets(command, {cloth->get_vk_desc_sets(info.frame_index)});
-    dispatch_command(command, 3, 1, 1);
+    dispatch_command(
+      command,
+      (cloth->get_x_grid() + cloth_local_size_x - 1) / cloth_local_size_x,
+      (cloth->get_y_grid() + cloth_local_size_y - 1) / cloth_local_size_y,
+      1);
   }
 }
 

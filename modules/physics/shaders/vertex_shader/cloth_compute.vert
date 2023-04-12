@@ -17,9 +17,13 @@ layout(set = 1, binding = 0) buffer Vertex {
   vertex vert[];
 };
 
+layout(set = 1, binding = 1) readonly buffer Index {
+  uint indices[];
+};
+
 void main()
 {
-    vec4 pos_world = vec4(vert[gl_VertexIndex].position, 1.0);
+    vec4 pos_world = vec4(vert[indices[gl_VertexIndex]].position, 1.0);
     gl_Position = ubo.projection * ubo.view * pos_world;
 
     frag_normal_world = vec3(0.0, 0.0, -1.0);

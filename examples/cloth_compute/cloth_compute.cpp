@@ -22,7 +22,7 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_compute, graphics_shaders, actors, compute_shad
     cloth_compute()
     {
       add_update_target_directly<game::default_camera>();
-      cloth_ = physics::mass_spring_cloth::create();
+      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
     }
     ~cloth_compute() {}
 

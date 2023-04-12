@@ -259,8 +259,6 @@ void desc_sets::build_layouts()
 
 void desc_sets::build()
 {
-  vk_desc_sets_.resize(set_infos_.size());
-
   // build raw desc sets
   for (int set_id = 0; set_id < set_infos_.size(); set_id++) {
     int resource_count = set_infos_[set_id].is_frame_buffered_ ? frame_count_ : 1;
@@ -271,9 +269,11 @@ void desc_sets::build()
         auto& binding = bindings[binding_id];
         auto buffer_info = get_buffer_r(set_id, binding_id, frame).desc_info();
         desc_writer(*layouts_[set_id], *pool_)
-          .write_buffer(binding_id, &buffer_info)
-          .build(get_vk_desc_set_r(set_id, frame));
+          .write_buffer(binding_id, &buffer_info);
       }
+
+      desc_writer(*layouts_[set_id], *pool_)
+        .build(get_vk_desc_set_r(set_id, frame));
     }
   }
 }

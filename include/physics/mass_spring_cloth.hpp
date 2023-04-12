@@ -15,12 +15,15 @@ struct vertex
 class mass_spring_cloth
 {
   public:
-    static s_ptr<mass_spring_cloth>create();
-    mass_spring_cloth();
+    static s_ptr<mass_spring_cloth>create(int x_grid, int y_grid, float x_len, float y_len);
+    explicit mass_spring_cloth(int x_grid, int y_grid, float x_len, float y_len);
     ~mass_spring_cloth();
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
+    inline int get_x_grid() const { return x_grid_; }
+    inline int get_y_grid() const { return y_grid_; }
+    inline uint32_t get_indices_count() const { return indices_count_; }
 
     static VkDescriptorSetLayout get_vk_desc_layout();
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame_index);
@@ -30,7 +33,9 @@ class mass_spring_cloth
     static void reset_desc_layout();
 
   private:
-    void setup_desc_sets();
+    std::vector<vertex> construct_mesh(float x_len, float y_len);
+    std::vector<uint32_t> construct_index_buffer();
+    void setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices);
 
     // ref to graphics_engine_core::device
     graphics::device& device_;
@@ -40,6 +45,9 @@ class mass_spring_cloth
     s_ptr<graphics::desc_pool> desc_pool_;
 
     static u_ptr<graphics::desc_layout> desc_layout_;
+
+    int x_grid_, y_grid_;
+    uint32_t indices_count_;
 };
 
 } // namespace hnll::physics

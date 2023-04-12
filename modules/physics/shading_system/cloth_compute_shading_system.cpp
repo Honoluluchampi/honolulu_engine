@@ -64,7 +64,7 @@ void cloth_compute_shading_system::render(const utils::graphics_frame_info& fram
       nullptr
     );
 
-    vkCmdDraw(frame_info.command_buffer, 3, 1, 0, 0);
+    vkCmdDraw(frame_info.command_buffer,cloth->get_indices_count(),1, 0, 0);
   }
 }
 
