@@ -18,7 +18,7 @@ swap_chain::swap_chain(device &device, VkExtent2D extent, u_ptr<swap_chain>&& pr
 
   // derive compute semaphore
   if (old_swap_chain_ != nullptr) {
-    compute_semaphore_ = old_swap_chain_->move_compute_semaphore();
+    move_timeline_semaphores();
   }
   else {
     compute_semaphore_ = timeline_semaphore::create(device_);
@@ -105,9 +105,7 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
   return result;
 }
 
-VkResult swap_chain::submit_command_buffers(
-  const VkCommandBuffer *buffers,
-  uint32_t *image_index)
+VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index)
 {
   // specify a timeout in nanoseconds for an image
   auto timeout = UINT64_MAX;
@@ -144,7 +142,7 @@ VkResult swap_chain::submit_command_buffers(
   submit_info.pWaitSemaphoreInfos = wait_semaphores;
   // which command buffers to actually submit for execution
   // should submit the command buffer that binds the swap chain image
-  // we just acquired as color attachiment.
+  // we just acquired as color attachment.
 
   // TODO : configure renderer count in a systematic way
 #ifdef IMGUI_DISABLED
@@ -200,7 +198,7 @@ VkResult swap_chain::submit_command_buffers(
   if (vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
 
-  // configure subpass dependencies in VkRenderPassFacotry::create_render_pass
+  // configure sub-pass dependencies in VkRenderPassFactory::create_render_pass
 
   // presentation
   // submit the result back to the swap chain to have it eventually show up on the screen
@@ -452,8 +450,10 @@ void swap_chain::reset_render_pass(int render_pass_id)
   }
 }
 
-u_ptr<timeline_semaphore>&& swap_chain::move_compute_semaphore()
-{ return std::move(compute_semaphore_); }
+void swap_chain::move_timeline_semaphores()
+{
+  compute_semaphore_ = std::move(old_swap_chain_->compute_semaphore_);
+}
 
 void swap_chain::create_depth_resources()
 {

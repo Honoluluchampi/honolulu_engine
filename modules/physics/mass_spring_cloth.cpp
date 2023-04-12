@@ -51,10 +51,11 @@ void mass_spring_cloth::setup_desc_sets()
     graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
 
   // create initial data
+
   std::array<vertex, 3> vertices = {
-    vec3{1.f, -1.f, 0.f},
-    vec3{-1.f, -1.f, 0.f},
-    vec3{0.f, -1.f, 0.f}
+    vertex{vec3(0.5, 0.0, 0.0), vec3(0,0,0) },
+    vertex{vec3(-0.5, 0.0, 0.0), vec3(0,0,0) },
+    vertex{vec3(0.0, 0.0, 0.5), vec3(0,0,0) }
   };
 
   // assign buffer
