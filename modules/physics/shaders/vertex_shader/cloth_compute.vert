@@ -16,9 +16,16 @@ struct vertex {
  vec3 normal;
 };
 
+vec3 positions[3] = {
+  vec3(-1.f, 0.f, 0.f),
+  vec3(1.f, 0.f, 0.f),
+  vec3(0.f, 0.f, 1.f)
+};
+
 void main()
 {
-  vec4 pos_world = vec4(in_position, 1.0);
+  // vec4 pos_world = vec4(in_position, 1.0);
+  vec4 pos_world = vec4(positions[gl_VertexIndex % 3], 1.0);
   gl_Position = ubo.projection * ubo.view * pos_world;
 
   frag_normal_world = vec3(0.0, 0.0, -1.0);

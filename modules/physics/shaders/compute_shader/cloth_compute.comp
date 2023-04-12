@@ -20,8 +20,15 @@ layout(push_constant) uniform Push {
   cloth_push push;
 };
 
+vec3 positions[3] = {
+  vec3(-1.f, 0.f, 0.f),
+  vec3(1.f, 0.f, 0.f),
+  vec3(0.f, 0.f, 1.f)
+};
+
 void main()
 {
   uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-  v_info.vert[current_index].position = v_info.vert[current_index].position + vec3(0, 0, 0.001);
+  // v_info.vert[current_index].position = v_info.vert[current_index].position + vec3(0, 0, 0.001);
+  v_info.vert[current_index].position = positions[current_index % 3];
 }
