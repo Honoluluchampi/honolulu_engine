@@ -10,7 +10,7 @@
 
 namespace hnll::utils {
 
-constexpr int FLAMES_IN_FLIGHTS = 2;
+constexpr int FRAMES_IN_FLIGHT = 2;
 
 enum class rendering_type
 {

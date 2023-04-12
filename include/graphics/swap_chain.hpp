@@ -14,8 +14,6 @@ class timeline_semaphore;
 
 class swap_chain {
   public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
     swap_chain(device &device, VkExtent2D window_extent, u_ptr<swap_chain>&& previous = nullptr);
     ~swap_chain();
 

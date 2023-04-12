@@ -3,7 +3,6 @@
 #include <physics/resource_manager.hpp>
 #include <game/modules/graphics_engine.hpp>
 #include <graphics/desc_set.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/buffer.hpp>
 
 namespace hnll::physics {
@@ -33,7 +32,7 @@ mass_spring_cloth::~mass_spring_cloth()
 
 void mass_spring_cloth::setup_desc_sets()
 {
-  int frame_in_flight = graphics::swap_chain::MAX_FRAMES_IN_FLIGHT;
+  int frame_in_flight = utils::FRAMES_IN_FLIGHT;
   // pool
   desc_pool_ = graphics::desc_pool::builder(device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_in_flight)
@@ -50,7 +49,7 @@ void mass_spring_cloth::setup_desc_sets()
     device_,
     desc_pool_,
     {set_info},
-    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
+    utils::FRAMES_IN_FLIGHT);
 
   // create initial data
 

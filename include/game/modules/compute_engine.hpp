@@ -2,9 +2,9 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/rendering_utils.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
 
 // std
@@ -66,7 +66,7 @@ template <> class compute_engine<> {};
 CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics::timeline_semaphore& semaphore)
  : device_(device), compute_semaphore_(semaphore)
 {
-  command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   semaphore_value_cache_.resize(command_buffers_.size(), 0);
 
   compute_queue_ = device.get_compute_queue();
@@ -168,7 +168,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::end_frame()
 
   submit_command();
 
-  current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
+  current_frame_index_ = ++current_frame_index_ == utils::FRAMES_IN_FLIGHT
                          ? 0 : current_frame_index_;
 }
 

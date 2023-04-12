@@ -1,6 +1,7 @@
 //hnll
 #include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
+#include <utils/rendering_utils.hpp>
 
 // std
 #include <array>
@@ -82,7 +83,7 @@ swap_chain::~swap_chain()
 #endif
 
   // cleanup synchronization objects
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+  for (size_t i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     vkDestroySemaphore(device_.get_device(), render_finished_semaphores_[i], nullptr);
     vkDestroySemaphore(device_.get_device(), image_available_semaphores_[i], nullptr);
     vkDestroyFence(device_.get_device(), in_flight_fences_[i], nullptr);
@@ -217,7 +218,7 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
 
   auto result = vkQueuePresentKHR(device_.get_present_queue(), &present_info);
 
-  current_frame_ = (current_frame_ + 1) % MAX_FRAMES_IN_FLIGHT;
+  current_frame_ = (current_frame_ + 1) % utils::FRAMES_IN_FLIGHT;
 
   return result;
 }
@@ -506,9 +507,9 @@ void swap_chain::create_depth_resources()
 
 void swap_chain::create_sync_objects()
 {
-  image_available_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-  render_finished_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-  in_flight_fences_.resize(MAX_FRAMES_IN_FLIGHT);
+  image_available_semaphores_.resize(utils::FRAMES_IN_FLIGHT);
+  render_finished_semaphores_.resize(utils::FRAMES_IN_FLIGHT);
+  in_flight_fences_.resize(utils::FRAMES_IN_FLIGHT);
   // initially not a single framce is using an image, so initialize it to no fence
   images_in_flight_.resize(get_image_count(), VK_NULL_HANDLE);
 
@@ -520,7 +521,7 @@ void swap_chain::create_sync_objects()
   // initialize fences in the signaled state as if they had been rendered an initial frame
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+  for (size_t i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     // future version of the graphics api may add functionality for other parameters
     if (vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &image_available_semaphores_[i]) != VK_SUCCESS ||
         vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &render_finished_semaphores_[i]) != VK_SUCCESS ||

@@ -50,9 +50,9 @@ void graphics_engine_core::setup_ubo()
 {
   // // 2 uniform buffer descriptor
   global_pool_ = graphics::desc_pool::builder(*device_)
-    .set_max_sets(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT)
+    .set_max_sets(utils::FRAMES_IN_FLIGHT)
     .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, graphics::swap_chain::MAX_FRAMES_IN_FLIGHT)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, utils::FRAMES_IN_FLIGHT)
     .build();
 
   // build desc sets
@@ -67,10 +67,10 @@ void graphics_engine_core::setup_ubo()
     *device_,
     global_pool_,
     {global_set_info},
-    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT);
+    utils::FRAMES_IN_FLIGHT);
 
   // creating ubo for each frame version
-  for (int i = 0; i < graphics::swap_chain::MAX_FRAMES_IN_FLIGHT; i++) {
+  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     auto buf = graphics::buffer::create(
       *device_,
       sizeof(utils::global_ubo),
