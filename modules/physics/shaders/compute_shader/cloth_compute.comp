@@ -13,8 +13,6 @@ struct vertex {
 };
 
 layout(set = 0, binding = 0) buffer Vertex {
-  int x_grid;
-  int y_grid;
   vertex vert[];
 } v_info;
 
@@ -24,6 +22,6 @@ layout(push_constant) uniform Push {
 
 void main()
 {
-  uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * v_info.x_grid;
+  uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
   v_info.vert[current_index].position = v_info.vert[current_index].position + vec3(0, 0, 0.001);
 }

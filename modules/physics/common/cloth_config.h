@@ -5,4 +5,6 @@ const int cloth_local_size_y = 32;
 
 struct cloth_push {
   float dt;
+  int x_grid;
+  int y_grid;
 };

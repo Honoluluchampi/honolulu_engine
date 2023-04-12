@@ -10,13 +10,9 @@ struct vertex
 {
   alignas(16) vec3 position;
   alignas(16) vec3 normal;
-};
 
-struct vertex_info
-{
-  int x_grid;
-  int y_grid;
-  vertex* vertices;
+  static std::vector<VkVertexInputBindingDescription> get_binding_descriptions();
+  static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions();
 };
 
 class mass_spring_cloth
@@ -25,6 +21,8 @@ class mass_spring_cloth
     static s_ptr<mass_spring_cloth>create(int x_grid, int y_grid, float x_len, float y_len);
     explicit mass_spring_cloth(int x_grid, int y_grid, float x_len, float y_len);
     ~mass_spring_cloth();
+
+    void bind(VkCommandBuffer cb);
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
@@ -50,6 +48,9 @@ class mass_spring_cloth
 
     u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
+
+    graphics::buffer*       vertex_buffer_;
+    u_ptr<graphics::buffer> index_buffer_;
 
     static u_ptr<graphics::desc_layout> desc_layout_;
 

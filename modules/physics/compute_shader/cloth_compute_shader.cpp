@@ -40,6 +40,8 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
 
   for (auto& cloth_kv : clothes_) {
     auto& cloth = cloth_kv.second;
+    push.x_grid = cloth->get_x_grid();
+    push.y_grid = cloth->get_y_grid();
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
     bind_desc_sets(command, {cloth->get_vk_desc_sets(info.frame_index)});
     dispatch_command(

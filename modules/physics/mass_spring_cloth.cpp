@@ -102,10 +102,6 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
   set_info.add_binding(
     VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  // index buffer (only used by vertex shader)
-  set_info.add_binding(
-      VK_SHADER_STAGE_VERTEX_BIT,
-      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
@@ -114,38 +110,34 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
     {set_info},
     utils::FRAMES_IN_FLIGHT);
 
-  vertex_info v_info {
-    x_grid_,
-    y_grid_,
-    mesh.data()
-  };
-
   // assign buffer
   for (int i = 0; i < frame_in_flight; i++) {
     // vertex buffer
     auto vertex_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(v_info),
+      sizeof(mesh),
       1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      &v_info
+      mesh.data()
     );
-    desc_sets_->set_buffer(0, 0, i, std::move(vertex_buffer));
 
-    // index buffer
-    auto index_buffer = graphics::buffer::create_with_staging(
-      device_,
-      sizeof(uint32_t) * indices.size(),
-      1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      indices.data()
-    );
-    desc_sets_->set_buffer(0, 1, i, std::move(index_buffer));
+    vertex_buffer_ = vertex_buffer.get();
+
+    desc_sets_->set_buffer(0, 0, i, std::move(vertex_buffer));
   }
 
   desc_sets_->build();
+
+  // index buffer
+  index_buffer_ = graphics::buffer::create_with_staging(
+    device_,
+    sizeof(uint32_t) * indices.size(),
+    1,
+    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    indices.data()
+  );
 }
 
 VkDescriptorSetLayout mass_spring_cloth::get_vk_desc_layout()
@@ -159,10 +151,6 @@ void mass_spring_cloth::set_desc_layout()
       .add_binding(
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT)
-      .add_binding(
-        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        VK_SHADER_STAGE_VERTEX_BIT
-        )
       .build();
   }
 }
@@ -172,5 +160,35 @@ void mass_spring_cloth::reset_desc_layout()
 
 std::vector<VkDescriptorSet> mass_spring_cloth::get_vk_desc_sets(int frame_index)
 { return desc_sets_->get_vk_desc_sets(frame_index); }
+
+void mass_spring_cloth::bind(VkCommandBuffer cb)
+{
+  VkBuffer buffers[] = { vertex_buffer_->get_buffer() };
+  VkDeviceSize offsets[] = { 0 };
+  vkCmdBindVertexBuffers(cb, 0, 1, buffers, offsets);
+  vkCmdBindIndexBuffer(cb, index_buffer_->get_buffer(), 0, VK_INDEX_TYPE_UINT32);
+};
+
+std::vector<VkVertexInputBindingDescription> vertex::get_binding_descriptions() {
+  std::vector<VkVertexInputBindingDescription> binding_descriptions(1);
+  // per-vertex data is packed together in one array, so the index of the
+  // binding in the array is always 0
+  binding_descriptions[0].binding = 0;
+  // number of bytes from one entry to the next
+  binding_descriptions[0].stride = sizeof(vertex);
+  binding_descriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  return binding_descriptions;
+}
+
+std::vector<VkVertexInputAttributeDescription> vertex::get_attribute_descriptions() {
+  // how to extract a vertex attribute from a chunk of vertex data
+  std::vector<VkVertexInputAttributeDescription> attribute_descriptions{};
+
+  // location, binding, format, offset
+  attribute_descriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, position)});
+  attribute_descriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, normal)});
+
+  return attribute_descriptions;
+}
 
 } // namespace hnll::physics

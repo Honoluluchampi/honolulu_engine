@@ -29,6 +29,8 @@ void cloth_compute_shading_system::setup()
   );
 
   auto pipeline_config_info = graphics::pipeline::default_pipeline_config_info();
+  pipeline_config_info.binding_descriptions   = physics::vertex::get_binding_descriptions();
+  pipeline_config_info.attribute_descriptions = physics::vertex::get_attribute_descriptions();
 
   pipeline_ = create_pipeline(
     pipeline_layout_,
@@ -64,7 +66,8 @@ void cloth_compute_shading_system::render(const utils::graphics_frame_info& fram
       nullptr
     );
 
-    vkCmdDraw(frame_info.command_buffer,cloth->get_indices_count(),1, 0, 0);
+    cloth->bind(frame_info.command_buffer);
+    vkCmdDrawIndexed(frame_info.command_buffer,cloth->get_indices_count(),1, 0, 0, 0);
   }
 }
 
