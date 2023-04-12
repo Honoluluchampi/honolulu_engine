@@ -10,6 +10,8 @@
 
 namespace hnll::utils {
 
+constexpr int FLAMES_IN_FLIGHTS = 2;
+
 enum class rendering_type
 {
   VERTEX_SHADING,

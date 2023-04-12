@@ -17,6 +17,7 @@ class mass_spring_cloth
   public:
     static s_ptr<mass_spring_cloth>create();
     mass_spring_cloth();
+    ~mass_spring_cloth();
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }

@@ -46,4 +46,8 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
 
 void cloth_compute_shader::add_cloth(const s_ptr<mass_spring_cloth> &cloth)
 { clothes_[cloth->get_id()] = cloth; }
+
+void cloth_compute_shader::remove_cloth(uint32_t cloth_id)
+{ clothes_.erase(cloth_id); }
+
 } // namespace hnll::physics

@@ -1,7 +1,7 @@
 // hnll
 #include <physics/mass_spring_cloth.hpp>
-#include <physics/compute_shader/cloth_compute_shader.hpp>
-#include <physics/shading_system/cloth_compute_shading_system.hpp>
+#include <physics/resource_manager.hpp>
+#include <game/modules/graphics_engine.hpp>
 #include <graphics/desc_set.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/buffer.hpp>
@@ -15,8 +15,7 @@ s_ptr<mass_spring_cloth> mass_spring_cloth::create()
   auto ret = std::make_shared<mass_spring_cloth>();
 
   // add to shaders
-  cloth_compute_shader::add_cloth(ret);
-  cloth_compute_shading_system::add_cloth(ret);
+  resource_manager::add_cloth(ret);
 
   return ret;
 }
@@ -28,6 +27,9 @@ mass_spring_cloth::mass_spring_cloth() : device_(game::graphics_engine_core::get
 
   setup_desc_sets();
 }
+
+mass_spring_cloth::~mass_spring_cloth()
+{ resource_manager::remove_cloth(cloth_id_); }
 
 void mass_spring_cloth::setup_desc_sets()
 {

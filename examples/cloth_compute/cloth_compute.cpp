@@ -2,7 +2,6 @@
 #include <game/engine.hpp>
 #include <game/actors/default_camera.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
-#include <game/shading_systems/static_mesh_shading_system.hpp>
 #include <physics/mass_spring_cloth.hpp>
 #include <physics/compute_shader/cloth_compute_shader.hpp>
 #include <physics/shading_system/cloth_compute_shading_system.hpp>

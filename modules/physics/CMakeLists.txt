@@ -2,6 +2,7 @@ set(SOURCES
         shading_system/cloth_compute_shading_system.cpp
         compute_shader/cloth_compute_shader.cpp
         mass_spring_cloth.cpp
+        resource_manager.cpp
         )
 
 add_library(hnll_physics STATIC ${SOURCES})

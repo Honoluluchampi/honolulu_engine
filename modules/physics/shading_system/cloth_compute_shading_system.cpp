@@ -71,4 +71,7 @@ void cloth_compute_shading_system::render(const utils::graphics_frame_info& fram
 void cloth_compute_shading_system::add_cloth(const s_ptr<mass_spring_cloth>& cloth)
 { clothes_[cloth->get_id()] = cloth; }
 
+void cloth_compute_shading_system::remove_cloth(uint32_t cloth_id)
+{ clothes_.erase(cloth_id); }
+
 } // namespace hnll::physics
