@@ -23,6 +23,6 @@ void main()
 {
   if (push.x_grid > gl_LocalInvocationID.x && push.y_grid > gl_LocalInvocationID.y) {
     uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-    vertices[current_index].position = vertices[current_index].position + vec3(0.001, 0, 0);
+    vertices[current_index].position = vertices[current_index].position + vec3(push.dt, 0, 0);
   }
 }

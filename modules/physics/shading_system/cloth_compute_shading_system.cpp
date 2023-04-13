@@ -2,6 +2,7 @@
 #include <game/modules/graphics_engine.hpp>
 #include <physics/mass_spring_cloth.hpp>
 #include <physics/shading_system/cloth_compute_shading_system.hpp>
+#include <graphics/utils.hpp>
 
 namespace hnll::physics {
 
@@ -29,8 +30,11 @@ void cloth_compute_shading_system::setup()
   );
 
   auto pipeline_config_info = graphics::pipeline::default_pipeline_config_info();
-  pipeline_config_info.binding_descriptions   = physics::vertex::get_binding_descriptions();
-  pipeline_config_info.attribute_descriptions = physics::vertex::get_attribute_descriptions();
+  pipeline_config_info.create_vertex_binding_descriptions<physics::vertex>();
+  pipeline_config_info.create_vertex_attribute_descriptions(
+    { VK_FORMAT_R32G32B32_SFLOAT },
+    { offsetof(physics::vertex, position) }
+  );
 
   pipeline_ = create_pipeline(
     pipeline_layout_,

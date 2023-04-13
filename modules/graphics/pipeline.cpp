@@ -257,6 +257,21 @@ VkPipelineVertexInputStateCreateInfo pipeline::create_vertex_input_info()
   return vertex_input_info;
 }
 
+void pipeline_config_info::create_vertex_attribute_descriptions(
+  const std::vector<VkFormat>& format_list, const std::vector<uint32_t>& offset_list)
+{
+  // how to extract a vertex attribute from a chunk of vertex data
+  std::vector<VkVertexInputAttributeDescription> attributes{};
+
+  // location, binding, format, offset
+  assert(format_list.size() == offset_list.size() && "counts of format and offset are different.");
+  for (uint32_t i = 0; i < format_list.size(); i++) {
+    attributes.push_back({i, 0, format_list[i], offset_list[i]});
+  }
+
+  attribute_descriptions = attributes;
+}
+
 void pipeline::bind(VkCommandBuffer command_buffer)
 {
   // basic drawing commands
