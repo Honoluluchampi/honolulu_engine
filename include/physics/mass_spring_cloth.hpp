@@ -25,6 +25,8 @@ class mass_spring_cloth
     inline uint32_t get_id() const { return cloth_id_; }
     inline int get_x_grid() const { return x_grid_; }
     inline int get_y_grid() const { return y_grid_; }
+    inline float get_x_len() const { return x_len_; }
+    inline float get_y_len() const { return y_len_; }
     inline uint32_t get_indices_count() const { return indices_count_; }
 
     static VkDescriptorSetLayout get_vk_desc_layout();
@@ -52,6 +54,7 @@ class mass_spring_cloth
     static u_ptr<graphics::desc_layout> desc_layout_;
 
     int x_grid_, y_grid_;
+    float x_len_, y_len_;
     uint32_t indices_count_;
 };
 

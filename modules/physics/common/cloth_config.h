@@ -7,4 +7,6 @@ struct cloth_push {
   float dt;
   int x_grid;
   int y_grid;
+  float x_len;
+  float y_len;
 };

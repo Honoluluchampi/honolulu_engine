@@ -27,6 +27,8 @@ mass_spring_cloth::mass_spring_cloth(int x_grid, int y_grid, float x_len, float 
 
   x_grid_ = x_grid;
   y_grid_ = y_grid;
+  x_len_ = x_len;
+  y_len_ = y_len;
   indices_count_ = (x_grid_ - 1) * (y_grid_ - 1) * 6;
 
   auto mesh = construct_mesh(x_len, y_len);

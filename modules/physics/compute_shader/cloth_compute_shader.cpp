@@ -43,6 +43,8 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
     auto& cloth = cloth_kv.second;
     push.x_grid = cloth->get_x_grid();
     push.y_grid = cloth->get_y_grid();
+    push.x_len = cloth->get_x_len();
+    push.y_len = cloth->get_y_len();
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
     // poll desc sets (each frame has only one desc sets)

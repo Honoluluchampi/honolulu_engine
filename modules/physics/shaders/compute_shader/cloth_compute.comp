@@ -14,25 +14,104 @@ struct vertex {
 
 // game::compute_shader binds current and previous vertices properly
 layout(set = 0, binding = 0) buffer Vertex0 {
-  vertex current_vertices[];
+  vertex curr_v[];
 };
 
 layout(set = 1, binding = 0) readonly buffer Vertex1 {
-  vertex previous_vertices[];
+  vertex prev_v[];
 };
 
 layout(push_constant) uniform Push {
   cloth_push push;
 };
 
-const float mass = 1.f;
-const float gravity = 9.8f;
+const float mass = 0.5;
+const float gravity = 9.8;
+
+const float stiffs[3] = {
+  100, // structural
+  100, // shear
+  100  // flexion
+};
+
+const float rest_coef[3] = {
+  1.0,
+  sqrt(2.0),
+  2.0
+};
+
+struct id_pair {
+  ivec2 pairs[4];
+};
+
+const ivec2 id_diff0[4] = { ivec2(0, 1), ivec2(0, -1), ivec2(1, 0), ivec2(-1, 0) };
+const ivec2 id_diff1[4] = { ivec2(1, 1), ivec2(1, -1), ivec2(-1, 1), ivec2(-1, -1) }; // shear
+const ivec2 id_diff2[4] = { ivec2(0, 2), ivec2(0, -2), ivec2(2, 0), ivec2(-2, 0) }; // flexion
+
+const id_pair id_diff[3] = {
+  id_pair(id_diff0),
+  id_pair(id_diff1),
+  id_pair(id_diff2)
+};
+
+vec3 gravity_force() {
+  return vec3(0, gravity, 0);
+}
+
+// returns true if the vertex is inside the cloth
+bool exists_vertex(uint x_id, uint y_id) {
+  return x_id < push.x_grid && y_id < push.y_grid;
+}
+
+vec3 get_prev_position(uint x_id, uint y_id) {
+  return prev_v[x_id + y_id * push.x_grid].position;
+}
+
+vec3 get_prev_velocity(uint x_id, uint y_id) {
+  return prev_v[x_id + y_id * push.x_grid].velocity;
+}
+
+vec3 spring_force(int spring_type, uint x_id, uint y_id) {
+  vec3 ret = vec3(0, 0, 0);
+
+  // this position will be updated
+  vec3 target = get_prev_position(x_id, y_id);
+
+  // TODO : LOOP UNROLL
+  for (int i = 0; i < 4; i++) {
+    // length of rest state
+    float rest = rest_coef[spring_type] * push.x_len / (float(push.x_grid) - 1.0);
+
+    // calc difference of positions
+    ivec2 elem_id = id_diff[spring_type].pairs[i];
+    vec3 elem = target - get_prev_position(x_id + elem_id.x, y_id + elem_id.y);
+
+    // if elem vertex does not exist, ret would not be updated
+    ret += float(exists_vertex(x_id + elem_id.x, y_id + elem_id.y)) // check existance without 'if'
+        * stiffs[spring_type] * (rest - length(elem)) * normalize(elem);
+  }
+
+  return ret;
+}
+
+vec3 gather_spring_force(uint x_id, uint y_id) {
+  vec3 ret = vec3(0, 0, 0);
+  ret += spring_force(0, x_id, y_id);
+  ret += spring_force(1, x_id, y_id);
+  ret += spring_force(2, x_id, y_id);
+  return ret;
+}
 
 void main()
 {
   uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
   // update velocity
-  current_vertices[index].velocity = previous_vertices[index].velocity + vec3(0, push.dt * gravity / mass, 0);
-  // update position
-  current_vertices[index].position = previous_vertices[index].position + push.dt * current_vertices[index].velocity;
+  vec3 whole_force = gather_spring_force(gl_LocalInvocationID.x, gl_LocalInvocationID.y) + gravity_force();
+
+  // fix corner
+  if (index != 0) {
+    curr_v[index].velocity = prev_v[index].velocity + push.dt * whole_force / mass;
+    // update position
+    curr_v[index].position = prev_v[index].position + push.dt * curr_v[index].velocity;
+  }
 }
