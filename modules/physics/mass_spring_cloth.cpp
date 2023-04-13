@@ -43,7 +43,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
   std::vector<vertex> mesh(grid_count);
 
   // temporal value
-  vec3 center = vec3(0.f, -3.f, 0.f);
+  vec3 center = vec3(0.f, 0.f, 0.f);
 
   float x_grid_len = x_len / static_cast<float>(x_grid_ - 1);
   float y_grid_len = y_len / static_cast<float>(y_grid_ - 1);
@@ -91,6 +91,8 @@ std::vector<uint32_t> mass_spring_cloth::construct_index_buffer()
 void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices)
 {
   int frame_in_flight = utils::FRAMES_IN_FLIGHT;
+  vertex_buffers_.resize(frame_in_flight);
+
   // pool
   desc_pool_ = graphics::desc_pool::builder(device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_in_flight)
@@ -122,7 +124,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
       mesh.data()
     );
 
-    vertex_buffer_ = vertex_buffer.get();
+    vertex_buffers_[i] = vertex_buffer.get();
 
     desc_sets_->set_buffer(0, 0, i, std::move(vertex_buffer));
   }
@@ -161,9 +163,9 @@ void mass_spring_cloth::reset_desc_layout()
 std::vector<VkDescriptorSet> mass_spring_cloth::get_vk_desc_sets(int frame_index)
 { return desc_sets_->get_vk_desc_sets(frame_index); }
 
-void mass_spring_cloth::bind(VkCommandBuffer cb)
+void mass_spring_cloth::bind(VkCommandBuffer cb, int frame_index)
 {
-  VkBuffer buffers[] = { vertex_buffer_->get_buffer() };
+  VkBuffer buffers[] = { vertex_buffers_[frame_index]->get_buffer() };
   VkDeviceSize offsets[] = { 0 };
   vkCmdBindVertexBuffers(cb, 0, 1, buffers, offsets);
   vkCmdBindIndexBuffer(cb, index_buffer_->get_buffer(), 0, VK_INDEX_TYPE_UINT32);

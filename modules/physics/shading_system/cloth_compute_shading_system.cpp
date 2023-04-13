@@ -70,7 +70,7 @@ void cloth_compute_shading_system::render(const utils::graphics_frame_info& fram
       nullptr
     );
 
-    cloth->bind(frame_info.command_buffer);
+    cloth->bind(frame_info.command_buffer, frame_info.frame_index);
     vkCmdDrawIndexed(frame_info.command_buffer,cloth->get_indices_count(),1, 0, 0, 0);
   }
 }

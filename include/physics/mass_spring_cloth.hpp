@@ -18,7 +18,7 @@ class mass_spring_cloth
     explicit mass_spring_cloth(int x_grid, int y_grid, float x_len, float y_len);
     ~mass_spring_cloth();
 
-    void bind(VkCommandBuffer cb);
+    void bind(VkCommandBuffer cb, int frame_index);
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
@@ -45,7 +45,7 @@ class mass_spring_cloth
     u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
 
-    graphics::buffer*       vertex_buffer_;
+    std::vector<graphics::buffer*> vertex_buffers_;
     u_ptr<graphics::buffer> index_buffer_;
 
     static u_ptr<graphics::desc_layout> desc_layout_;

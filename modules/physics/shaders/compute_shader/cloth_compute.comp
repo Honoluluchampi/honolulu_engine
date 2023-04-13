@@ -11,8 +11,13 @@ struct vertex {
  vec3 position;
 };
 
-layout(set = 0, binding = 0) buffer Vertex {
-  vertex vertices[];
+// switching between current and previous frame according to push.frame_mod
+layout(set = 0, binding = 0) buffer Vertex0 {
+  vertex current_v[];
+};
+
+layout(set = 1, binding = 0) readonly buffer Vertex1 {
+  vertex previous_v[];
 };
 
 layout(push_constant) uniform Push {
@@ -21,8 +26,9 @@ layout(push_constant) uniform Push {
 
 void main()
 {
-  if (push.x_grid > gl_LocalInvocationID.x && push.y_grid > gl_LocalInvocationID.y) {
-    uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-    vertices[current_index].position = vertices[current_index].position + vec3(push.dt, 0, 0);
+  uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
+//  current_v[index].position = previous_v[index].position;
+  if (gl_LocalInvocationID.x == 1) {
+    current_v[index].position.y -= push.dt;
   }
 }
