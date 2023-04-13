@@ -10,20 +10,6 @@ layout(location = 0) out vec3 frag_color;
 layout(location = 1) out vec3 frag_pos_world;
 layout(location = 2) out vec3 frag_normal_world;
 
-struct vertex {
- vec4 position;
-};
-
-vec3 positions[6] = {
-  vec3(-1.f, 0.f, 0.f),
-  vec3(1.f, 0.f, 0.f),
-  vec3(-1.f, 0.f, 1.f),
-  vec3(1.f, 0.f, 1.f),
-
-  vec3(-1.f, 0.f, 0.f),
-  vec3(-2.f, 0.f, 1.f)
-};
-
 void main()
 {
   vec4 pos_world = vec4(in_position, 1.0);
