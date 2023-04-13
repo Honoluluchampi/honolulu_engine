@@ -43,7 +43,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
   std::vector<vertex> mesh(grid_count);
 
   // temporal value
-  vec3 center = vec3(0.f, -5.f, 0.f);
+  vec3 center = vec3(0.f, 0.f, 0.f);
 
   float x_grid_len = x_len / static_cast<float>(x_grid_ - 1);
   float y_grid_len = y_len / static_cast<float>(y_grid_ - 1);
@@ -58,7 +58,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
         center.z() + y_grid_len * (j - static_cast<float>(y_grid_ - 1) / 2.f)
       };
 
-      mesh[id] = vertex { position, vec3{0.f, 0.f, 0.f} };
+      mesh[id] = vertex { position };
     }
   }
 
@@ -115,7 +115,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
     // vertex buffer
     auto vertex_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(mesh),
+      sizeof(vertex) * mesh.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -186,7 +186,6 @@ std::vector<VkVertexInputAttributeDescription> vertex::get_attribute_description
 
   // location, binding, format, offset
   attribute_descriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, position)});
-  attribute_descriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, normal)});
 
   return attribute_descriptions;
 }

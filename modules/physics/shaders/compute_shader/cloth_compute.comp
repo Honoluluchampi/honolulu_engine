@@ -9,7 +9,6 @@ layout (local_size_x = cloth_local_size_x, local_size_y = cloth_local_size_y, lo
 
 struct vertex {
  vec3 position;
- vec3 normal;
 };
 
 layout(set = 0, binding = 0) buffer Vertex {
@@ -28,7 +27,7 @@ vec3 positions[3] = {
 
 void main()
 {
-  uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-  // v_info.vert[current_index].position = v_info.vert[current_index].position + vec3(0, 0, 0.001);
-  v_info.vert[current_index].position = positions[current_index % 3];
+//  uint current_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
+//  // v_info.vert[current_index].position = v_info.vert[current_index].position + vec3(0, 0, 0.001);
+//   v_info.vert[current_index].position = positions[current_index % 3];
 }

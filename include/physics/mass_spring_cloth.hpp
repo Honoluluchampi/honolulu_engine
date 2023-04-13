@@ -8,8 +8,7 @@ namespace hnll::physics {
 
 struct vertex
 {
-  alignas(16) vec3 position;
-  alignas(16) vec3 normal;
+  vec3 position;
 
   static std::vector<VkVertexInputBindingDescription> get_binding_descriptions();
   static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions();
