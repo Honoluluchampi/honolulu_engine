@@ -9,15 +9,16 @@ layout (local_size_x = cloth_local_size_x, local_size_y = cloth_local_size_y, lo
 
 struct vertex {
  vec3 position;
+ vec3 velocity;
 };
 
-// switching between current and previous frame according to push.frame_mod
+// game::compute_shader binds current and previous vertices properly
 layout(set = 0, binding = 0) buffer Vertex0 {
-  vertex current_v[];
+  vertex current_vertices[];
 };
 
 layout(set = 1, binding = 0) readonly buffer Vertex1 {
-  vertex previous_v[];
+  vertex previous_vertices[];
 };
 
 layout(push_constant) uniform Push {
@@ -27,5 +28,6 @@ layout(push_constant) uniform Push {
 void main()
 {
   uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-  current_v[index].position = previous_v[index].position - vec3(0, push.dt, 0);
+  current_vertices[index].position = previous_vertices[index].position - vec3(0, push.dt, 0);
+  current_vertices[index].velocity = previous_vertices[index].velocity - vec3(0, push.dt, 0);
 }

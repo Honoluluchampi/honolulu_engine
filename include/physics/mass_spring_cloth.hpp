@@ -9,6 +9,7 @@ namespace hnll::physics {
 struct vertex
 {
   alignas(16) vec3 position;
+  alignas(16) vec3 velocity;
 };
 
 class mass_spring_cloth

@@ -44,6 +44,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
 
   // temporal value
   vec3 center = vec3(0.f, 0.f, 0.f);
+  vec3 initial_velocity = vec3(0.f, 0.f, 0.f);
 
   float x_grid_len = x_len / static_cast<float>(x_grid_ - 1);
   float y_grid_len = y_len / static_cast<float>(y_grid_ - 1);
@@ -58,7 +59,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
         center.z() + y_grid_len * (j - static_cast<float>(y_grid_ - 1) / 2.f)
       };
 
-      mesh[id] = vertex { position };
+      mesh[id] = vertex { position, initial_velocity };
     }
   }
 
@@ -150,6 +151,7 @@ void mass_spring_cloth::set_desc_layout()
   if (desc_layout_ == nullptr) {
     auto& device = game::graphics_engine_core::get_device_r();
     desc_layout_ = graphics::desc_layout::builder(device)
+      // vertex buffer
       .add_binding(
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT)
