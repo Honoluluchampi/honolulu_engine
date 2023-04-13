@@ -25,9 +25,14 @@ layout(push_constant) uniform Push {
   cloth_push push;
 };
 
+const float mass = 1.f;
+const float gravity = 9.8f;
+
 void main()
 {
   uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-  current_vertices[index].position = previous_vertices[index].position - vec3(0, push.dt, 0);
-  current_vertices[index].velocity = previous_vertices[index].velocity - vec3(0, push.dt, 0);
+  // update velocity
+  current_vertices[index].velocity = previous_vertices[index].velocity + vec3(0, push.dt * gravity / mass, 0);
+  // update position
+  current_vertices[index].position = previous_vertices[index].position + push.dt * current_vertices[index].velocity;
 }
