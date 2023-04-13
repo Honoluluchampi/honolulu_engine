@@ -27,8 +27,5 @@ layout(push_constant) uniform Push {
 void main()
 {
   uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y * push.x_grid;
-//  current_v[index].position = previous_v[index].position;
-  if (gl_LocalInvocationID.x == 1) {
-    current_v[index].position.y -= push.dt;
-  }
+  current_v[index].position = previous_v[index].position - vec3(0, push.dt, 0);
 }

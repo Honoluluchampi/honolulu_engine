@@ -23,6 +23,7 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
   graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
 #endif
 
+  old_time_ = std::chrono::system_clock::now();;
   // glfw
   set_glfw_mouse_button_callbacks();
 }
