@@ -12,12 +12,16 @@ struct vertex {
  vec3 velocity;
 };
 
-// game::compute_shader binds current and previous vertices properly
-layout(set = 0, binding = 0) buffer Vertex0 {
+// game::compute_shader binds next, current and previous vertices properly
+layout(set = 0, binding = 0) buffer Next {
+  vertex next_v[];
+};
+
+layout(set = 1, binding = 0) buffer Current {
   vertex curr_v[];
 };
 
-layout(set = 1, binding = 0) readonly buffer Vertex1 {
+layout(set = 2, binding = 0) readonly buffer Previous {
   vertex prev_v[];
 };
 

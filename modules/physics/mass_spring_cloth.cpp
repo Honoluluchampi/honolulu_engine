@@ -93,7 +93,8 @@ std::vector<uint32_t> mass_spring_cloth::construct_index_buffer()
 
 void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices)
 {
-  int frame_in_flight = utils::FRAMES_IN_FLIGHT;
+  // for central difference approximation
+  int frame_in_flight = 3;
   vertex_buffers_.resize(frame_in_flight);
 
   // pool
@@ -113,7 +114,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
     device_,
     desc_pool_,
     {set_info},
-    utils::FRAMES_IN_FLIGHT);
+    frame_in_flight);
 
   // assign buffer
   for (int i = 0; i < frame_in_flight; i++) {
@@ -167,12 +168,42 @@ void mass_spring_cloth::reset_desc_layout()
 std::vector<VkDescriptorSet> mass_spring_cloth::get_vk_desc_sets(int frame_index)
 { return desc_sets_->get_vk_desc_sets(frame_index); }
 
-void mass_spring_cloth::bind(VkCommandBuffer cb, int frame_index)
+std::vector<VkDescriptorSet> mass_spring_cloth::get_frame_desc_sets() const
 {
-  VkBuffer buffers[] = { vertex_buffers_[frame_index]->get_buffer() };
+  // poll desc sets (each frame has only one desc sets)
+  std::vector<VkDescriptorSet> desc_sets;
+  if (frame_index_ == 0) {
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(2)[0]
+    };
+  }
+  else if (frame_index_ == 1) {
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(2)[0],
+      desc_sets_->get_vk_desc_sets(0)[0]
+    };
+  }
+  else {
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(2)[0],
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(1)[0]
+    };
+  }
+  return desc_sets;
+}
+
+void mass_spring_cloth::bind(VkCommandBuffer cb)
+{
+  VkBuffer buffers[] = { vertex_buffers_[frame_index_]->get_buffer() };
   VkDeviceSize offsets[] = { 0 };
   vkCmdBindVertexBuffers(cb, 0, 1, buffers, offsets);
   vkCmdBindIndexBuffer(cb, index_buffer_->get_buffer(), 0, VK_INDEX_TYPE_UINT32);
+
+  frame_index_ = frame_index_ == 2 ? 0 : frame_index_ + 1;
 };
 
 } // namespace hnll::physics

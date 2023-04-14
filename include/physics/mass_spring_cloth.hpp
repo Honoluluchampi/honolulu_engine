@@ -19,7 +19,7 @@ class mass_spring_cloth
     explicit mass_spring_cloth(int x_grid, int y_grid, float x_len, float y_len);
     ~mass_spring_cloth();
 
-    void bind(VkCommandBuffer cb, int frame_index);
+    void bind(VkCommandBuffer cb);
 
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
@@ -28,6 +28,7 @@ class mass_spring_cloth
     inline float get_x_len() const { return x_len_; }
     inline float get_y_len() const { return y_len_; }
     inline uint32_t get_indices_count() const { return indices_count_; }
+    std::vector<VkDescriptorSet> get_frame_desc_sets() const;
 
     static VkDescriptorSetLayout get_vk_desc_layout();
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame_index);
@@ -53,6 +54,8 @@ class mass_spring_cloth
 
     static u_ptr<graphics::desc_layout> desc_layout_;
 
+    // 3 different frames for central difference
+    int frame_index_ = 0; // corresponds to next frame
     int x_grid_, y_grid_;
     float x_len_, y_len_;
     uint32_t indices_count_;

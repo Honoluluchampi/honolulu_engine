@@ -23,10 +23,11 @@ cloth_compute_shader::~cloth_compute_shader()
 void cloth_compute_shader::setup()
 {
   mass_spring_cloth::set_desc_layout();
+  auto layout= mass_spring_cloth::get_vk_desc_layout();
   create_pipeline<cloth_push>(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
     // double buffering to separate current and previous frames
-    { mass_spring_cloth::get_vk_desc_layout(), mass_spring_cloth::get_vk_desc_layout() }
+    { layout, layout, layout }
   );
 }
 
@@ -47,20 +48,7 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
     push.y_len = cloth->get_y_len();
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
-    // poll desc sets (each frame has only one desc sets)
-    std::vector<VkDescriptorSet> desc_sets;
-    if (info.frame_index == 0) {
-      desc_sets = {
-        cloth->get_vk_desc_sets(0)[0],
-        cloth->get_vk_desc_sets(1)[0]
-      };
-    }
-    else {
-      desc_sets = {
-        cloth->get_vk_desc_sets(1)[0],
-        cloth->get_vk_desc_sets(0)[0]
-      };
-    }
+    auto desc_sets = cloth->get_frame_desc_sets();
     bind_desc_sets(command, desc_sets);
 
     dispatch_command(
