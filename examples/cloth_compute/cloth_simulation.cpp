@@ -5,6 +5,7 @@
 #include <physics/mass_spring_cloth.hpp>
 #include <physics/compute_shader/cloth_compute_shader.hpp>
 #include <physics/shading_system/cloth_compute_shading_system.hpp>
+#include <imgui/imgui.h>
 
 namespace hnll {
 
@@ -26,9 +27,18 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
     }
     ~cloth_simulation() {}
 
+    void update_this(const float& dt)
+    {
+      dt_ = dt;
+      ImGui::Begin("fps");
+      ImGui::Text("fps : %d", static_cast<int>(1.f / dt_));
+      ImGui::End();
+    }
+
     void cleanup() { cloth_.reset(); }
   private:
     s_ptr<physics::mass_spring_cloth> cloth_;
+    float dt_;
 };
 
 }

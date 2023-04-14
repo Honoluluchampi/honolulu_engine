@@ -30,11 +30,12 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
 
 engine_core::~engine_core() { cleanup(); }
 
+void engine_core::begin_imgui()
+{ gui_engine_->begin_imgui(); }
+
 void engine_core::render_gui()
 {
   if (!hnll::graphics::renderer::swap_chain_recreated_) {
-    gui_engine_->begin_imgui();
-    update_gui();
     gui_engine_->render();
   }
 }

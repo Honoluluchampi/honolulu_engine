@@ -41,6 +41,8 @@ class engine_core
 
     void render_gui();
 
+    void begin_imgui();
+
     inline const std::chrono::system_clock::time_point& get_old_time() const { return old_time_; };
     inline void set_old_time(std::chrono::system_clock::time_point&& time) { old_time_ = std::move(time); }
 
@@ -159,6 +161,8 @@ ENGN_API void ENGN_TYPE::update()
   const auto& old_time = core_.get_old_time();
   dt_ = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
   core_.set_old_time(std::move(new_time));
+
+  core_.begin_imgui();
 
   static_cast<Derived*>(this)->update_this(dt_);
   if constexpr (sizeof...(A) >= 1) {

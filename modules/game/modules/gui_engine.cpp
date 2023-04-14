@@ -82,9 +82,6 @@ void gui_engine::begin_imgui()
 void gui_engine::render()
 {
 
-  // show the demo window
-  ImGui::ShowDemoWindow();
-
   // render window
   ImGui::Render();
 

@@ -53,13 +53,15 @@ const id_pair id_diff[3] = {
 };
 
 const float mass = 1;
-const float gravity = 9.8;
+const float gravity = 0.98;
 
 const float stiffs[3] = {
   10000, // structural
   3000, // shear
-  1000  // flexion
+  10000  // flexion
 };
+
+const float spring_dumping = 5.0;
 
 const float rest_coef[3] = {
   1.0,
@@ -94,11 +96,18 @@ vec3 spring_force(int spring_type, uint x_id, uint y_id) {
   return ret;
 }
 
+vec3 spring_dumping_force(uint x_id, uint y_id) {
+  return -spring_dumping * get_prev_velocity(x_id, y_id);
+}
+
 vec3 gather_spring_force(uint x_id, uint y_id) {
   vec3 ret = vec3(0, 0, 0);
-  ret += push.dt * spring_force(0, x_id, y_id) / mass;
-  ret += push.dt * spring_force(1, x_id, y_id) / mass;
-  ret += push.dt * spring_force(2, x_id, y_id) / mass;
+  ret += spring_force(0, x_id, y_id) / mass;
+  ret += spring_force(1, x_id, y_id) / mass;
+  ret += spring_force(2, x_id, y_id) / mass;
+  // spring dumping
+  ret += spring_dumping_force(x_id, y_id) / mass;
+
   return ret;
 }
 
