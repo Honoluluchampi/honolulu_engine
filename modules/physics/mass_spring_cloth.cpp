@@ -175,22 +175,22 @@ std::vector<VkDescriptorSet> mass_spring_cloth::get_frame_desc_sets() const
   if (frame_index_ == 0) {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(0)[0],
-      desc_sets_->get_vk_desc_sets(1)[0],
-      desc_sets_->get_vk_desc_sets(2)[0]
+      desc_sets_->get_vk_desc_sets(2)[0],
+      desc_sets_->get_vk_desc_sets(1)[0]
     };
   }
   else if (frame_index_ == 1) {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(1)[0],
-      desc_sets_->get_vk_desc_sets(2)[0],
-      desc_sets_->get_vk_desc_sets(0)[0]
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(2)[0]
     };
   }
   else {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(2)[0],
-      desc_sets_->get_vk_desc_sets(0)[0],
-      desc_sets_->get_vk_desc_sets(1)[0]
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(0)[0]
     };
   }
   return desc_sets;
