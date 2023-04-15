@@ -59,12 +59,12 @@ const float mass = 0.001;
 const float gravity = 9.8;
 
 const float stiffs[3] = {
-  10000, // structural
-  10000, // shear
-  10000  // flexion
+  15, // structural
+  15, // shear
+  15  // flexion
 };
 
-const float spring_dumping = 5000.0;
+const float spring_dumping = 1.0;
 
 const float rest_coef[3] = {
   1.0,
@@ -89,8 +89,7 @@ vec3 spring_force(int spring_type, uint x_id, uint y_id) {
     ivec2 elem_id = id_diff[spring_type].pairs[i];
     vec3 elem = target - get_curr_position(x_id + elem_id.x, y_id + elem_id.y);
     vec3 relative_elem = elem - (normalize(elem)) * rest;
-    float dt_stiff = stiffs[spring_type] * push.dt * push.dt / mass;
-    elem = relative_elem * dt_stiff;
+    elem = relative_elem * stiffs[spring_type];
 
     // if elem vertex does not exist, ret would not be updated
     ret -= float(exists_vertex(x_id + elem_id.x, y_id + elem_id.y)) // check existance without 'if'
@@ -107,13 +106,15 @@ vec3 spring_dumping_force(uint x_id, uint y_id) {
 vec3 gather_spring_force(uint x_id, uint y_id) {
   vec3 ret = vec3(0, 0, 0);
   ret += spring_force(0, x_id, y_id);
-//  ret += spring_force(1, x_id, y_id) / mass;
-//  ret += spring_force(2, x_id, y_id) / mass;
+  ret += spring_force(1, x_id, y_id);
+  ret += spring_force(2, x_id, y_id);
   // spring dumping
-//  ret += spring_dumping_force(x_id, y_id) / mass * push.dt * push.dt;
+  ret += spring_dumping_force(x_id, y_id);
 
   return ret;
 }
+
+#define MAX_DT 0.01
 
 void main()
 {
@@ -121,9 +122,9 @@ void main()
   uint y_id = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
   uint index = x_id + y_id * push.x_grid;
 
+  float dt = min(push.dt, MAX_DT);
   vec3 spring_force = gather_spring_force(x_id, y_id);
-  vec3 whole_force = //spring_force +
-    gravity_force() * (push.dt * push.dt) / mass;
+  vec3 whole_force = spring_force + gravity_force();
 
   // update unfixed vertices
   if (index != 0) {
@@ -131,7 +132,7 @@ void main()
     vec3 new_position =
       (current_position * 2.0)
       - prev_v[index].position
-      + whole_force;
+      + whole_force * dt * dt / mass;
 
     // update position
     next_v[index].position = new_position;
