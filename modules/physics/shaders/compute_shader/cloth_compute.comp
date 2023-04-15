@@ -8,8 +8,9 @@
 layout (local_size_x = cloth_local_size_x, local_size_y = cloth_local_size_y, local_size_z = 1) in;
 
 struct vertex {
- vec3 position;
- vec3 velocity;
+  vec3 position;
+  vec3 velocity;
+  vec3 normal;
 };
 
 // game::compute_shader binds next, current and previous vertices properly
@@ -64,7 +65,7 @@ const float stiffs[3] = {
   15  // flexion
 };
 
-const float spring_dumping = 1.0;
+const float spring_dumping = 3.0;
 
 const float rest_coef[3] = {
   1.0,

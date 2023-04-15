@@ -47,6 +47,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
   // temporal value
   vec3 center = vec3(0.f, 0.f, 0.f);
   vec3 initial_velocity = vec3(0.f, 0.f, 0.f);
+  vec3 initial_normal = vec3(0.f, -1.f, 0.f);
 
   float x_grid_len = x_len / static_cast<float>(x_grid_ - 1);
   float y_grid_len = y_len / static_cast<float>(y_grid_ - 1);
@@ -61,7 +62,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
         center.z() + y_grid_len * (j - static_cast<float>(y_grid_ - 1) / 2.f)
       };
 
-      mesh[id] = vertex { position, initial_velocity };
+      mesh[id] = vertex { position, initial_velocity, initial_normal };
     }
   }
 

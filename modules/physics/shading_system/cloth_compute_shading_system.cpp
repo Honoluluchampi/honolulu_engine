@@ -32,8 +32,8 @@ void cloth_compute_shading_system::setup()
   auto pipeline_config_info = graphics::pipeline::default_pipeline_config_info();
   pipeline_config_info.create_vertex_binding_descriptions<physics::vertex>();
   pipeline_config_info.create_vertex_attribute_descriptions(
-    { VK_FORMAT_R32G32B32_SFLOAT },
-    { offsetof(physics::vertex, position) }
+    { VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT },
+    { offsetof(physics::vertex, position), offsetof(physics::vertex, normal) }
   );
 
   pipeline_ = create_pipeline(
