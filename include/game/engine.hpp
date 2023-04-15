@@ -43,6 +43,7 @@ class engine_core
 
     void begin_imgui();
 
+    float get_dt();
     inline const std::chrono::system_clock::time_point& get_old_time() const { return old_time_; };
     inline void set_old_time(std::chrono::system_clock::time_point&& time) { old_time_ = std::move(time); }
 
@@ -157,10 +158,7 @@ ENGN_API void ENGN_TYPE::run()
 ENGN_API void ENGN_TYPE::update()
 {
   // calc delta time
-  std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();;
-  const auto& old_time = core_.get_old_time();
-  dt_ = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
-  core_.set_old_time(std::move(new_time));
+  dt_ = core_.get_dt();
 
   core_.begin_imgui();
 

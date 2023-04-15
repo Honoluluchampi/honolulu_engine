@@ -61,7 +61,7 @@ const float mass = 1;
 const float gravity = 9.8;
 
 const float stiffs[3] = {
-  1000, // structural
+  500, // structural
   1000, // shear
   1000  // flexion
 };
@@ -90,10 +90,12 @@ vec3 spring_force(int spring_type, uint x_id, uint y_id) {
     // calc difference of positions
     ivec2 elem_id = id_diff[spring_type].pairs[i];
     vec3 elem = target - get_curr_position(x_id + elem_id.x, y_id + elem_id.y);
+    vec3 relative_elem = elem - (normalize(elem)) * rest;
+    elem = relative_elem * stiffs[spring_type];
 
     // if elem vertex does not exist, ret would not be updated
     ret += float(exists_vertex(x_id + elem_id.x, y_id + elem_id.y)) // check existance without 'if'
-        * stiffs[spring_type] * (rest - length(elem)) * normalize(elem);
+         * elem;
   }
 
   return ret;
@@ -106,8 +108,8 @@ vec3 spring_dumping_force(uint x_id, uint y_id) {
 vec3 gather_spring_force(uint x_id, uint y_id) {
   vec3 ret = vec3(0, 0, 0);
   ret += spring_force(0, x_id, y_id) / mass;
-  ret += spring_force(1, x_id, y_id) / mass;
-  ret += spring_force(2, x_id, y_id) / mass;
+//  ret += spring_force(1, x_id, y_id) / mass;
+//  ret += spring_force(2, x_id, y_id) / mass;
   // spring dumping
   ret += spring_dumping_force(x_id, y_id) / mass;
 
