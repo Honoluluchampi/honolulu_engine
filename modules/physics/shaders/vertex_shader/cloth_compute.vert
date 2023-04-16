@@ -18,5 +18,5 @@ void main()
 
   frag_normal_world = in_normal;
   frag_pos_world = pos_world.xyz;
-  frag_color = vec3(0.8, 0.8, 0.8);
+  frag_color = vec3(1, 1, 1);
 }

@@ -46,7 +46,7 @@ std::vector<vertex> mass_spring_cloth::construct_mesh(float x_len, float y_len)
   std::vector<vertex> mesh(grid_count);
 
   // temporal value
-  vec3 center = vec3(0.f, 0.f, 0.f);
+  vec3 center = vec3(0.f, -3.f, 0.f);
   vec3 initial_velocity = vec3(0.f, 0.f, 0.f);
   vec3 initial_normal = vec3(0.f, -1.f, 0.f);
 

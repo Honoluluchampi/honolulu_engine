@@ -149,9 +149,9 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     ubo.view         = frame_info.view.view;
     ubo.inverse_view = frame_info.view.inverse_view;
     // temp
-    ubo.point_lights[0] = {{0.f, -6.f, 0.f, 0.f}, { 1.f, 1.f, 1.f, 1.f}};
+    ubo.point_lights[0] = {{0.f, -6.f, 0.f, 1.f}, { 1.f, 1.f, 1.f, 10.f}};
     ubo.lights_count = 1;
-    ubo.ambient_light_color = { 0.6f, 0.6f, 0.6f, 0.6f };
+    ubo.ambient_light_color = { 1.f, 1.f, 1.f, 0.1f };
 
     utils::graphics_frame_info frame_info{
       frame_index,
