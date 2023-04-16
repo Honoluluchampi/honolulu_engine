@@ -25,6 +25,7 @@ mass_spring_cloth::mass_spring_cloth(int x_grid, int y_grid, float x_len, float 
   static uint32_t id = 0;
   cloth_id_ = id++;
 
+  assert((x_grid % 2 == 0 && y_grid % 2 == 0) && "mass_spring_cloth : each grid count should be even number.");
   x_grid_ = x_grid;
   y_grid_ = y_grid;
   x_len_ = x_len;

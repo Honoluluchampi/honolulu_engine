@@ -16,7 +16,7 @@ void main()
   vec4 pos_world = vec4(in_position, 1.0);
   gl_Position = ubo.projection * ubo.view * pos_world;
 
-  frag_normal_world = vec3(0.0, 0.0, -1.0);
+  frag_normal_world = in_normal;
   frag_pos_world = pos_world.xyz;
-  frag_color = -in_position;
+  frag_color = vec3(0.8, 0.8, 0.8);
 }
