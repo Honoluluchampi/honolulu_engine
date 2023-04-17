@@ -32,6 +32,9 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
       dt_ = dt;
       ImGui::Begin("fps");
       ImGui::Text("fps : %d", static_cast<int>(1.f / dt_));
+      if (ImGui::Button("unbind")){
+        cloth_->unbind();
+      }
       ImGui::End();
     }
 

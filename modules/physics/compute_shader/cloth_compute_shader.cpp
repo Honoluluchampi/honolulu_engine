@@ -46,6 +46,7 @@ void cloth_compute_shader::render(const utils::compute_frame_info &info)
     push.y_grid = cloth->get_y_grid();
     push.x_len = cloth->get_x_len();
     push.y_len = cloth->get_y_len();
+    push.bound = cloth->is_bound();
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
     auto desc_sets = cloth->get_frame_desc_sets();

@@ -22,12 +22,15 @@ class mass_spring_cloth
 
     void bind(VkCommandBuffer cb);
 
+    void unbind() { bound_ = false; };
+
     // getter
     inline uint32_t get_id() const { return cloth_id_; }
     inline int get_x_grid() const { return x_grid_; }
     inline int get_y_grid() const { return y_grid_; }
     inline float get_x_len() const { return x_len_; }
     inline float get_y_len() const { return y_len_; }
+    inline float is_bound() const { return bound_; }
     inline uint32_t get_indices_count() const { return indices_count_; }
     std::vector<VkDescriptorSet> get_frame_desc_sets() const;
 
@@ -60,6 +63,8 @@ class mass_spring_cloth
     int x_grid_, y_grid_;
     float x_len_, y_len_;
     uint32_t indices_count_;
+
+    bool bound_ = true;
 };
 
 } // namespace hnll::physics
