@@ -62,8 +62,8 @@ const float ground_offset = 0.0;
 
 const float stiffs[3] = {
   15, // structural
-  15, // shear
-  15  // flexion
+  10, // shear
+  10  // flexion
 };
 
 const float spring_dumping = 1.0;

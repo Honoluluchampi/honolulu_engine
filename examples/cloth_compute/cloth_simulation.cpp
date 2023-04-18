@@ -29,6 +29,7 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
       cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
       sphere_ = game::static_mesh_actor::create("smooth_sphere.obj");
       sphere_->set_translation(vec3(0.f, -1.f, 0.f));
+      sphere_->set_rotation(vec3(0.f, 1.6f, 0.f));
       add_render_target<game::static_mesh_shading_system>(sphere_->get_mesh_comp());
     }
     ~cloth_simulation() {}
