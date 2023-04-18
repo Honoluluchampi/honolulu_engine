@@ -3,6 +3,8 @@
 
 namespace hnll::game {
 
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(grid_shading_system, grid_comp);
+
 void grid_shading_system::setup()
 {
   shading_type_ = utils::shading_type::GRID;

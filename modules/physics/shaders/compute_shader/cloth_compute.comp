@@ -1,23 +1,186 @@
 #version 450
 
-layout (local_size_x = 3, local_size_y = 1, local_size_z = 1) in;
+#extension GL_GOOGLE_include_directive : require
+
+// include common struct (cloth_push)
+#include "../../common/cloth_config.h"
+
+layout (local_size_x = cloth_local_size_x, local_size_y = cloth_local_size_y, local_size_z = 1) in;
 
 struct vertex {
- vec3 position;
+  vec3 position;
+  vec3 velocity;
+  vec3 normal;
 };
 
-layout(set = 0, binding = 0) buffer Vertex {
-  vertex vert[];
+// game::compute_shader binds next, current and previous vertices properly
+layout(set = 0, binding = 0) buffer Next {
+  vertex next_v[];
 };
 
-vec3 positions[3] = {
-  vec3(0.5, 0.0, 0.0),
-  vec3(-0.5, 0.0, 0.0),
-  vec3(0.0, 0.0, 0.5)
+layout(set = 1, binding = 0) readonly buffer Current {
+  vertex curr_v[];
 };
+
+layout(set = 2, binding = 0) readonly buffer Previous {
+  vertex prev_v[];
+};
+
+layout(push_constant) uniform Push {
+  cloth_push push;
+};
+
+// returns true if the vertex is inside the cloth
+bool exists_vertex(uint x_id, uint y_id) {
+  return x_id < push.x_grid && 0 <= x_id &&
+         y_id < push.y_grid && 0 <= y_id;
+}
+
+vec3 get_curr_position(uint x_id, uint y_id) {
+  return curr_v[x_id + y_id * push.x_grid].position;
+}
+
+vec3 get_curr_velocity(uint x_id, uint y_id) {
+  return curr_v[x_id + y_id * push.x_grid].velocity;
+}
+
+struct id_pair { ivec2 pairs[4]; };
+
+const ivec2 id_diff0[4] = { ivec2(0, 1), ivec2(0, -1), ivec2(1, 0), ivec2(-1, 0) };
+const ivec2 id_diff1[4] = { ivec2(1, 1), ivec2(1, -1), ivec2(-1, 1), ivec2(-1, -1) }; // shear
+const ivec2 id_diff2[4] = { ivec2(0, 2), ivec2(0, -2), ivec2(2, 0), ivec2(-2, 0) }; // flexion
+
+const id_pair id_diff[3] = {
+  id_pair(id_diff0),
+  id_pair(id_diff1),
+  id_pair(id_diff2)
+};
+
+const float mass = 0.001;
+const float gravity = 9.8;
+const float ground_offset = 0.0;
+
+const float stiffs[3] = {
+  15, // structural
+  10, // shear
+  10  // flexion
+};
+
+const float spring_dumping = 1.0;
+
+const float rest_coef[3] = {
+  1.0,
+  sqrt(2.0),
+  2.0
+};
+
+vec3 gravity_force() { return vec3(0, mass * gravity, 0); }
+
+vec3 spring_force(int spring_type, uint x_id, uint y_id) {
+  vec3 ret = vec3(0, 0, 0);
+
+  // this position will be updated
+  vec3 target = get_curr_position(x_id, y_id);
+
+  // TODO : LOOP UNROLL
+  for (int i = 0; i < 4; i++) {
+    // length of rest state
+    float rest = rest_coef[spring_type] * push.x_len / (push.x_grid - 1);
+
+    // calc difference of positions
+    ivec2 elem_id = id_diff[spring_type].pairs[i];
+    vec3 elem = target - get_curr_position(x_id + elem_id.x, y_id + elem_id.y);
+    vec3 relative_elem = elem - (normalize(elem)) * rest;
+    elem = relative_elem * stiffs[spring_type];
+
+    // if elem vertex does not exist, ret would not be updated
+    ret -= float(exists_vertex(x_id + elem_id.x, y_id + elem_id.y)) // check existance without 'if'
+         * elem;
+  }
+
+  return ret;
+}
+
+vec3 spring_dumping_force(uint x_id, uint y_id) {
+  return -spring_dumping * get_curr_velocity(x_id, y_id);
+}
+
+vec3 gather_spring_force(uint x_id, uint y_id) {
+  vec3 ret = vec3(0, 0, 0);
+  ret += spring_force(0, x_id, y_id);
+  ret += spring_force(1, x_id, y_id);
+  ret += spring_force(2, x_id, y_id);
+  // spring dumping
+  ret += spring_dumping_force(x_id, y_id);
+
+  return ret;
+}
+
+vec3 compute_normal(uint x_id, uint y_id) {
+  vec3 ret = vec3(0, 0, 0);
+
+  int joint_count = 0;
+
+  vec3 v0 = get_curr_position(x_id, y_id);
+  vec3 diff1 = -v0 + get_curr_position(x_id + 1, y_id);
+  vec3 diff2 = -v0 + get_curr_position(x_id, y_id + 1);
+  vec3 diff3 = -v0 + get_curr_position(x_id - 1, y_id);
+  vec3 diff4 = -v0 + get_curr_position(x_id, y_id - 1);
+
+  bool exist1 = exists_vertex(x_id + 1, y_id);
+  bool exist2 = exists_vertex(x_id, y_id + 1);
+  bool exist3 = exists_vertex(x_id - 1, y_id);
+  bool exist4 = exists_vertex(x_id, y_id - 1);
+
+  ret += normalize(cross(diff1, diff2)) * float(exist1 && exist2);
+  ret += normalize(cross(diff2, diff3)) * float(exist2 && exist3);
+  ret += normalize(cross(diff3, diff4)) * float(exist3 && exist4);
+  ret += normalize(cross(diff4, diff1)) * float(exist4 && exist1);
+
+  joint_count += int(exist1 && exist2);
+  joint_count += int(exist2 && exist3);
+  joint_count += int(exist3 && exist4);
+  joint_count += int(exist4 && exist1);
+
+  return ret / joint_count;
+}
+
+#define MAX_DT 0.01
+
+vec4 sphere = vec4(0, -1, 0, 1.05); // position, radius
 
 void main()
 {
-  uint current_index = gl_LocalInvocationID.x;
-  vert[current_index].position = positions[current_index];
+  uint x_id = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+  uint y_id = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
+  uint index = x_id + y_id * push.x_grid;
+
+  float dt = min(push.dt, MAX_DT);
+  vec3 spring_force = gather_spring_force(x_id, y_id);
+  vec3 whole_force = spring_force + gravity_force();
+
+  // update unfixed vertices
+  if (index != 0 || push.bound == 0) {
+    vec3 current_position = curr_v[index].position;
+    vec3 new_position =
+      (current_position * 2.0)
+      - prev_v[index].position
+      + whole_force * dt * dt / mass;
+
+    // collision with ground (assume coefficinet of restitution is completely zero)
+    new_position.y = min(ground_offset, new_position.y);
+
+    // update position
+    next_v[index].position = new_position;
+    if (length(sphere.xyz - new_position) < sphere.w) {
+      vec3 diff = new_position - sphere.xyz;
+      vec3 elem = normalize(diff) * (sphere.w - length(diff));
+      next_v[index].position += elem * 1.3;
+    }
+    // update velocity
+    next_v[index].velocity = next_v[index].position - current_position;
+  }
+
+  // update normals
+  next_v[index].normal = compute_normal(x_id, y_id);
 }

@@ -2,9 +2,9 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/rendering_utils.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
 
 // std
@@ -27,7 +27,7 @@ class compute_engine
     static u_ptr<compute_engine<C...>> create(graphics::device& device, graphics::timeline_semaphore& semaphore)
     { return std::make_unique<compute_engine<C...>>(device, semaphore); }
     explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
-    ~compute_engine() { device_.free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE); }
+    ~compute_engine();
 
     void render(float dt);
 
@@ -53,7 +53,7 @@ class compute_engine
     bool is_frame_started_ = false;
 
     // ref to swap_chain::compute_semaphore
-    graphics::timeline_semaphore& semaphore_;
+    graphics::timeline_semaphore& compute_semaphore_;
 
     shader_map shaders_;
 };
@@ -64,14 +64,20 @@ template <> class compute_engine<> {};
 #define CMPT_ENGN_TYPE compute_engine<CS...>
 
 CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics::timeline_semaphore& semaphore)
- : device_(device), semaphore_(semaphore)
+ : device_(device), compute_semaphore_(semaphore)
 {
-  command_buffers_ = device.create_command_buffers(graphics::swap_chain::MAX_FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   semaphore_value_cache_.resize(command_buffers_.size(), 0);
 
   compute_queue_ = device.get_compute_queue();
 
   add_shader<CS...>();
+}
+
+CMPT_ENGN_API CMPT_ENGN_TYPE::~compute_engine()
+{
+  device_.free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE);
+  shaders_.clear();
 }
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::render(float dt)
@@ -100,7 +106,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::begin_frame()
   wait_info.pNext = nullptr;
   wait_info.flags = VK_SEMAPHORE_WAIT_ANY_BIT;
   wait_info.semaphoreCount = 1;
-  wait_info.pSemaphores = semaphore_.get_vk_semaphore_r();
+  wait_info.pSemaphores = compute_semaphore_.get_vk_semaphore_r();
   wait_info.pValues = &semaphore_value_cache_[current_frame_index_];
 
   vkWaitSemaphores(device_.get_device(), &wait_info, std::numeric_limits<uint64_t>::max());
@@ -116,27 +122,27 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::begin_frame()
 
 CMPT_ENGN_API void CMPT_ENGN_TYPE::submit_command()
 {
-  bool has_wait_semaphore = semaphore_.get_last_semaphore_value() > 0;
+  bool has_wait_semaphore = compute_semaphore_.get_last_semaphore_value() > 0;
 
-  auto vk_semaphore = semaphore_.get_vk_semaphore();
+  auto vk_semaphore = compute_semaphore_.get_vk_semaphore();
   // wait for previous frame's compute submission
   VkSemaphoreSubmitInfoKHR wait_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   wait_semaphore.pNext = nullptr;
   wait_semaphore.semaphore = vk_semaphore;
-  wait_semaphore.value = semaphore_.get_last_semaphore_value();
+  wait_semaphore.value = compute_semaphore_.get_last_semaphore_value();
   wait_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   wait_semaphore.deviceIndex = 0;
 
-  semaphore_.increment_semaphore_value();
+  compute_semaphore_.increment_semaphore_value();
 
   VkSemaphoreSubmitInfoKHR signal_semaphore { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR };
   signal_semaphore.pNext = nullptr;
   signal_semaphore.semaphore = vk_semaphore;
-  signal_semaphore.value = semaphore_.get_last_semaphore_value();
+  signal_semaphore.value = compute_semaphore_.get_last_semaphore_value();
   signal_semaphore.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
   signal_semaphore.deviceIndex = 0;
 
-  semaphore_value_cache_[current_frame_index_] = semaphore_.get_last_semaphore_value();
+  semaphore_value_cache_[current_frame_index_] = compute_semaphore_.get_last_semaphore_value();
 
   VkCommandBufferSubmitInfoKHR command_buffer_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR };
   command_buffer_info.commandBuffer = command_buffers_[current_frame_index_];
@@ -162,7 +168,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::end_frame()
 
   submit_command();
 
-  current_frame_index_ = ++current_frame_index_ == graphics::swap_chain::MAX_FRAMES_IN_FLIGHT
+  current_frame_index_ = ++current_frame_index_ == utils::FRAMES_IN_FLIGHT
                          ? 0 : current_frame_index_;
 }
 

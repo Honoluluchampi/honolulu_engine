@@ -1,6 +1,7 @@
 // hnll
 #include <graphics/renderer.hpp>
 #include <graphics/swap_chain.hpp>
+#include <utils/rendering_utils.hpp>
 
 namespace hnll::graphics {
 
@@ -16,7 +17,7 @@ renderer::renderer(window& window, device& device, bool recreate_from_scratch)
 {
   // recreate swap chain dependent objects
   if (recreate_from_scratch) recreate_swap_chain();
-  command_buffers_ = device.create_command_buffers(swap_chain::MAX_FRAMES_IN_FLIGHT, command_type::GRAPHICS);
+  command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, command_type::GRAPHICS);
 }
 
 renderer::~renderer()
@@ -57,7 +58,7 @@ void renderer::reset_frame()
   swap_chain_recreated_ = false;
   submitting_command_buffers_.clear();
   // increment current_frame_index_
-  if (++current_frame_index_ == swap_chain::MAX_FRAMES_IN_FLIGHT)
+  if (++current_frame_index_ == utils::FRAMES_IN_FLIGHT)
     current_frame_index_ = 0;
 }
 

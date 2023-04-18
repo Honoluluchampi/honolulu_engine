@@ -10,6 +10,8 @@
 #include <unordered_map>
 
 #define DEFINE_SHADING_SYSTEM(new_system, rc) class new_system : public game::shading_system<new_system, rc>
+#define DEFAULT_SHADING_SYSTEM_CTOR(system, rc) explicit system(graphics::device &device)
+#define DEFAULT_SHADING_SYSTEM_CTOR_IMPL(system, rc) system::system(graphics::device &device) : game::shading_system<system, rc>(device) {}
 
 namespace hnll {
 
@@ -20,7 +22,7 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    shading_system(graphics::device& device) : device_(device)
+    explicit shading_system(graphics::device& device) : device_(device)
     { static_cast<Derived*>(this)->setup(); }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
@@ -61,6 +63,15 @@ class shading_system {
       VkPipelineLayout pipeline_layout,
       VkRenderPass render_pass,
       const std::string& shaders_directory,
+      const std::vector<std::string>& shader_filenames,
+      const std::vector<VkShaderStageFlagBits>& shader_stage_flags,
+      graphics::pipeline_config_info config_info
+    );
+
+    u_ptr<graphics::pipeline> create_pipeline(
+      VkPipelineLayout pipeline_layout,
+      VkRenderPass render_pass,
+      const std::vector<std::string>& shaders_directories,
       const std::vector<std::string>& shader_filenames,
       const std::vector<VkShaderStageFlagBits>& shader_stage_flags,
       graphics::pipeline_config_info config_info
@@ -140,6 +151,32 @@ SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
   std::vector<std::string> shader_paths;
   for (const auto& name : shader_filenames) {
     shader_paths.emplace_back(directory + name);
+  }
+
+  config_info.pipeline_layout = pipeline_layout;
+  config_info.render_pass     = render_pass;
+
+  return graphics::pipeline::create(
+    device_,
+    shader_paths,
+    shader_stage_flags,
+    config_info
+  );
+}
+
+SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
+  VkPipelineLayout                   pipeline_layout,
+  VkRenderPass                       render_pass,
+  const std::vector<std::string>&           shaders_directories,
+  const std::vector<std::string>&           shader_filenames,
+  const std::vector<VkShaderStageFlagBits>& shader_stage_flags,
+  graphics::pipeline_config_info     config_info)
+{
+  assert(shaders_directories.size() == shader_filenames.size() && "shader directories and filenames do not correspond to each other");
+
+  std::vector<std::string> shader_paths;
+  for (int i = 0; i < shaders_directories.size(); i++) {
+    shader_paths.emplace_back(std::string(std::getenv("HNLL_ENGN")) + shaders_directories[i] + shader_filenames[i]);
   }
 
   config_info.pipeline_layout = pipeline_layout;

@@ -14,8 +14,6 @@ class timeline_semaphore;
 
 class swap_chain {
   public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
     swap_chain(device &device, VkExtent2D window_extent, u_ptr<swap_chain>&& previous = nullptr);
     ~swap_chain();
 
@@ -93,7 +91,7 @@ class swap_chain {
     void reset_render_pass(int render_pass_id);
 #endif
 
-    u_ptr<timeline_semaphore>&& move_compute_semaphore();
+    void move_timeline_semaphores();
 
     // Helper functions
     VkSurfaceFormatKHR choose_swap_surface_format(

@@ -9,6 +9,9 @@
 
 namespace hnll::game {
 
+constexpr float MAX_FPS = 240.f;
+constexpr float MIN_DT = 1.f / MAX_FPS;
+
 // static members
 u_ptr<gui_engine> engine_core::gui_engine_;
 std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
@@ -23,22 +26,35 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
   graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
 #endif
 
+  old_time_ = std::chrono::system_clock::now();;
   // glfw
   set_glfw_mouse_button_callbacks();
 }
 
 engine_core::~engine_core() { cleanup(); }
 
+void engine_core::begin_imgui()
+{ gui_engine_->begin_imgui(); }
+
 void engine_core::render_gui()
 {
   if (!hnll::graphics::renderer::swap_chain_recreated_) {
-    gui_engine_->begin_imgui();
-    update_gui();
     gui_engine_->render();
   }
 }
 
 void engine_core::cleanup() { gui_engine_.reset(); }
+
+float engine_core::get_dt()
+{
+  std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();
+  while (std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count() < MIN_DT) {
+    new_time = std::chrono::system_clock::now();
+  }
+  float dt = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count();
+  old_time_ = new_time;
+  return dt;
+}
 
 // glfw
 void engine_core::set_glfw_mouse_button_callbacks()

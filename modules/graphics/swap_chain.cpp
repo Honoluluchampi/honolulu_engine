@@ -1,6 +1,7 @@
 //hnll
 #include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
+#include <utils/rendering_utils.hpp>
 
 // std
 #include <array>
@@ -18,7 +19,7 @@ swap_chain::swap_chain(device &device, VkExtent2D extent, u_ptr<swap_chain>&& pr
 
   // derive compute semaphore
   if (old_swap_chain_ != nullptr) {
-    compute_semaphore_ = old_swap_chain_->move_compute_semaphore();
+    move_timeline_semaphores();
   }
   else {
     compute_semaphore_ = timeline_semaphore::create(device_);
@@ -82,7 +83,7 @@ swap_chain::~swap_chain()
 #endif
 
   // cleanup synchronization objects
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+  for (size_t i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     vkDestroySemaphore(device_.get_device(), render_finished_semaphores_[i], nullptr);
     vkDestroySemaphore(device_.get_device(), image_available_semaphores_[i], nullptr);
     vkDestroyFence(device_.get_device(), in_flight_fences_[i], nullptr);
@@ -105,9 +106,7 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
   return result;
 }
 
-VkResult swap_chain::submit_command_buffers(
-  const VkCommandBuffer *buffers,
-  uint32_t *image_index)
+VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index)
 {
   // specify a timeout in nanoseconds for an image
   auto timeout = UINT64_MAX;
@@ -144,7 +143,7 @@ VkResult swap_chain::submit_command_buffers(
   submit_info.pWaitSemaphoreInfos = wait_semaphores;
   // which command buffers to actually submit for execution
   // should submit the command buffer that binds the swap chain image
-  // we just acquired as color attachiment.
+  // we just acquired as color attachment.
 
   // TODO : configure renderer count in a systematic way
 #ifdef IMGUI_DISABLED
@@ -200,7 +199,7 @@ VkResult swap_chain::submit_command_buffers(
   if (vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
 
-  // configure subpass dependencies in VkRenderPassFacotry::create_render_pass
+  // configure sub-pass dependencies in VkRenderPassFactory::create_render_pass
 
   // presentation
   // submit the result back to the swap chain to have it eventually show up on the screen
@@ -219,7 +218,7 @@ VkResult swap_chain::submit_command_buffers(
 
   auto result = vkQueuePresentKHR(device_.get_present_queue(), &present_info);
 
-  current_frame_ = (current_frame_ + 1) % MAX_FRAMES_IN_FLIGHT;
+  current_frame_ = (current_frame_ + 1) % utils::FRAMES_IN_FLIGHT;
 
   return result;
 }
@@ -452,8 +451,10 @@ void swap_chain::reset_render_pass(int render_pass_id)
   }
 }
 
-u_ptr<timeline_semaphore>&& swap_chain::move_compute_semaphore()
-{ return std::move(compute_semaphore_); }
+void swap_chain::move_timeline_semaphores()
+{
+  compute_semaphore_ = std::move(old_swap_chain_->compute_semaphore_);
+}
 
 void swap_chain::create_depth_resources()
 {
@@ -506,9 +507,9 @@ void swap_chain::create_depth_resources()
 
 void swap_chain::create_sync_objects()
 {
-  image_available_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-  render_finished_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-  in_flight_fences_.resize(MAX_FRAMES_IN_FLIGHT);
+  image_available_semaphores_.resize(utils::FRAMES_IN_FLIGHT);
+  render_finished_semaphores_.resize(utils::FRAMES_IN_FLIGHT);
+  in_flight_fences_.resize(utils::FRAMES_IN_FLIGHT);
   // initially not a single framce is using an image, so initialize it to no fence
   images_in_flight_.resize(get_image_count(), VK_NULL_HANDLE);
 
@@ -520,7 +521,7 @@ void swap_chain::create_sync_objects()
   // initialize fences in the signaled state as if they had been rendered an initial frame
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+  for (size_t i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     // future version of the graphics api may add functionality for other parameters
     if (vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &image_available_semaphores_[i]) != VK_SUCCESS ||
         vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &render_finished_semaphores_[i]) != VK_SUCCESS ||

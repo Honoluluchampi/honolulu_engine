@@ -31,6 +31,24 @@ struct pipeline_config_info
   // dynamic state
   void create_dynamic_state();
 
+  // manually called functions
+  template <typename V>
+  void create_vertex_binding_descriptions()
+  {
+    std::vector<VkVertexInputBindingDescription> binding(1);
+    // per-vertex data is packed together in one array, so the index of the
+    // binding in the array is always 0
+    binding[0].binding = 0;
+    // number of bytes from one entry to the next
+    binding[0].stride = sizeof(V);
+    binding[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    binding_descriptions = binding;
+  }
+
+  void create_vertex_attribute_descriptions(
+    const std::vector<VkFormat>& format_list,
+    const std::vector<uint32_t>& offset_list);
+
   // member variables
   std::vector<VkVertexInputBindingDescription>   binding_descriptions{};
   std::vector<VkVertexInputAttributeDescription> attribute_descriptions{};

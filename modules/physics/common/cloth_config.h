@@ -1,0 +1,13 @@
+// be careful not to include this file more than once
+
+const int cloth_local_size_x = 32;
+const int cloth_local_size_y = 32;
+
+struct cloth_push {
+  float dt;
+  int x_grid;
+  int y_grid;
+  float x_len;
+  float y_len;
+  int bound;
+};

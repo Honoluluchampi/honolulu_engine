@@ -12,6 +12,8 @@ struct mesh_push_constant
   mat4 normal_matrix;
 };
 
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(static_mesh_shading_system, static_mesh_comp);
+
 void static_mesh_shading_system::setup()
 {
   shading_type_ = utils::shading_type::MESH;

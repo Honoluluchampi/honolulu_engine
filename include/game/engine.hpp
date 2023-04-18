@@ -41,6 +41,9 @@ class engine_core
 
     void render_gui();
 
+    void begin_imgui();
+
+    float get_dt();
     inline const std::chrono::system_clock::time_point& get_old_time() const { return old_time_; };
     inline void set_old_time(std::chrono::system_clock::time_point&& time) { old_time_ = std::move(time); }
 
@@ -94,10 +97,14 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
+  protected:
+    // cleaning method of each specific application
+    void cleanup() {}
+
   private:
     void update();
     void render();
-    void cleanup();
+    void cleanup_common();
 
     // for each specific engine
     void update_this(const float& dt) {}
@@ -145,16 +152,15 @@ ENGN_API void ENGN_TYPE::run()
     render();
   }
   graphics_engine_core_.wait_idle();
-  cleanup();
+  cleanup_common();
 }
 
 ENGN_API void ENGN_TYPE::update()
 {
   // calc delta time
-  std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();;
-  const auto& old_time = core_.get_old_time();
-  dt_ = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time).count();
-  core_.set_old_time(std::move(new_time));
+  dt_ = core_.get_dt();
+
+  core_.begin_imgui();
 
   static_cast<Derived*>(this)->update_this(dt_);
   if constexpr (sizeof...(A) >= 1) {
@@ -173,8 +179,9 @@ ENGN_API void ENGN_TYPE::render()
   core_.render_gui();
 }
 
-ENGN_API void ENGN_TYPE::cleanup()
+ENGN_API void ENGN_TYPE::cleanup_common()
 {
+  static_cast<Derived*>(this)->cleanup();
   graphics_engine_.reset();
   compute_engine_.reset();
   utils::singleton_deleter::delete_reversely();
