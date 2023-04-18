@@ -8,7 +8,7 @@ namespace hnll::physics {
 
 std::unordered_map<uint32_t, s_ptr<mass_spring_cloth>> cloth_compute_shading_system::clothes_;
 
-DEFAULT_SHADING_SYSTEM_CTOR_IMPL(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::CLOTH>);
 cloth_compute_shading_system::~cloth_compute_shading_system()
 {
   clothes_.clear();
@@ -17,7 +17,7 @@ cloth_compute_shading_system::~cloth_compute_shading_system()
 
 void cloth_compute_shading_system::setup()
 {
-  shading_type_ = utils::shading_type::MESH;
+  shading_type_ = utils::shading_type::CLOTH;
 
   mass_spring_cloth::set_desc_layout();
 

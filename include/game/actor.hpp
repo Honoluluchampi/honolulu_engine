@@ -45,6 +45,7 @@ class actor_base
     inline const utils::transform& get_transform() const { return transform_; }
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
+    void set_translation(const vec3& tra) { transform_.translation = tra; }
 
   protected:
     // specialize this function for each actor class
@@ -80,6 +81,7 @@ class pure_actor_base
     void set_transform(const utils::transform& tf) { transform_ = tf; }
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
+    void set_translation(const vec3& tra) { transform_.translation = tra; }
 
   protected:
     // specialize this function for each actor class

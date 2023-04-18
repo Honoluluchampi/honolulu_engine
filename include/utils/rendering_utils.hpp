@@ -23,15 +23,16 @@ enum class rendering_type
 // solid object should be drawn first, then transparent object should be drawn after that
 enum class shading_type : uint32_t
 {
-  MESH               = 10,
-  SKINNING_MESH      = 11,
-  FRAME_ANIM_MESH    = 12,
-  MESHLET            = 20,
-  FRAME_ANIM_MESHLET = 21,
-  POINT_LIGHT  = 40,
+  MESH               = 100,
+  SKINNING_MESH      = 101,
+  FRAME_ANIM_MESH    = 102,
+  CLOTH              = 103,
+  MESHLET            = 200,
+  FRAME_ANIM_MESHLET = 201,
+  POINT_LIGHT  = 400,
   LINE         = 0,
-  WIRE_FRUSTUM = 30,
-  GRID         = 50
+  WIRE_FRUSTUM = 300,
+  GRID         = 500
 };
 
 struct point_light

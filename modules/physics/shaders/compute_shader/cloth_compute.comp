@@ -147,7 +147,7 @@ vec3 compute_normal(uint x_id, uint y_id) {
 
 #define MAX_DT 0.01
 
-vec4 sphere = vec4(0, -1, 0, 1); // position, radius
+vec4 sphere = vec4(0, -1, 0, 1.05); // position, radius
 
 void main()
 {

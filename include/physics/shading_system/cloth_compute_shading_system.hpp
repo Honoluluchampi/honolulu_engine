@@ -8,10 +8,10 @@ namespace hnll::physics {
 
 class mass_spring_cloth;
 
-DEFINE_SHADING_SYSTEM(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>)
+DEFINE_SHADING_SYSTEM(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::CLOTH>)
 {
   public:
-    DEFAULT_SHADING_SYSTEM_CTOR(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
+    DEFAULT_SHADING_SYSTEM_CTOR(cloth_compute_shading_system, game::dummy_renderable_comp<utils::shading_type::CLOTH>);
     ~cloth_compute_shading_system();
 
     void render(const utils::graphics_frame_info& frame_info);

@@ -2,6 +2,8 @@
 #include <game/engine.hpp>
 #include <game/actors/default_camera.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
+#include <game/shading_systems/static_mesh_shading_system.hpp>
+#include <game/actors/basic_actors.hpp>
 #include <physics/mass_spring_cloth.hpp>
 #include <physics/compute_shader/cloth_compute_shader.hpp>
 #include <physics/shading_system/cloth_compute_shading_system.hpp>
@@ -11,6 +13,7 @@ namespace hnll {
 
 SELECT_SHADING_SYSTEM(graphics_shaders,
   game::grid_shading_system,
+  game::static_mesh_shading_system,
   physics::cloth_compute_shading_system);
 
 SELECT_ACTOR(actors, game::default_camera);
@@ -24,6 +27,9 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
     {
       add_update_target_directly<game::default_camera>();
       cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
+      sphere_ = game::static_mesh_actor::create("smooth_sphere.obj");
+      sphere_->set_translation(vec3(0.f, -1.f, 0.f));
+      add_render_target<game::static_mesh_shading_system>(sphere_->get_mesh_comp());
     }
     ~cloth_simulation() {}
 
@@ -40,6 +46,7 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
 
     void cleanup() { cloth_.reset(); }
   private:
+    u_ptr<game::static_mesh_actor> sphere_;
     s_ptr<physics::mass_spring_cloth> cloth_;
     float dt_;
 };
