@@ -9,5 +9,5 @@ struct cloth_push {
   int y_grid;
   float x_len;
   float y_len;
-  bool bound;
+  int bound;
 };
