@@ -64,6 +64,7 @@ class gui_engine {
 
     // share the basic graphics object with hve, so there is nothing to do for now
     void setup_specific_vulkan_objects();
+    void setup_viewport();
 
     void upload_font();
 
@@ -75,13 +76,17 @@ class gui_engine {
       fprintf(stderr, "Glfw Error %d: %s\n", error, description);
     }
 
-    VkDevice device_;
+    graphics::device& device_;
     VkDescriptorPool descriptor_pool_;
     VkQueue graphics_queue_;
 
     ImGui_ImplVulkanH_Window main_window_data_;
 
     u_ptr<gui::renderer> renderer_up_;
+
+    // for viewport
+    VkSampler viewport_sampler_;
+    std::vector<VkDescriptorSet> viewport_image_ids_;
 
     // TODO : make it consistent with hve
     int min_image_count_ = 2;

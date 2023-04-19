@@ -1,7 +1,11 @@
 // hnll
 #include <gui/renderer.hpp>
+#include <graphics/image_resource.hpp>
 
 namespace hnll::gui {
+
+u_ptr<renderer> renderer::create(graphics::window& window, graphics::device& device, bool recreate_from_scratch)
+{ return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
 renderer::renderer(graphics::window& window, graphics::device& device, bool recreate_from_scratch) :
   hnll::graphics::renderer(window, device, recreate_from_scratch)
@@ -9,6 +13,9 @@ renderer::renderer(graphics::window& window, graphics::device& device, bool recr
 
 void renderer::recreate_swap_chain()
 {
+  // for viewport screen
+  create_viewport_images();
+
   swap_chain_->set_render_pass(create_render_pass(), GUI_RENDER_PASS_ID);
   swap_chain_->set_frame_buffers(create_frame_buffers(), GUI_RENDER_PASS_ID);
 
@@ -90,4 +97,29 @@ std::vector<VkFramebuffer> renderer::create_frame_buffers()
   return framebuffers;
 }
 
+void renderer::create_viewport_images()
+{
+  auto image_count = swap_chain_->get_image_count();
+  vp_images_.resize(image_count);
+
+  for (uint32_t i = 0; i < image_count; i++) {
+    vp_images_[i] = graphics::image_resource::create(
+      device_,
+      {swap_chain_->get_swap_chain_extent().width, swap_chain_->get_swap_chain_extent().height, 1},
+      VK_FORMAT_B8G8R8A8_SRGB,
+      VK_IMAGE_TILING_OPTIMAL,
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+  }
+}
+
+std::vector<VkImageView> renderer::get_view_port_image_views() const
+{
+  std::vector<VkImageView> ret;
+  for (auto& image : vp_images_) {
+    ret.push_back(image->get_image_view());
+  }
+  return ret;
+}
 } // namespace hnll::gui
