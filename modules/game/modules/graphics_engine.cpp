@@ -99,17 +99,22 @@ void graphics_engine_core::cleanup()
 void graphics_engine_core::wait_idle() { vkDeviceWaitIdle(device_->get_device()); }
 
 // for graphics_engine::render()
-VkCommandBuffer graphics_engine_core::begin_frame() { return renderer_->begin_frame(); }
+bool graphics_engine_core::begin_frame() { return renderer_->begin_frame(); }
+void graphics_engine_core::record_default_render_command()
+{ renderer_->record_default_render_command(); }
+
+VkCommandBuffer graphics_engine_core::begin_command_buffer(int renderer_id)
+{ return renderer_->begin_command_buffer(renderer_id); }
 
 int graphics_engine_core::get_frame_index() { return renderer_->get_frame_index(); }
 
-void graphics_engine_core::begin_swap_chain_render_pass(VkCommandBuffer command_buffer)
-{ renderer_->begin_swap_chain_render_pass(command_buffer, HVE_RENDER_PASS_ID); }
+void graphics_engine_core::begin_render_pass(VkCommandBuffer command_buffer, int renderer_id)
+{ renderer_->begin_render_pass(command_buffer, renderer_id); }
 
-void graphics_engine_core::end_swap_chain_and_frame(VkCommandBuffer command_buffer)
+void graphics_engine_core::end_render_pass_and_frame(VkCommandBuffer command_buffer)
 {
-  renderer_->end_swap_chain_render_pass(command_buffer);
-  renderer_->end_frame();
+  renderer_->end_render_pass(command_buffer);
+  renderer_->end_frame(command_buffer);
 }
 
 void graphics_engine_core::setup_global_shading_system_config()

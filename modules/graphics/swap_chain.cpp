@@ -106,6 +106,7 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
   return result;
 }
 
+// buffers : default command buffer, viewport command buffer, imgui command buffer
 VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index)
 {
   // specify a timeout in nanoseconds for an image

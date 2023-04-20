@@ -44,10 +44,14 @@ class renderer
       return current_frame_index_;
     }
 
-    VkCommandBuffer begin_frame();
-    void end_frame();
-    void begin_swap_chain_render_pass(VkCommandBuffer command_buffer, int render_pass_id);
-    void end_swap_chain_render_pass(VkCommandBuffer command_buffer);
+    bool begin_frame();
+    void end_frame(VkCommandBuffer command);
+    void begin_render_pass(VkCommandBuffer command_buffer, int render_pass_id);
+    void end_render_pass(VkCommandBuffer command_buffer);
+    VkCommandBuffer begin_command_buffer(int renderer_id);
+
+    // for default render pass
+    void record_default_render_command();
 
     virtual void recreate_swap_chain();
 
@@ -77,6 +81,7 @@ class renderer
     bool is_frame_started_ = false;
 
 #ifndef IMGUI_DISABLED
+    std::vector<VkCommandBuffer> view_port_command_buffers_;
     // store multiple renderers' command buffers
     static std::vector<VkCommandBuffer> submitting_command_buffers_;
 #endif

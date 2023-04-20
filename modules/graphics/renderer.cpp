@@ -17,7 +17,9 @@ renderer::renderer(window& window, device& device, bool recreate_from_scratch)
 {
   // recreate swap chain dependent objects
   if (recreate_from_scratch) recreate_swap_chain();
+
   command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, command_type::GRAPHICS);
+  view_port_command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, command_type::GRAPHICS);
 }
 
 renderer::~renderer()
@@ -67,7 +69,7 @@ void renderer::cleanup_swap_chain()
   swap_chain_.reset();
 }
 
-VkCommandBuffer renderer::begin_frame()
+bool renderer::begin_frame()
 {
   assert(!is_frame_started_ && "Can't call begin_frame() while already in progress");
   // get finished image from swap chain
@@ -80,7 +82,7 @@ VkCommandBuffer renderer::begin_frame()
       window_.reset_window_resized_flag();
       recreate_swap_chain();
       // the frame has not successfully started
-      return nullptr;
+      return false;
     }
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -88,29 +90,44 @@ VkCommandBuffer renderer::begin_frame()
   }
 
   is_frame_started_ = true;
-
-  auto command_buffer = get_current_command_buffer();
-  // assert(command_buffer != VK_NULL_HANDLE && "");
-  // start recording command buffers
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  // // how to use the command buffer
-  // begin_info.flags = 0;
-  // // state to inherit from the calling primary command buffers
-  // // (only relevant for secondary command buffers)
-  // begin_info.pInheritanceInfo = nullptr;
-
-  if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
-    throw std::runtime_error("failed to begin recording command buffer!");
-  return command_buffer;
+  return true;
 }
 
-void renderer::end_frame()
+VkCommandBuffer renderer::begin_command_buffer(int render_id)
+{
+  VkCommandBuffer command;
+  command = get_current_command_buffer();
+#ifndef IMGUI_DISABLED
+  if (render_id == 1) {
+    command = view_port_command_buffers_[current_frame_index_];
+  }
+#endif
+  VkCommandBufferBeginInfo begin_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+  if (vkBeginCommandBuffer(command, &begin_info) != VK_SUCCESS)
+    throw std::runtime_error("failed to begin recording command buffer.");
+
+  return command;
+}
+
+void renderer::record_default_render_command()
+{
+  auto command = begin_command_buffer(HVE_RENDER_PASS_ID);
+
+  begin_render_pass(command, HVE_RENDER_PASS_ID);
+
+//  vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, );
+
+  end_render_pass(command);
+
+  end_frame(command);
+  is_frame_started_ = true;
+}
+
+void renderer::end_frame(VkCommandBuffer command)
 {
   assert(is_frame_started_ && "Can't call end_frame() while the frame is not in progress");
-  auto command_buffer = get_current_command_buffer();
   // end recording command buffer
-  if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
+  if (vkEndCommandBuffer(command) != VK_SUCCESS)
     throw std::runtime_error("failed to record command buffer!");
 
 #ifdef IMGUI_DISABLED
@@ -127,7 +144,7 @@ void renderer::end_frame()
   if (++current_frame_index_ == swap_chain::MAX_FRAMES_IN_FLIGHT)
     current_frame_index_ = 0;
 #else
-  submitting_command_buffers_.push_back(command_buffer);
+  submitting_command_buffers_.push_back(command);
 #endif
 
   is_frame_started_ = false;
@@ -137,10 +154,9 @@ void renderer::end_frame()
   }
 }
 
-void renderer::begin_swap_chain_render_pass(VkCommandBuffer command_buffer, int renderPassId)
+void renderer::begin_render_pass(VkCommandBuffer command_buffer, int renderPassId)
 {
   assert(is_frame_started_ && "Can't call begin_swap_chain_render_pass() while the frame is not in progress.");
-  assert(command_buffer == get_current_command_buffer() && "Can't beginig render pass on command buffer from a different frame.");
 
   // starting a render pass
   VkRenderPassBeginInfo render_pass_info{};
@@ -187,12 +203,11 @@ void renderer::begin_swap_chain_render_pass(VkCommandBuffer command_buffer, int 
   vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 }
 
-void renderer::end_swap_chain_render_pass(VkCommandBuffer command_buffer)
+void renderer::end_render_pass(VkCommandBuffer command_buffer)
 {
   assert(is_frame_started_ && "Can't call end_swap_chain_render_pass() while the frame is not in progress.");
-  assert(command_buffer == get_current_command_buffer() && "Can't ending render pass on command buffer from a different frame.");
 
-  // finish render pass and recording the comand buffer
+  // finish render pass and recording the command buffer
   vkCmdEndRenderPass(command_buffer);
 }
 

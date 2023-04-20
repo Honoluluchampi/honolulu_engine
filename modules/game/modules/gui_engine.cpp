@@ -149,14 +149,15 @@ void gui_engine::render()
 void gui_engine::frame_render()
 {
   // whether swap chain had been recreated
-  if (auto command_buffer = renderer_up_->begin_frame()) {
-    renderer_up_->begin_swap_chain_render_pass(command_buffer, GUI_RENDER_PASS_ID);
+  if (renderer_up_->begin_frame()) {
+    auto command_buffer = renderer_up_->begin_command_buffer(GUI_RENDER_PASS_ID);
+    renderer_up_->begin_render_pass(command_buffer, GUI_RENDER_PASS_ID);
 
     // record the draw data to the command buffer
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer);
 
-    renderer_up_->end_swap_chain_render_pass(command_buffer);
-    renderer_up_->end_frame();
+    renderer_up_->end_render_pass(command_buffer);
+    renderer_up_->end_frame(command_buffer);
   }
 }
 
