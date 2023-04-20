@@ -50,11 +50,14 @@ class graphics_engine_core
     void wait_idle();
 
     // for graphics_engine::render()
-    VkCommandBuffer begin_frame();
+    bool begin_frame();
+    void record_default_render_command();
+    VkCommandBuffer begin_command_buffer(int renderer_id);
+
     int  get_frame_index();
     VkDescriptorSet update_ubo(const utils::global_ubo& ubo, int frame_index);
-    void begin_swap_chain_render_pass(VkCommandBuffer command_buffer);
-    void end_swap_chain_and_frame(VkCommandBuffer command_buffer);
+    void begin_render_pass(VkCommandBuffer command_buffer, int renderer_id);
+    void end_render_pass_and_frame(VkCommandBuffer command_buffer);
 
     // getter
     template <graphics::GraphicsModel M>
@@ -140,7 +143,7 @@ GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_nam
 
 GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_info)
 {
-  if (auto command_buffer = core_.begin_frame()) {
+  if (core_.begin_frame()) {
     int frame_index = core_.get_frame_index();
 
     // update
@@ -153,6 +156,16 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     ubo.lights_count = 1;
     ubo.ambient_light_color = { 1.f, 1.f, 1.f, 0.1f };
 
+    VkCommandBuffer command_buffer;
+    // setup command buffer which associated with proper render pass
+#ifndef IMGUI_DISABLED
+    core_.record_default_render_command();
+    command_buffer = core_.begin_command_buffer(1);
+    core_.begin_render_pass(command_buffer, 1);
+#elif
+    command_buffer = begin_command_buffer(0);
+    core_.begin_render_pass(command_buffer, 0);
+#endif
     utils::graphics_frame_info frame_info{
       frame_index,
       command_buffer,
@@ -160,13 +173,11 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
       {}
     };
 
-    core_.begin_swap_chain_render_pass(command_buffer);
-
     for (auto& system_kv : shading_systems_) {
       std::visit([&frame_info](auto& system) { system->render(frame_info); }, system_kv.second);
     }
 
-    core_.end_swap_chain_and_frame(command_buffer);
+    core_.end_render_pass_and_frame(command_buffer);
   }
 }
 

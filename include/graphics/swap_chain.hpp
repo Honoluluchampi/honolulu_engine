@@ -6,9 +6,10 @@
 namespace hnll::graphics {
 
 // TODO : configure renderer count in a systematic manner
-#define RENDERER_COUNT 2
+#define RENDERER_COUNT 3
 #define HVE_RENDER_PASS_ID 0
-#define GUI_RENDER_PASS_ID 1
+#define VIEWPORT_RENDER_PASS_ID 1
+#define GUI_RENDER_PASS_ID 2
 
 class timeline_semaphore;
 
@@ -33,6 +34,7 @@ class swap_chain {
 
     VkImage            get_image(int index)      { return swap_chain_images_[index]; }
     VkImageView        get_image_view(int index) { return swap_chain_image_views_[index]; }
+    VkImageView        get_depth_image_view(int index) { return depth_image_views_[index]; }
     size_t             get_image_count() { return swap_chain_images_.size(); }
     VkFormat           get_swap_chain_images_format() { return swap_chain_image_format_; }
     VkExtent2D         get_swap_chain_extent() { return swap_chain_extent_; }

@@ -168,7 +168,7 @@ void main()
       + whole_force * dt * dt / mass;
 
     // collision with ground (assume coefficinet of restitution is completely zero)
-    new_position.y = min(ground_offset, new_position.y);
+    new_position.y = min(ground_offset - 0.01, new_position.y);
 
     // update position
     next_v[index].position = new_position;

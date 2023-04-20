@@ -2,21 +2,26 @@
 #include <game/modules/gui_engine.hpp>
 #include <gui/renderer.hpp>
 #include <graphics/swap_chain.hpp>
+#include <graphics/image_resource.hpp>
 
 // embedded fonts
 // download by yourself
 #include <imgui/roboto_regular.embed>
+#include <vulkan/vulkan.h>
 
 namespace hnll::game {
 
 // take s_ptr<swap_chain> from get_renderer
 gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
-  : device_(device.get_device())
+  : device_(device)
 {
   setup_specific_vulkan_objects();
   renderer_up_ = gui::renderer::create(window, device, false);
+
   setup_imgui(device, window.get_glfw_window());
   upload_font();
+
+  setup_viewport();
 }
 
 gui_engine::~gui_engine()
@@ -30,6 +35,51 @@ gui_engine::~gui_engine()
 void gui_engine::setup_specific_vulkan_objects()
 {
   create_descriptor_pool();
+}
+
+void gui_engine::setup_viewport()
+{
+  // setup sampler
+  VkSamplerCreateInfo sampler_info{};
+  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+  // filtering
+  sampler_info.magFilter = VK_FILTER_LINEAR;
+  sampler_info.minFilter = VK_FILTER_LINEAR;
+  // matters when you sample outside the image
+  // repeat is common for texture tiling
+  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+  sampler_info.anisotropyEnable = VK_FALSE;
+  sampler_info.maxAnisotropy = 1.f;
+
+  // when sampling beyond the image with clamp to border addressing mode
+  sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+  sampler_info.unnormalizedCoordinates = VK_FALSE;
+
+  // for percentage closer filtering on shadow maps
+  sampler_info.compareEnable = VK_FALSE;
+  sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+
+  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  sampler_info.mipLodBias = 0.0f;
+  sampler_info.minLod = 0.0f;
+  sampler_info.maxLod = 0.0f;
+
+  if (vkCreateSampler(device_.get_device(), &sampler_info, nullptr, &viewport_sampler_) != VK_SUCCESS)
+    throw std::runtime_error("failed to create sampler!");
+
+  // set up viewport images
+  const auto& vp_image_views = renderer_up_->get_view_port_image_views();
+  viewport_image_ids_.resize(vp_image_views.size());
+  for (int i = 0; i < vp_image_views.size(); i++) {
+    viewport_image_ids_[i] = ImGui_ImplVulkan_AddTexture(
+      viewport_sampler_,
+      vp_image_views[i],
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  }
 }
 
 void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
@@ -47,8 +97,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   ImGui_ImplVulkan_InitInfo info = {};
   info.Instance = device.get_instance();
   info.PhysicalDevice = device.get_physical_device();
-  device_ = device.get_device();
-  info.Device = device_;
+  info.Device = device_.get_device();
   // graphicsFamily's indice is needed (see device::create_command_pool)
   // but these are never used...
   info.QueueFamily = device.get_queue_family_indices().graphics_family_.value();
@@ -68,7 +117,8 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
 
 void gui_engine::cleanup_vulkan()
 {
-  vkDestroyDescriptorPool(device_, descriptor_pool_, nullptr);
+  vkDestroySampler(device_.get_device(), viewport_sampler_, nullptr);
+  vkDestroyDescriptorPool(device_.get_device(), descriptor_pool_, nullptr);
 }
 
 void gui_engine::begin_imgui()
@@ -81,6 +131,14 @@ void gui_engine::begin_imgui()
 
 void gui_engine::render()
 {
+  ImGui::Begin("Viewport");
+
+  ImVec2 panel_size = ImGui::GetContentRegionAvail();
+  ImGui::Image(
+    viewport_image_ids_[renderer_up_->get_frame_index()],
+    panel_size);
+
+  ImGui::End();
 
   // render window
   ImGui::Render();
@@ -91,14 +149,15 @@ void gui_engine::render()
 void gui_engine::frame_render()
 {
   // whether swap chain had been recreated
-  if (auto command_buffer = renderer_up_->begin_frame()) {
-    renderer_up_->begin_swap_chain_render_pass(command_buffer, GUI_RENDER_PASS_ID);
+  if (renderer_up_->begin_frame()) {
+    auto command_buffer = renderer_up_->begin_command_buffer(GUI_RENDER_PASS_ID);
+    renderer_up_->begin_render_pass(command_buffer, GUI_RENDER_PASS_ID);
 
     // record the draw data to the command buffer
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer);
 
-    renderer_up_->end_swap_chain_render_pass(command_buffer);
-    renderer_up_->end_frame();
+    renderer_up_->end_render_pass(command_buffer);
+    renderer_up_->end_frame(command_buffer);
   }
 }
 
@@ -126,7 +185,7 @@ void gui_engine::create_descriptor_pool()
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
-  if (vkCreateDescriptorPool(device_, &pool_info, nullptr, &descriptor_pool_) != VK_SUCCESS)
+  if (vkCreateDescriptorPool(device_.get_device(), &pool_info, nullptr, &descriptor_pool_) != VK_SUCCESS)
     throw std::runtime_error("failed to create descriptor pool.");
 }
 
@@ -143,7 +202,7 @@ void gui_engine::upload_font()
   // Use any command queue
   VkCommandPool command_pool = renderer_up_->get_command_pool();
   VkCommandBuffer command_buffer = renderer_up_->get_current_command_buffer();
-  if (vkResetCommandPool(device_, command_pool, 0) != VK_SUCCESS)
+  if (vkResetCommandPool(device_.get_device(), command_pool, 0) != VK_SUCCESS)
     throw std::runtime_error("failed to reset command pool");
 
   VkCommandBufferBeginInfo begin_info = {};
@@ -164,7 +223,7 @@ void gui_engine::upload_font()
   if (vkQueueSubmit(graphics_queue_, 1, &end_info, VK_NULL_HANDLE) != VK_SUCCESS)
     throw std::runtime_error("failed to submit font upload queue.");
 
-  vkDeviceWaitIdle(device_);
+  vkDeviceWaitIdle(device_.get_device());
   ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 

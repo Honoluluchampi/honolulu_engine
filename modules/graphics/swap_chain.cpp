@@ -106,6 +106,7 @@ VkResult swap_chain::acquire_next_image(uint32_t *image_index)
   return result;
 }
 
+// buffers : default command buffer, viewport command buffer, imgui command buffer
 VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint32_t *image_index)
 {
   // specify a timeout in nanoseconds for an image
@@ -159,7 +160,7 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
   submit_info.commandBufferInfoCount = 1;
   submit_info.pCommandBufferInfos = command_buffers;
 #else
-  VkCommandBufferSubmitInfoKHR command_buffers[] {
+  std::vector<VkCommandBufferSubmitInfoKHR> command_buffers {
     {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
       nullptr,
@@ -171,11 +172,17 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
       nullptr,
       buffers[1],
       0
+    },
+    {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+        nullptr,
+        buffers[2],
+        0
     }
   };
 
-  submit_info.commandBufferInfoCount = 2;
-  submit_info.pCommandBufferInfos = command_buffers;
+  submit_info.commandBufferInfoCount = static_cast<uint32_t>(command_buffers.size());
+  submit_info.pCommandBufferInfos = command_buffers.data();
 #endif
   // specify which semaphores to signal once the command buffer have finished execution
   VkSemaphoreSubmitInfoKHR signal_semaphores[] {
@@ -323,20 +330,6 @@ void swap_chain::create_image_views()
 
 VkRenderPass swap_chain::create_render_pass()
 {
-  VkAttachmentDescription depth_attachment{};
-  depth_attachment.format = find_depth_format();
-  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentReference depth_attachmet_ref{};
-  depth_attachmet_ref.attachment = 1;
-  depth_attachmet_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
   VkAttachmentDescription color_attachment = {};
   color_attachment.format = get_swap_chain_images_format();
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -354,11 +347,30 @@ VkRenderPass swap_chain::create_render_pass()
   color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 #endif
 
+  VkAttachmentDescription depth_attachment{};
+  depth_attachment.format = find_depth_format();
+  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+#ifndef IMGUI_DISABLED
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+#else
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+#endif
+  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
   VkAttachmentReference color_attachment_ref = {};
   // which attachment to reference by its index
   color_attachment_ref.attachment = 0;
   // which layout we would like the attachment to have during a subpass
   color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference depth_attachmet_ref{};
+  depth_attachmet_ref.attachment = 1;
+  depth_attachmet_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   // subpass creation
   // graphics may support compute subpasses in the future
@@ -368,19 +380,39 @@ VkRenderPass swap_chain::create_render_pass()
   subpass.pColorAttachments = &color_attachment_ref;
   subpass.pDepthStencilAttachment = &depth_attachmet_ref;
 
-  VkSubpassDependency dependency = {};
+  std::vector<VkSubpassDependency> dependencies = {};
+#ifndef IMGUI_DISABLED
+  dependencies.resize(2);
+  dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependencies[0].dstSubpass = 0;
+  dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+  dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+  dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+  dependencies[1].srcSubpass = 0;
+  dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+  dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+  dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+  dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+#elif
+  dependencies.resize(1);
   // the implicit subpass befor or after the render pass
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.srcAccessMask = 0;
+  dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependencies[0].srcAccessMask = 0;
   // the operations to wait on and the stages in which these operations occur
-  dependency.srcStageMask =
+  dependencies[0].srcStageMask =
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   // dstSubpass souhld be higher than srcSubpass to prevent cycles
-  dependency.dstSubpass = 0;
-  dependency.dstStageMask =
+  dependencies[0].dstSubpass = 0;
+  dependencies[0].dstStageMask =
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask =
+  dependencies[0].dstAccessMask =
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+#endif
 
   std::array<VkAttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
   VkRenderPassCreateInfo render_pass_info = {};
@@ -390,8 +422,8 @@ VkRenderPass swap_chain::create_render_pass()
   // attachment and subpass can be array of those;
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
-  render_pass_info.dependencyCount = 1;
-  render_pass_info.pDependencies = &dependency;
+  render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+  render_pass_info.pDependencies = dependencies.data();
 
   VkRenderPass render_pass;
 
