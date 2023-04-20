@@ -160,7 +160,7 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
   submit_info.commandBufferInfoCount = 1;
   submit_info.pCommandBufferInfos = command_buffers;
 #else
-  VkCommandBufferSubmitInfoKHR command_buffers[] {
+  std::vector<VkCommandBufferSubmitInfoKHR> command_buffers {
     {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
       nullptr,
@@ -172,11 +172,17 @@ VkResult swap_chain::submit_command_buffers(const VkCommandBuffer *buffers, uint
       nullptr,
       buffers[1],
       0
+    },
+    {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+        nullptr,
+        buffers[2],
+        0
     }
   };
 
-  submit_info.commandBufferInfoCount = 2;
-  submit_info.pCommandBufferInfos = command_buffers;
+  submit_info.commandBufferInfoCount = static_cast<uint32_t>(command_buffers.size());
+  submit_info.pCommandBufferInfos = command_buffers.data();
 #endif
   // specify which semaphores to signal once the command buffer have finished execution
   VkSemaphoreSubmitInfoKHR signal_semaphores[] {
