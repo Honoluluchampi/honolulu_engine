@@ -6,9 +6,10 @@
 namespace hnll::graphics {
 
 // TODO : configure renderer count in a systematic manner
-#define RENDERER_COUNT 2
+#define RENDERER_COUNT 3
 #define HVE_RENDER_PASS_ID 0
-#define GUI_RENDER_PASS_ID 1
+#define VIEWPORT_RENDER_PASS_ID 1
+#define GUI_RENDER_PASS_ID 2
 
 class timeline_semaphore;
 

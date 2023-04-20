@@ -12,7 +12,7 @@ namespace graphics {
 
 namespace gui {
 
-#define GUI_RENDER_PASS_ID 1
+#define GUI_RENDER_PASS_ID 2
 
   class renderer : public hnll::graphics::renderer
     {
@@ -32,8 +32,10 @@ namespace gui {
 
       private:
         // specific for hie
-        VkRenderPass create_render_pass();
-        std::vector<VkFramebuffer> create_frame_buffers();
+        VkRenderPass create_viewport_render_pass();
+        VkRenderPass create_imgui_render_pass();
+        std::vector<VkFramebuffer> create_viewport_frame_buffers();
+        std::vector<VkFramebuffer> create_imgui_frame_buffers();
 
         void create_viewport_images();
 
