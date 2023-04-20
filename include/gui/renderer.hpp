@@ -43,7 +43,6 @@ namespace gui {
         // image, image view and image memory are combined
         std::vector<u_ptr<graphics::image_resource>> vp_images_;
 
-        VkPipeline vp_pipeline_;
         std::vector<VkCommandBuffer> vp_command_buffers_;
     };
 
