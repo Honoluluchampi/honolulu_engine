@@ -16,6 +16,8 @@ void renderer::recreate_swap_chain()
   // for viewport screen
   create_viewport_images();
 
+  swap_chain_->set_render_pass(create_viewport_render_pass(), VIEWPORT_RENDER_PASS_ID);
+  swap_chain_->set_frame_buffers(create_viewport_frame_buffers(), VIEWPORT_RENDER_PASS_ID);
   swap_chain_->set_render_pass(create_imgui_render_pass(), GUI_RENDER_PASS_ID);
   swap_chain_->set_frame_buffers(create_imgui_frame_buffers(), GUI_RENDER_PASS_ID);
 
@@ -148,6 +150,34 @@ VkRenderPass renderer::create_imgui_render_pass()
     throw std::runtime_error("failed to create render pass.");
 
   return render_pass;
+}
+
+std::vector<VkFramebuffer> renderer::create_viewport_frame_buffers()
+{
+  auto image_count = vp_images_.size();
+  std::vector<VkFramebuffer> frame_buffers(image_count);
+
+  for (size_t i = 0; i < image_count; i++) {
+    std::array<VkImageView, 2> attachments = {
+      vp_images_[i]->get_image_view(),
+      swap_chain_->get_depth_image_view(i)
+    };
+
+    VkFramebufferCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    // make sure to create renderpass before frame buffers
+    info.renderPass = swap_chain_->get_render_pass(VIEWPORT_RENDER_PASS_ID);
+    info.attachmentCount = static_cast<uint32_t>(attachments.size());
+    info.pAttachments = attachments.data();
+    auto extent = swap_chain_->get_swap_chain_extent();
+    info.width = extent.width;
+    info.height = extent.height;
+    info.layers = 1;
+
+    if (vkCreateFramebuffer(device_.get_device(), &info, nullptr, &frame_buffers[i]) != VK_SUCCESS)
+      throw std::runtime_error("failed to create frame buffer.");
+  }
+  return frame_buffers;
 }
 
 std::vector<VkFramebuffer> renderer::create_imgui_frame_buffers()
