@@ -132,7 +132,7 @@ void gui_engine::begin_imgui()
 
 void gui_engine::render()
 {
-  ImGui::Begin("Viewport", );
+  ImGui::Begin("Viewport");
 
   ImVec2 panel_size = ImGui::GetContentRegionAvail();
   ImGui::Image(
