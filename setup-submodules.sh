@@ -4,23 +4,23 @@ mkdir -p $HNLL_ENGN/submodules
 if [ ! -e $HNLL_ENGN/submodules/imgui/imgui.cpp ]; then
   mkdir -p $HNLL_ENGN/submodules/imgui
   echo "downloading imgui"
-  curl -o $HNLL_ENGN/submodules/imgui/imgui.cpp https://raw.githubusercontent.com/ocornut/imgui/master/imgui.cpp
-  curl -o $HNLL_ENGN/submodules/imgui/imgui_demo.cpp https://raw.githubusercontent.com/ocornut/imgui/master/imgui_demo.cpp
-  curl -o $HNLL_ENGN/submodules/imgui/imgui_draw.cpp https://raw.githubusercontent.com/ocornut/imgui/master/imgui_draw.cpp
-  curl -o $HNLL_ENGN/submodules/imgui/imgui_widgets.cpp https://raw.githubusercontent.com/ocornut/imgui/master/imgui_widgets.cpp
-  curl -o $HNLL_ENGN/submodules/imgui/imgui_tables.cpp https://raw.githubusercontent.com/ocornut/imgui/master/imgui_tables.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/imgui.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/imgui.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_demo.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/imgui_demo.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_draw.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/imgui_draw.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_widgets.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/imgui_widgets.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_tables.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/imgui_tables.cpp
   mkdir -p $HNLL_ENGN/submodules/imgui/backends
-  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.cpp https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_vulkan.cpp
-  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.cpp https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_glfw.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/backends/imgui_impl_vulkan.cpp
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.cpp https://raw.githubusercontent.com/ocornut/imgui/docking/backends/imgui_impl_glfw.cpp
   curl -o $HNLL_ENGN/submodules/imgui/roboto_regular.embed https://raw.githubusercontent.com/TheCherno/Walnut/master/Walnut/src/Walnut/ImGui/Roboto-Regular.embed
-  curl -o $HNLL_ENGN/submodules/imgui/imgui.h https://raw.githubusercontent.com/ocornut/imgui/master/imgui.h
-  curl -o $HNLL_ENGN/submodules/imgui/imgui_internal.h https://raw.githubusercontent.com/ocornut/imgui/master/imgui_internal.h
-  curl -o $HNLL_ENGN/submodules/imgui/imstb_rectpack.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_rectpack.h
-  curl -o $HNLL_ENGN/submodules/imgui/imstb_textedit.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_textedit.h
-  curl -o $HNLL_ENGN/submodules/imgui/imstb_truetype.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_truetype.h
-  curl -o $HNLL_ENGN/submodules/imgui/imconfig.h https://raw.githubusercontent.com/ocornut/imgui/master/imconfig.h
-  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.h https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_vulkan.h
-  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.h https://raw.githubusercontent.com/ocornut/imgui/master/backends/imgui_impl_glfw.h
+  curl -o $HNLL_ENGN/submodules/imgui/imgui.h https://raw.githubusercontent.com/ocornut/imgui/docking/imgui.h
+  curl -o $HNLL_ENGN/submodules/imgui/imgui_internal.h https://raw.githubusercontent.com/ocornut/imgui/docking/imgui_internal.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_rectpack.h https://raw.githubusercontent.com/ocornut/imgui/docking/imstb_rectpack.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_textedit.h https://raw.githubusercontent.com/ocornut/imgui/docking/imstb_textedit.h
+  curl -o $HNLL_ENGN/submodules/imgui/imstb_truetype.h https://raw.githubusercontent.com/ocornut/imgui/docking/imstb_truetype.h
+  curl -o $HNLL_ENGN/submodules/imgui/imconfig.h https://raw.githubusercontent.com/ocornut/imgui/docking/imconfig.h
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_vulkan.h https://raw.githubusercontent.com/ocornut/imgui/docking/backends/imgui_impl_vulkan.h
+  curl -o $HNLL_ENGN/submodules/imgui/backends/imgui_impl_glfw.h https://raw.githubusercontent.com/ocornut/imgui/docking/backends/imgui_impl_glfw.h
 fi
 export IMGUI_DIR=$HNLL_ENGN/submodules/imgui
 
