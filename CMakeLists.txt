@@ -18,6 +18,7 @@ add_subdirectory(modules/graphics)
 add_subdirectory(modules/gui)
 add_subdirectory(modules/geometry)
 add_subdirectory(modules/physics)
+add_subdirectory(modules/audio)
 add_subdirectory(modules/utils)
 
 include($ENV{HNLL_ENGN}/cmake_utils/include.cmake)
@@ -32,6 +33,7 @@ target_link_libraries(hnll_engine PUBLIC
     hnll_gui
     hnll_geometry
     hnll_physics
+    hnll_audio
     hnll_utils
     libvulkan.so.1.3.224
     glfw
