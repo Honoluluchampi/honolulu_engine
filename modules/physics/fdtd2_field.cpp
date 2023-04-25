@@ -1,7 +1,6 @@
 // hnll
 #include <game/modules/graphics_engine.hpp>
 #include <physics/fdtd2_field.hpp>
-#include <graphics/desc_set.hpp>
 
 namespace hnll::physics {
 
@@ -33,7 +32,7 @@ void fdtd2_field::compute_constants()
 void fdtd2_field::setup_desc_sets()
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, utils::FRAMES_IN_FLIGHT)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_)
     .build();
 
   graphics::desc_set_info set_info;
@@ -49,18 +48,18 @@ void fdtd2_field::setup_desc_sets()
     device_,
     desc_pool_,
     {set_info},
-    utils::FRAMES_IN_FLIGHT);
+    frame_count_);
 
   // initial data
   int press_grid_count = x_grid_ * y_grid_;
   int vx_grid_count = (x_grid_ + 1) * y_grid_;
   int vy_grid_count = x_grid_ * (y_grid_ + 1);
-  std::vector<float> initial_press(0, press_grid_count);
-  std::vector<float> initial_vx(0, vx_grid_count);
-  std::vector<float> initial_vy(0, vy_grid_count);
+  std::vector<float> initial_press(press_grid_count, 0.f);
+  std::vector<float> initial_vx(vx_grid_count, 0.f);
+  std::vector<float> initial_vy(vy_grid_count, 0.f);
 
   // assign buffer
-  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+  for (int i = 0; i < frame_count_; i++) {
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
       sizeof(float) * press_grid_count,
@@ -89,6 +88,27 @@ void fdtd2_field::setup_desc_sets()
   }
 
   desc_sets_->build();
+}
+
+std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
+{
+  std::vector<VkDescriptorSet> desc_sets;
+  if (frame_index_ == 0) {
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(1)[0]
+    };
+  }
+  else {
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(0)[0]
+    };
+  }
+
+  frame_index_ = frame_index_ == 0 ? 1 : 0;
+
+  return desc_sets;
 }
 
 } // namespace hnll::physics

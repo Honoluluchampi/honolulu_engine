@@ -1,17 +1,10 @@
 #pragma once
 
 // hnll
+#include <graphics/desc_set.hpp>
 #include <utils/common_alias.hpp>
 
-namespace hnll {
-
-namespace graphics {
-  class device;
-  class desc_sets;
-  class desc_pool;
-}
-
-namespace physics {
+namespace hnll::physics {
 
 struct fdtd_info {
   float x_len;
@@ -25,8 +18,10 @@ struct fdtd_info {
 class fdtd2_field
 {
   public:
-    u_ptr<fdtd2_field> create(const fdtd_info& info);
+    static u_ptr<fdtd2_field> create(const fdtd_info& info);
     explicit fdtd2_field(const fdtd_info& info);
+
+    std::vector<VkDescriptorSet> get_frame_desc_sets();
 
   private:
     void compute_constants();
@@ -45,5 +40,9 @@ class fdtd2_field
     float x_len_, y_len_;
     int x_grid_, y_grid_;
     float dt_, grid_size_;
+
+    // frame_buffering
+    int frame_count_ = 2;
+    int frame_index_ = 0;
 };
-}} // namespace hnll::physics
+} // namespace hnll::physics
