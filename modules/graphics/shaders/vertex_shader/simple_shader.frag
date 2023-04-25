@@ -30,7 +30,7 @@ void main()
     float attenuation = 1.0 / dot(direction_to_light, direction_to_light); // distance squared
 
     direction_to_light = normalize(direction_to_light);
-    float cos_ang_incidence = max(dot(surface_normal, direction_to_light), 0);
+    float cos_ang_incidence = max(dot(surface_normal, direction_to_light), 0.f);
     vec3 intensity = light.color.xyz * light.color.w * attenuation;
 
     diffuse_light += intensity * cos_ang_incidence;
@@ -38,8 +38,8 @@ void main()
     // specular light
     vec3 half_angle = normalize(direction_to_light + view_direction);
     float blinn_term = dot(surface_normal, half_angle);
-    blinn_term = clamp(blinn_term, 0 , 1);
-    blinn_term = pow(blinn_term, 50);
+    blinn_term = clamp(blinn_term, 0.f, 1.f);
+    blinn_term = pow(blinn_term, 50.f);
     specular_light += light.color.xyz * attenuation * blinn_term;
   }
 

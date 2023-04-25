@@ -88,6 +88,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO(); (void)io;
   // enable keyboard control
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   // setup ImGui style
   ImGui::StyleColorsDark();
