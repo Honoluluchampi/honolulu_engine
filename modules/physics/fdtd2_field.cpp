@@ -92,21 +92,21 @@ void fdtd2_field::setup_desc_sets()
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      nullptr);
+      initial_press.data());
     auto vx_buffer = graphics::buffer::create_with_staging(
       device_,
       sizeof(float) * vx_grid_count,
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      nullptr);
+      initial_vx.data());
     auto vy_buffer = graphics::buffer::create_with_staging(
       device_,
       sizeof(float) * vy_grid_count,
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      nullptr);
+      initial_vy.data());
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
     desc_sets_->set_buffer(0, 1, i, std::move(vx_buffer));

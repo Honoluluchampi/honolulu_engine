@@ -1,18 +1,17 @@
 // hnll
 #include <game/engine.hpp>
-#include <game/actors/default_camera.hpp>
+#include <game/shading_systems/grid_shading_system.hpp>
 #include <physics/fdtd2_field.hpp>
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(graphics_shaders, physics::fdtd2_shading_system);
+SELECT_SHADING_SYSTEM(graphics_shaders, game::grid_shading_system); //physics::fdtd2_shading_system);
 // TODO : replace with dummy_actor
-SELECT_ACTOR(actors, game::default_camera);
 SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd2_compute_shader);
 
-DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, actors, compute_shaders)
+DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compute_shaders)
 {
   public:
     fdtd_compute()
@@ -26,8 +25,11 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, actors, compute_shade
         4000.f
       };
 
-      auto fdtd_field = physics::fdtd2_field::create(info);
+      field_ = physics::fdtd2_field::create(info);
     }
+
+  private:
+    s_ptr<physics::fdtd2_field> field_;
 };
 
 } // namespace hnll

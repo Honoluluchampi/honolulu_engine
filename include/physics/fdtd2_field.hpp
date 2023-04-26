@@ -25,6 +25,12 @@ class fdtd2_field
     // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets();
     uint32_t get_field_id() const { return field_id_; }
+    int get_x_grid() const { return x_grid_; }
+    int get_y_grid() const { return y_grid_; }
+    float get_x_len() const { return x_len_; }
+    float get_y_len() const { return y_len_; }
+    float get_v_fac() const { return 1 / (rho_ * grid_size_);  }
+    float get_p_fac() const { return kappa_ / grid_size_; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 

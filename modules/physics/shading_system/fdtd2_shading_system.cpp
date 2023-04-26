@@ -4,6 +4,8 @@
 
 namespace hnll::physics {
 
+s_ptr<fdtd2_field> fdtd2_shading_system::target_ = nullptr;
+
 void fdtd2_shading_system::set_target(const s_ptr<fdtd2_field> &target)
 { target_ = target; }
 

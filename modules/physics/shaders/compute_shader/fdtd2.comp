@@ -2,7 +2,7 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../../common/cloth_config.h"
+#include "../../common/fdtd2_config.h"
 
 layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
 
@@ -36,6 +36,6 @@ void main() {
 
   // update pressure
   curr_p[p_id(i, j)] = prev_p[p_id(i, j)] - push.p_fac *
-                             (curr_vx[vx_id(i, j)] - curr_vx[vx_id[i-1, j]] +
-                              curr_vy[vy_id(i, j)] - curr_vy[vy_id[i, j-1]]);
+                             (curr_vx[vx_id(i, j)] - curr_vx[vx_id(i-1, j)] +
+                              curr_vy[vy_id(i, j)] - curr_vy[vy_id(i, j-1)]);
 }
