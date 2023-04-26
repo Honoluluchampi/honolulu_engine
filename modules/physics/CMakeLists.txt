@@ -6,6 +6,7 @@ set(SOURCES
 
         # fdtd
         fdtd2_field.cpp
+        compute_shader/fdtd2_compute_shader.cpp
         resource_manager.cpp
         )
 

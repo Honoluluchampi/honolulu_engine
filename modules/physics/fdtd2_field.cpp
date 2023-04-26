@@ -4,6 +4,13 @@
 
 namespace hnll::physics {
 
+// only binding of the pressure is accessed by fragment shader
+const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+};
+
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
 { return std::make_unique<fdtd2_field>(info); }
 
@@ -35,13 +42,7 @@ void fdtd2_field::setup_desc_sets()
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_)
     .build();
 
-  graphics::desc_set_info set_info;
-  // 3 bindings for pressure, x-velocity, y-velocity
-  for (int i = 0; i < 3; i++) {
-    set_info.add_binding(
-      VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  }
+  graphics::desc_set_info set_info { field_bindings };
   set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
@@ -60,6 +61,15 @@ void fdtd2_field::setup_desc_sets()
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
+    // setup initial pressure as impulse signal from the center of the room
+    int center_grid_id = x_grid_ / 2 + y_grid_ / 2 * x_grid_;
+    if (i == 0) {
+      initial_press[center_grid_id] = 500.f;
+    }
+    else {
+      initial_press[center_grid_id] = 0.f;
+    }
+
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
       sizeof(float) * press_grid_count,

@@ -2,6 +2,7 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
+#include <utils/singleton.hpp>
 
 // std
 #include <cassert>
@@ -30,6 +31,15 @@ std::unique_ptr<desc_layout> desc_layout::builder::build()
 { return std::make_unique<desc_layout>(device_, std::move(bindings_)); }
 
 // *************** Descriptor Set Layout *********************
+
+u_ptr<desc_layout> desc_layout::create_from_bindings(device& device, const std::vector<binding_info>& bindings)
+{
+  builder build(device);
+  for (const auto& binding : bindings) {
+    build.add_binding(binding.desc_type, binding.shader_stages);
+  }
+  return build.build();
+}
 
 desc_layout::desc_layout
   (device &device, std::vector<VkDescriptorSetLayoutBinding>&& bindings) : device_{device}, bindings_{std::move(bindings)}

@@ -14,6 +14,31 @@ namespace hnll::graphics {
 class device;
 class buffer;
 
+struct binding_info
+{
+  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type)
+  { shader_stages = shader_stage; desc_type = type; }
+
+  VkShaderStageFlags shader_stages;
+  VkDescriptorType desc_type;
+};
+
+// contains single set, multiple bindings
+struct desc_set_info
+{
+  desc_set_info() {}
+  desc_set_info(const std::vector<binding_info>& bindings) { bindings_ = bindings; }
+
+  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type)
+  {
+    bindings_.emplace_back(stage, type);
+    return *this;
+  }
+
+  std::vector<binding_info> bindings_;
+  bool is_frame_buffered_ = false;
+};
+
 class desc_layout {
   public:
     class builder {
@@ -31,8 +56,11 @@ class desc_layout {
         std::vector<VkDescriptorSetLayoutBinding> bindings_{};
     };
 
+    static u_ptr<desc_layout> create_from_bindings(device& device, const std::vector<binding_info>& bindings);
+
     // ctor dtor
-    desc_layout(device &device, std::vector<VkDescriptorSetLayoutBinding>&& bindings);
+    desc_layout(device& device, std::vector<VkDescriptorSetLayoutBinding>&& bindings);
+    desc_layout(device& device, const std::vector<binding_info>& bindings);
     ~desc_layout();
 
     VkDescriptorSetLayout get_descriptor_set_layout() const { return descriptor_set_layout_; }
@@ -96,28 +124,6 @@ class desc_writer {
     desc_layout &set_layout_;
     desc_pool &pool_;
     std::vector<VkWriteDescriptorSet> writes_;
-};
-
-struct binding_info
-{
-  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type)
-  { shader_stages = shader_stage; desc_type = type; }
-
-  VkShaderStageFlags shader_stages;
-  VkDescriptorType desc_type;
-};
-
-// contains single set, multiple bindings
-struct desc_set_info
-{
-  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type)
-  {
-    bindings_.emplace_back(stage, type);
-    return *this;
-  }
-
-  std::vector<binding_info> bindings_;
-  bool is_frame_buffered_ = false;
 };
 
 // contains multiple sets

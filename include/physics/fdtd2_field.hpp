@@ -23,6 +23,8 @@ class fdtd2_field
 
     std::vector<VkDescriptorSet> get_frame_desc_sets();
 
+    static const std::vector<graphics::binding_info> field_bindings;
+
   private:
     void compute_constants();
     void setup_desc_sets();

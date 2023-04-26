@@ -10,7 +10,7 @@ namespace hnll {
 SELECT_SHADING_SYSTEM(graphics_shaders, physics::fdtd2_shading_system);
 // TODO : replace with dummy_actor
 SELECT_ACTOR(actors, game::default_camera);
-SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd_compute_shader);
+SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd2_compute_shader);
 
 DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, actors, compute_shaders)
 {
