@@ -1,0 +1,13 @@
+// hnll
+#include <physics/shading_system/fdtd2_shading_system.hpp>
+#include <physics/fdtd2_field.hpp>
+
+namespace hnll::physics {
+
+void fdtd2_shading_system::set_target(const s_ptr<fdtd2_field> &target)
+{ target_ = target; }
+
+void fdtd2_shading_system::remove_target(uint32_t field_id)
+{ if (field_id == target_->get_field_id()) target_.reset(); }
+
+} // namespace hnll::physics

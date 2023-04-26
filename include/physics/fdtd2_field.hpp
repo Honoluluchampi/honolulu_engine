@@ -18,10 +18,13 @@ struct fdtd_info {
 class fdtd2_field
 {
   public:
-    static u_ptr<fdtd2_field> create(const fdtd_info& info);
+    static s_ptr<fdtd2_field> create(const fdtd_info& info);
     explicit fdtd2_field(const fdtd_info& info);
+    ~fdtd2_field();
 
+    // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets();
+    uint32_t get_field_id() const { return field_id_; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 
@@ -46,5 +49,7 @@ class fdtd2_field
     // frame_buffering
     int frame_count_ = 2;
     int frame_index_ = 0;
+
+    uint32_t field_id_;
 };
 } // namespace hnll::physics

@@ -1,6 +1,8 @@
 // hnll
 #include <game/modules/graphics_engine.hpp>
 #include <physics/fdtd2_field.hpp>
+#include <physics/compute_shader/fdtd2_compute_shader.hpp>
+#include <physics/shading_system/fdtd2_shading_system.hpp>
 
 namespace hnll::physics {
 
@@ -11,11 +13,19 @@ const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
 };
 
-u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
-{ return std::make_unique<fdtd2_field>(info); }
+s_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
+{
+  auto ret = std::make_shared<fdtd2_field>(info);
+  fdtd2_compute_shader::set_target(ret);
+  fdtd2_shading_system::set_target(ret);
+  return ret;
+}
 
 fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_core::get_device_r())
 {
+  static uint32_t id = 0;
+  field_id_ = id++;
+
   x_len_ = info.x_len;
   y_len_ = info.y_len;
   sound_speed_ = info.sound_speed;
@@ -25,6 +35,12 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
 
   compute_constants();
   setup_desc_sets();
+}
+
+fdtd2_field::~fdtd2_field()
+{
+  fdtd2_compute_shader::remove_target(field_id_);
+  fdtd2_shading_system::remove_target(field_id_);
 }
 
 void fdtd2_field::compute_constants()
