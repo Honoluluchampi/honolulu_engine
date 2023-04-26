@@ -29,7 +29,7 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compu
     }
 
   private:
-    s_ptr<physics::fdtd2_field> field_;
+    u_ptr<physics::fdtd2_field> field_;
 };
 
 } // namespace hnll

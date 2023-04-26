@@ -17,12 +17,12 @@ DEFINE_SHADING_SYSTEM(fdtd2_shading_system, game::dummy_renderable_comp<utils::s
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 
-    static void set_target(const s_ptr<fdtd2_field>& target);
+    static void set_target(fdtd2_field* target);
     static void remove_target(uint32_t field_id);
 
   private:
     u_ptr<graphics::desc_layout> layout_;
-    static s_ptr<fdtd2_field> target_;
+    static fdtd2_field* target_;
 };
 
 } // namespace hnll::physics

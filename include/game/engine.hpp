@@ -62,8 +62,9 @@ class engine_core
     static std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> glfw_mouse_button_callbacks_;
 
     graphics_engine_core& graphics_engine_core_;
-    static u_ptr<gui_engine> gui_engine_;
-
+#ifndef IMGUI_DISABLED
+    gui_engine& gui_engine_;
+#endif
     std::chrono::system_clock::time_point old_time_;
     static utils::viewer_info viewer_info_;
 };
@@ -83,7 +84,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
     engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
-    virtual ~engine_base(){}
+    virtual ~engine_base();
 
     void run();
 
@@ -104,7 +105,6 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
   private:
     void update();
     void render();
-    void cleanup_common();
 
     // for each specific engine
     void update_this(const float& dt) {}
@@ -144,6 +144,14 @@ ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rend
   }
 }
 
+ENGN_API ENGN_TYPE::~engine_base()
+{
+  static_cast<Derived*>(this)->cleanup();
+  graphics_engine_.reset();
+  compute_engine_.reset();
+  utils::singleton_deleter::delete_reversely();
+}
+
 ENGN_API void ENGN_TYPE::run()
 {
   while (!graphics_engine_core_.should_close_window()) {
@@ -152,7 +160,6 @@ ENGN_API void ENGN_TYPE::run()
     render();
   }
   graphics_engine_core_.wait_idle();
-  cleanup_common();
 }
 
 ENGN_API void ENGN_TYPE::update()
@@ -177,14 +184,6 @@ ENGN_API void ENGN_TYPE::render()
   utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
   graphics_engine_->render(game_frame_info);
   core_.render_gui();
-}
-
-ENGN_API void ENGN_TYPE::cleanup_common()
-{
-  static_cast<Derived*>(this)->cleanup();
-  graphics_engine_.reset();
-  compute_engine_.reset();
-  utils::singleton_deleter::delete_reversely();
 }
 
 ENGN_API template <Actor Act> void ENGN_TYPE::add_update_target(u_ptr<Act>&& target)

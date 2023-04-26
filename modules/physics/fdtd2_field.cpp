@@ -13,11 +13,11 @@ const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
 };
 
-s_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
+u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
 {
-  auto ret = std::make_shared<fdtd2_field>(info);
-  fdtd2_compute_shader::set_target(ret);
-  fdtd2_shading_system::set_target(ret);
+  auto ret = std::make_unique<fdtd2_field>(info);
+  fdtd2_compute_shader::set_target(ret.get());
+  fdtd2_shading_system::set_target(ret.get());
   return ret;
 }
 

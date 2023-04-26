@@ -10,7 +10,7 @@ namespace hnll::physics {
 #include "../common/fdtd2_config.h"
 
 // static member
-s_ptr<fdtd2_field> fdtd2_compute_shader::target_ = nullptr;
+fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
 
 DEFAULT_COMPUTE_SHADER_CTOR_IMPL(fdtd2_compute_shader);
 
@@ -49,10 +49,10 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
   }
 }
 
-void fdtd2_compute_shader::set_target(const s_ptr<fdtd2_field> &target)
+void fdtd2_compute_shader::set_target(fdtd2_field* target)
 { target_ = target; }
 
 void fdtd2_compute_shader::remove_target(uint32_t field_id)
-{ if (field_id == target_->get_field_id()) target_.reset(); }
+{ if (field_id == target_->get_field_id()) target_ = nullptr; }
 
 } // namespace hnll::physics

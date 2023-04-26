@@ -18,7 +18,7 @@ struct fdtd_info {
 class fdtd2_field
 {
   public:
-    static s_ptr<fdtd2_field> create(const fdtd_info& info);
+    static u_ptr<fdtd2_field> create(const fdtd_info& info);
     explicit fdtd2_field(const fdtd_info& info);
     ~fdtd2_field();
 
