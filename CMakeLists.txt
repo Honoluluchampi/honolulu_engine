@@ -29,12 +29,12 @@ if (APPLE)
 endif()
 
 target_link_libraries(hnll_engine PUBLIC
-    hnll_graphics
     hnll_gui
     hnll_geometry
     hnll_physics
     hnll_audio
     hnll_utils
+    hnll_graphics
     libvulkan.so.1.3.224
     glfw
 )

@@ -4,6 +4,7 @@
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/pipeline.hpp>
+#include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
 
 // std
@@ -81,6 +82,7 @@ class shading_system {
     graphics::device &device_;
     u_ptr<graphics::pipeline> pipeline_;
     VkPipelineLayout pipeline_layout_;
+    u_ptr<graphics::desc_layout> desc_layout_;
 
     // shading system is called in rendering_type-order at rendering process
     utils::shading_type shading_type_;

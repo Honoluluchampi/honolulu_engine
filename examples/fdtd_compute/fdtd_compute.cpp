@@ -1,13 +1,13 @@
 // hnll
 #include <game/engine.hpp>
-#include <game/shading_systems/grid_shading_system.hpp>
+#include <graphics/pipeline.hpp>
 #include <physics/fdtd2_field.hpp>
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(graphics_shaders, game::grid_shading_system); //physics::fdtd2_shading_system);
+SELECT_SHADING_SYSTEM(graphics_shaders, physics::fdtd2_shading_system);
 // TODO : replace with dummy_actor
 SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd2_compute_shader);
 
