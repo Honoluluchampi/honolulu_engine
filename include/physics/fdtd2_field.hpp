@@ -33,6 +33,7 @@ class fdtd2_field
     float get_y_len() const { return y_len_; }
     float get_v_fac() const { return 1 / (rho_ * grid_size_);  }
     float get_p_fac() const { return kappa_ / grid_size_; }
+    float get_f_max() const { return f_max_; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 

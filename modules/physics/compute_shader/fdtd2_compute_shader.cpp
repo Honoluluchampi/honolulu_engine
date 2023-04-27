@@ -29,13 +29,15 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     auto &command = info.command_buffer;
     bind_pipeline(command);
 
+    float dt = 0.001;
+
     fdtd2_push push;
     push.x_grid = target_->get_x_grid();
     push.y_grid = target_->get_y_grid();
     push.x_len = target_->get_x_len();
     push.y_len = target_->get_y_len();
-    push.v_fac = info.dt * target_->get_v_fac();
-    push.p_fac = info.dt * target_->get_p_fac();
+    push.v_fac = dt * target_->get_v_fac();
+    push.p_fac = dt * target_->get_p_fac();
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
     auto desc_sets = target_->get_frame_desc_sets();

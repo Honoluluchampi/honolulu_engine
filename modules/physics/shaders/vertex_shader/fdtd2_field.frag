@@ -22,5 +22,5 @@ void main()
   float i = (gl_FragCoord.x ) / push.width * push.x_grid;
   float j = (1 - gl_FragCoord.y / push.height) * push.y_grid;
   float val = curr_p[id(int(i), int(j))];
-  out_color = vec4(val, -val, val, 1);
+  out_color = vec4(val, 0, -val, 1);
 }
