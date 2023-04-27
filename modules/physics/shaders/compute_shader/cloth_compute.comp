@@ -14,21 +14,11 @@ struct vertex {
 };
 
 // game::compute_shader binds next, current and previous vertices properly
-layout(set = 0, binding = 0) buffer Next {
-  vertex next_v[];
-};
+layout(set = 0, binding = 0) buffer Next { vertex next_v[]; };
+layout(set = 1, binding = 0) readonly buffer Current { vertex curr_v[]; };
+layout(set = 2, binding = 0) readonly buffer Previous { vertex prev_v[]; };
 
-layout(set = 1, binding = 0) readonly buffer Current {
-  vertex curr_v[];
-};
-
-layout(set = 2, binding = 0) readonly buffer Previous {
-  vertex prev_v[];
-};
-
-layout(push_constant) uniform Push {
-  cloth_push push;
-};
+layout(push_constant) uniform Push { cloth_push push; };
 
 // returns true if the vertex is inside the cloth
 bool exists_vertex(uint x_id, uint y_id) {

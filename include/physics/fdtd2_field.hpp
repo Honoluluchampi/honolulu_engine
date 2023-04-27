@@ -22,6 +22,8 @@ class fdtd2_field
     explicit fdtd2_field(const fdtd_info& info);
     ~fdtd2_field();
 
+    void update_frame() { frame_index_ = frame_index_ == 0 ? 1 : 0; }
+
     // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets();
     uint32_t get_field_id() const { return field_id_; }

@@ -29,8 +29,8 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
   x_len_ = info.x_len;
   y_len_ = info.y_len;
   sound_speed_ = info.sound_speed;
-  kappa_ = info.sound_speed;
-  rho_ = info.sound_speed;
+  kappa_ = info.kappa;
+  rho_ = info.rho;
   f_max_ = info.f_max;
 
   compute_constants();
@@ -79,7 +79,7 @@ void fdtd2_field::setup_desc_sets()
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
     int center_grid_id = x_grid_ / 2 + y_grid_ / 2 * x_grid_;
-    if (i == 0) {
+    if (i == 1) {
       initial_press[center_grid_id] = 500.f;
     }
     else {
@@ -88,21 +88,21 @@ void fdtd2_field::setup_desc_sets()
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * press_grid_count,
+      sizeof(float) * initial_press.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_press.data());
     auto vx_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * vx_grid_count,
+      sizeof(float) * initial_vx.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_vx.data());
     auto vy_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * vy_grid_count,
+      sizeof(float) * initial_vy.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -131,8 +131,6 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(0)[0]
     };
   }
-
-  frame_index_ = frame_index_ == 0 ? 1 : 0;
 
   return desc_sets;
 }

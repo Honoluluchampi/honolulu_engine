@@ -10,6 +10,8 @@ fdtd2_field* fdtd2_shading_system::target_ = nullptr;
 struct fdtd2_frag_push {
   float width;
   float height;
+  int x_grid;
+  int y_grid;
 };
 
 DEFAULT_SHADING_SYSTEM_CTOR_IMPL(fdtd2_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
@@ -25,7 +27,7 @@ void fdtd2_shading_system::setup()
   pipeline_layout_ = create_pipeline_layout<fdtd2_frag_push>(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{
-      vk_layout, vk_layout
+      vk_layout
     }
   );
 
@@ -50,6 +52,8 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
     fdtd2_frag_push push;
     push.width = std::get<0>(window_size);
     push.height = std::get<1>(window_size);
+    push.x_grid = target_->get_x_grid();
+    push.y_grid = target_->get_y_grid();
     vkCmdPushConstants(
       command,
       pipeline_layout_,
@@ -58,19 +62,21 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
       sizeof(fdtd2_frag_push),
       &push);
 
-    auto desc_sets = target_->get_frame_desc_sets();
+    auto desc_sets = target_->get_frame_desc_sets()[0];
     vkCmdBindDescriptorSets(
       command,
       VK_PIPELINE_BIND_POINT_GRAPHICS,
       pipeline_layout_,
       0,
-      desc_sets.size(),
-      desc_sets.data(),
+      1,
+      &desc_sets,
       0,
       nullptr
     );
 
     vkCmdDraw(command, 6, 1, 0, 0);
+
+    target_->update_frame();
   }
 }
 
