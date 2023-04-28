@@ -18,12 +18,12 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compu
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        1.f,
-        1.f,
+        100.f,
+        100.f,
         10.f,
         0.1f,
         0.001f,
-        1000.f
+        100.f
       };
 
       field_ = physics::fdtd2_field::create(info);

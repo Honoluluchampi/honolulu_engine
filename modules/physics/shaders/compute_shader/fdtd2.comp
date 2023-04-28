@@ -30,7 +30,7 @@ void main() {
     curr_p[p_id(i, j)] = 0.f;
     curr_vx[vx_id(i, j)] = 0.f;
     curr_vy[vy_id(i, j)] = 0.f;
-    if (push.reset == 1 && i == push.x_grid / 2 && j == push.y_grid / 2)
+    if (i == push.x_grid / 2 && j == push.y_grid / 2)
       curr_p[p_id(i, j)] = 128.f;
     return;
   }
