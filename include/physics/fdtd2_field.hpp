@@ -34,6 +34,13 @@ class fdtd2_field
     float get_v_fac() const { return 1 / (rho_ * grid_size_);  }
     float get_p_fac() const { return kappa_ / grid_size_; }
     float get_f_max() const { return f_max_; }
+    int get_restart() const { return restart_; }
+    float get_duration() const { return duration_; }
+
+    // setter
+    void set_restart(int state) { restart_ = state; }
+    void reset_duration() { duration_ = 0.f; }
+    void add_duration(float dt) { duration_ += dt; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 
@@ -60,5 +67,8 @@ class fdtd2_field
     int frame_index_ = 0;
 
     uint32_t field_id_;
+
+    int restart_ = 2;
+    float duration_ = 0.f;
 };
 } // namespace hnll::physics

@@ -18,12 +18,12 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compu
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        10.f,
-        10.f,
-        314.f,
         1.f,
         1.f,
-        4000.f
+        10.f,
+        0.1f,
+        0.001f,
+        1000.f
       };
 
       field_ = physics::fdtd2_field::create(info);
@@ -33,6 +33,13 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compu
     {
       ImGui::Begin("stats");
       ImGui::Text("fps : %d", int(1.f/dt));
+      ImGui::Text("x grid : %d", field_->get_x_grid());
+      ImGui::Text("y grid : %d", field_->get_y_grid());
+      ImGui::Text("duration : %f", field_->get_duration());
+      if (ImGui::Button("restart")) {
+        field_->set_restart(2);
+        field_->reset_duration();
+      }
       ImGui::End();
     }
 

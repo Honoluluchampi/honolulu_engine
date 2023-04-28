@@ -9,8 +9,8 @@ namespace hnll::physics {
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
 };
 
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
@@ -55,7 +55,7 @@ void fdtd2_field::compute_constants()
 void fdtd2_field::setup_desc_sets()
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 3)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
@@ -71,7 +71,7 @@ void fdtd2_field::setup_desc_sets()
   int press_grid_count = x_grid_ * y_grid_;
   int vx_grid_count = (x_grid_ + 1) * y_grid_;
   int vy_grid_count = x_grid_ * (y_grid_ + 1);
-  std::vector<float> initial_press(press_grid_count, 0.3f);
+  std::vector<float> initial_press(press_grid_count, 0.f);
   std::vector<float> initial_vx(vx_grid_count, 0.f);
   std::vector<float> initial_vy(vy_grid_count, 0.f);
 
@@ -79,7 +79,7 @@ void fdtd2_field::setup_desc_sets()
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
     int center_grid_id = x_grid_ / 2 + y_grid_ / 2 * x_grid_;
-    initial_press[center_grid_id] = 500.f;
+//    initial_press[center_grid_id] = 500.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
