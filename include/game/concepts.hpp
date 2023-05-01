@@ -16,9 +16,9 @@ namespace graphics {
 
 class device;
 
-template <typename T, typename... Args>
+template <typename T>
 concept GraphicsModel =
-requires(T a, VkCommandBuffer cb, Args... args) { a.bind(cb, args...); a.draw(cb, args...); } &&
+requires(T a, VkCommandBuffer cb) { a.bind(cb); a.draw(cb); } &&
 requires(const T a) { T::get_shading_type(); a.is_textured(); };
 
 }

@@ -5,6 +5,7 @@
 #include <graphics/buffer.hpp>
 #include <graphics/utils.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
+//#include <graphics/graphics_models/static_meshlet.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -60,7 +61,7 @@ class graphics_model_pool
     device& device_;
 
     model_map<static_mesh> static_mesh_map_;
-//    model_map<utils::shading_type::MESHLET> static_meshlet_map_;
+//    model_map<static_meshlet> static_meshlet_map_;
 //    model_map<utils::shading_type::SKINNING_MESH> skinning_mesh_map_;
 //    model_map<utils::shading_type::FRAME_ANIM_MESH> frame_anim_mesh_map_;
 //    model_map<utils::shading_type::FRAME_ANIM_MESHLET> frame_anim_meshlet_map_;
