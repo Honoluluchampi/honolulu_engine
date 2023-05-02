@@ -31,16 +31,9 @@ void grid_shading_system::setup()
 
 void grid_shading_system::render(const utils::graphics_frame_info &frame_info)
 {
-  pipeline_->bind(frame_info.command_buffer);
-
-  vkCmdBindDescriptorSets(
-    frame_info.command_buffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipeline_layout_,
-    0, 1,
-    &frame_info.global_descriptor_set,
-    0, nullptr
-  );
+  set_current_command_buffer(frame_info.command_buffer);
+  bind_pipeline();
+  bind_desc_sets({frame_info.global_descriptor_set});
 
   vkCmdDraw(frame_info.command_buffer, 6, 1, 0, 0);
 }
