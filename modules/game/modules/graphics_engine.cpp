@@ -146,4 +146,11 @@ graphics::timeline_semaphore& graphics_engine_core::get_compute_semaphore_r()
 VkDescriptorSetLayout graphics_engine_core::get_global_desc_layout()
 { return global_desc_sets_->get_vk_layouts()[0]; }
 
+std::tuple<int, int> graphics_engine_core::get_window_size()
+{
+  auto extent = window_->get_extent();
+  std::tuple<int, int> ret { extent.width, extent.height };
+  return ret;
+}
+
 } // namespace hnll::game

@@ -13,17 +13,18 @@ constexpr float MAX_FPS = 240.f;
 constexpr float MIN_DT = 1.f / MAX_FPS;
 
 // static members
-u_ptr<gui_engine> engine_core::gui_engine_;
 std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
 utils::viewer_info engine_core::viewer_info_;
 
 engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
+#ifndef IMGUI_DISABLED
+   gui_engine_(utils::singleton<gui_engine>::get_instance(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r()))
+#endif
 {
 #ifndef IMGUI_DISABLED
-  gui_engine_ = gui_engine::create(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r());
   // configure dependency between renderers
-  graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
+  graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_.renderer_p());
 #endif
 
   old_time_ = std::chrono::system_clock::now();;
@@ -34,16 +35,16 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
 engine_core::~engine_core() { cleanup(); }
 
 void engine_core::begin_imgui()
-{ gui_engine_->begin_imgui(); }
+{ gui_engine_.begin_imgui(); }
 
 void engine_core::render_gui()
 {
   if (!hnll::graphics::renderer::swap_chain_recreated_) {
-    gui_engine_->render();
+    gui_engine_.render();
   }
 }
 
-void engine_core::cleanup() { gui_engine_.reset(); }
+void engine_core::cleanup() {  }
 
 float engine_core::get_dt()
 {

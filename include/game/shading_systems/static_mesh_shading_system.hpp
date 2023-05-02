@@ -7,6 +7,7 @@
 namespace hnll::game {
 
 using static_mesh_comp = renderable_comp<graphics::static_mesh>;
+//using static_meshlet_comp = renderable_comp<graphics::static_meshlet>;
 
 DEFINE_SHADING_SYSTEM(static_mesh_shading_system, static_mesh_comp)
 {

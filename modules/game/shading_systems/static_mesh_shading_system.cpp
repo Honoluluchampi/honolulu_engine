@@ -42,7 +42,8 @@ void static_mesh_shading_system::setup()
 
 void static_mesh_shading_system::render(const utils::graphics_frame_info& frame_info)
 {
-  pipeline_->bind(frame_info.command_buffer);
+  set_current_command_buffer(frame_info.command_buffer);
+  bind_pipeline();
 
   for (auto& target : targets_) {
     auto obj = target.second;
@@ -58,25 +59,8 @@ void static_mesh_shading_system::render(const utils::graphics_frame_info& frame_
       obj.get_texture_desc_set()
     };
 
-    vkCmdBindDescriptorSets(
-      frame_info.command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS,
-      pipeline_layout_,
-      0,
-      desc_sets.size(),
-      desc_sets.data(),
-      0,
-      nullptr
-    );
-
-    vkCmdPushConstants(
-      frame_info.command_buffer,
-      pipeline_layout_,
-      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-      0,
-      sizeof(mesh_push_constant),
-      &push
-    );
+    bind_desc_sets(desc_sets);
+    bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
     obj.bind(frame_info.command_buffer);
     obj.draw(frame_info.command_buffer);

@@ -36,6 +36,11 @@ u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::stri
     auto texture = texture_image::create(device, texture_path);
     ret->set_texture(std::move(texture));
   }
+  else {
+    auto null_texture_path = std::string(std::getenv("HNLL_ENGN")) + "/models/primitives/null_texture.png";
+    auto texture = texture_image::create(device, null_texture_path);
+    ret->set_texture(std::move(texture));
+  }
 
   return ret;
 }

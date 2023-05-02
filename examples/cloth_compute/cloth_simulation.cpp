@@ -26,7 +26,9 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
     cloth_simulation()
     {
       add_update_target_directly<game::default_camera>();
-      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
+      // add cloth
+//      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
+      // add sphere
       sphere_ = game::static_mesh_actor::create("smooth_sphere.obj");
       sphere_->set_translation(vec3(0.f, -1.f, 0.f));
       sphere_->set_rotation(vec3(0.f, 1.6f, 0.f));
@@ -39,8 +41,16 @@ DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_s
       dt_ = dt;
       ImGui::Begin("fps");
       ImGui::Text("fps : %d", static_cast<int>(1.f / dt_));
-      if (ImGui::Button("unbind")){
-        cloth_->unbind();
+      if (cloth_ != nullptr) {
+        ImGui::Text("x grid : %d", cloth_->get_x_grid());
+        ImGui::Text("y grid : %d", cloth_->get_y_grid());
+        if (ImGui::Button("unbind")) {
+          cloth_->unbind();
+        }
+      }
+      if (ImGui::Button("restart")){
+        cloth_.reset();
+        cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
       }
       ImGui::End();
     }

@@ -73,6 +73,7 @@ class graphics_engine_core
 
     static VkDescriptorSetLayout get_global_desc_layout();
     static VkRenderPass get_default_render_pass() { return default_render_pass_; }
+    static std::tuple<int, int> get_window_size();
 
   private:
     void init();

@@ -4,6 +4,7 @@
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/pipeline.hpp>
+#include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
 
 // std
@@ -77,14 +78,28 @@ class shading_system {
       graphics::pipeline_config_info config_info
     );
 
+    // call this before binding
+    void set_current_command_buffer(VkCommandBuffer command);
+
+    void bind_pipeline();
+
+    void bind_desc_sets(const std::vector<VkDescriptorSet>& desc_sets);
+
+    template <typename PushConstants>
+    void bind_push(const PushConstants& push, VkShaderStageFlags stages);
+
     // vulkan objects
     graphics::device &device_;
     u_ptr<graphics::pipeline> pipeline_;
     VkPipelineLayout pipeline_layout_;
+    u_ptr<graphics::desc_layout> desc_layout_;
 
     // shading system is called in rendering_type-order at rendering process
     utils::shading_type shading_type_;
     target_map targets_;
+
+    // update this at the start of the command recording
+    VkCommandBuffer current_command_;
 };
 
 // impl
@@ -187,6 +202,40 @@ SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
     shader_paths,
     shader_stage_flags,
     config_info
+  );
+}
+
+SS_API void SS_TYPE::set_current_command_buffer(VkCommandBuffer command)
+{ current_command_ = command; }
+
+SS_API void SS_TYPE::bind_pipeline()
+{ pipeline_->bind(current_command_); }
+
+SS_API void SS_TYPE::bind_desc_sets(const std::vector<VkDescriptorSet> &desc_sets)
+{
+  vkCmdBindDescriptorSets(
+    current_command_,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    pipeline_layout_,
+    0,
+    desc_sets.size(),
+    desc_sets.data(),
+    0,
+    nullptr
+  );
+}
+
+SS_API template <typename PushConstants> void SS_TYPE::bind_push(
+  const PushConstants &push,
+  VkShaderStageFlags stages)
+{
+  vkCmdPushConstants(
+    current_command_,
+    pipeline_layout_,
+    stages,
+    0,
+    sizeof(PushConstants),
+    &push
   );
 }
 
