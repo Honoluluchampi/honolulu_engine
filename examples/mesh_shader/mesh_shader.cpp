@@ -23,16 +23,14 @@ DEFINE_PURE_ACTOR(mesh_actor)
     u_ptr<game::static_mesh_comp> mesh_model_;
 };
 
-SELECT_SHADING_SYSTEM(shading_systems,
-  game::grid_shading_system,
-  game::static_mesh_shading_system
-);
-SELECT_ACTOR(actors, game::default_camera);
+SELECT_SHADING_SYSTEM(game::grid_shading_system, game::static_mesh_shading_system);
+SELECT_ACTOR(game::default_camera);
+SELECT_COMPUTE_SHADER();
 
-DEFINE_ENGINE(my_engine, shading_systems, actors)
+DEFINE_ENGINE(my_engine)
 {
   public:
-    my_engine()
+    ENGINE_CTOR(my_engine)
     {
       add_mesh_model();
       add_update_target_directly<game::default_camera>();
@@ -51,7 +49,7 @@ DEFINE_ENGINE(my_engine, shading_systems, actors)
 } // namespace hnll
 
 int main() {
-  hnll::my_engine engine;
+  hnll::my_engine engine("mesh shader", hnll::utils::rendering_type::MESH_SHADING);
 
   try { engine.run(); }
   catch (const std::exception &e) {
