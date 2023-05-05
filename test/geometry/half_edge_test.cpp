@@ -14,10 +14,10 @@ bool eps_eq(const vec3& a, const vec3& b)
   return (abs(a.x()-b.x()) < EPSILON && abs(a.y()-b.y()) < EPSILON && abs(a.z()-b.z()) < EPSILON);
 }
 
-TEST(vertex, ctor) {
-  vertex v {vec3{0.f, 1.f, 0.f}};
+TEST(vert, ctor) {
+  vertex v { vec3{0.f, 1.f, 0.f}, 2 };
   EXPECT_EQ(v.position, vec3(0.f, 1.f, 0.f));
-  half_edge he {v};
+  half_edge he { v, 4 };
   EXPECT_EQ(v.he_id, he.this_id);
 }
 
@@ -28,14 +28,14 @@ TEST(common, id) {
    *   | /  |
    *  v1 - v3
    */
-  auto v0 = vertex::create({ 0.f, 0.f, 0.f });
-  auto v1 = vertex::create({ 0.f, 1.f, 0.f});
-  auto v2 = vertex::create({ 1.f, 0.f, 0.f });
-  auto v3 = vertex::create({ 1.f, 1.f, 0.f});
-  auto fc_id0 = model->add_face(v0, v1, v2);
-  auto v = model->get_vertex(v0->id_);
-  EXPECT_EQ(v->id_, v0->id_);
-  EXPECT_EQ(fc_id0, model->get_face(fc_id0)->id_);
+  vertex v0 { vec3{ 0.f, 0.f, 0.f }, 0 };
+  vertex v1 { vec3{ 0.f, 1.f, 0.f }, 1 };
+  vertex v2 { vec3{ 1.f, 0.f, 0.f }, 2 };
+  vertex v3 { vec3{ 1.f, 1.f, 0.f }, 3 };
+  auto fc_id0 = model->add_face(v0, v1, v2, 0);
+  auto v = model->get_vertex_r(v0.v_id);
+  EXPECT_EQ(v.v_id, v0.v_id);
+  EXPECT_EQ(fc_id0, model->get_face_r(fc_id0).f_id);
 }
 
 TEST(mesh_model, add_face) {
@@ -45,27 +45,27 @@ TEST(mesh_model, add_face) {
    *   | /  |
    *  v1 - v3
    */
-  auto v0 = vertex::create({ 0.f, 0.f, 0.f }, 0);
-  auto v1 = vertex::create({ 0.f, 1.f, 0.f}, 1);
-  auto v2 = vertex::create({ 1.f, 0.f, 0.f }, 2);
-  auto v3 = vertex::create({ 1.f, 1.f, 0.f}, 3);
-  auto fc_id0 = model->add_face(v0, v1, v2, hnll::geometry::auto_vertex_normal_calculation::ON);
+  auto v0 = vertex{ { 0.f, 0.f, 0.f }, 0 };
+  auto v1 = vertex{ { 0.f, 1.f, 0.f }, 1 };
+  auto v2 = vertex{ { 1.f, 0.f, 0.f }, 2 };
+  auto v3 = vertex{ { 1.f, 1.f, 0.f }, 3 };
+  auto fc_id0 = model->add_face(v0, v1, v2, 0);
   EXPECT_EQ(model->get_half_edge_count(), 3);
   EXPECT_EQ(model->get_face_count(), 1);
   EXPECT_EQ(model->get_vertex_count(), 3);
-  EXPECT_EQ(model->get_vertex(v0->id_)->normal_, vec3(0.f, 0.f, -1.f));
-  EXPECT_EQ(model->get_face(fc_id0)->normal_, vec3(0.f, 0.f, -1.f));
-  auto fc_id1 = model->add_face(v1, v3, v2);
+  EXPECT_EQ(model->get_vertex_r(v0.v_id).normal, vec3(0.f, 0.f, -1.f));
+  EXPECT_EQ(model->get_face_r(fc_id0).normal, vec3(0.f, 0.f, -1.f));
+  auto fc_id1 = model->add_face(v1, v3, v2, 1);
   EXPECT_EQ(model->get_half_edge_count(), 6);
   EXPECT_EQ(model->get_face_count(), 2);
   EXPECT_EQ(model->get_vertex_count(), 4);
-  auto v4 = vertex::create({ 0.f, 0.f, 1.f });
-  auto fc_id2 = model->add_face(v2, v3, v4, hnll::geometry::auto_vertex_normal_calculation::ON);
+  auto v4 = vertex{ { 0.f, 0.f, 1.f }, 4 };
+  auto fc_id2 = model->add_face(v2, v3, v4, 2);
   EXPECT_TRUE(eps_eq(
-    model->get_vertex(v2->id_)->normal_,
+    model->get_vertex_r(v2.v_id).normal,
     vec3(sqrt(2)/6.f, 0.f, (sqrt(2)/2.f - 2.f) / 3.f).normalized()));
   EXPECT_TRUE(eps_eq(
-    model->get_face(fc_id2)->normal_,
+    model->get_face_r(fc_id2).normal,
     vec3(sqrt(2)/2.f, 0.f, sqrt(2)/2.f)));
 }
 
@@ -78,25 +78,34 @@ TEST(half_edge, pair) {
  * - v1 - ex/ex - v3 - ex/ex - v5 - ex/ex - v1
  */
   auto model = mesh_model::create();
-  auto v0 = vertex::create({ 0.f, 0.f, 0.f });
-  auto v1 = vertex::create({ 0.f, -1.f, 0.f});
-  auto v2 = vertex::create({ 1.f, 0.f, 0.f });
-  auto v3 = vertex::create({ 1.f, -1.f, 0.f});
-  auto v4 = vertex::create({ 0.f, 0.f, 1.f });
-  auto v5 = vertex::create({ 0.f, -1.f, 1.f});
+  auto v0 = vertex{ { 0.f, 0.f, 0.f }, 0};
+  auto v1 = vertex{ { 0.f, -1.f, 0.f}, 1};
+  auto v2 = vertex{ { 1.f, 0.f, 0.f }, 2};
+  auto v3 = vertex{ { 1.f, -1.f, 0.f}, 3};
+  auto v4 = vertex{ { 0.f, 0.f, 1.f }, 4};
+  auto v5 = vertex{ { 0.f, -1.f, 1.f}, 5};
 
-  model->add_face(v0, v1, v2);
-  EXPECT_EQ(model->get_half_edge(v1, v2)->get_pair(), nullptr);
-  model->add_face(v1, v3, v2);
-  EXPECT_EQ(model->get_half_edge(v1, v2), model->get_half_edge(v1, v2)->get_pair()->get_pair());
-  model->add_face(v2, v3, v4);
-  model->add_face(v3, v5, v4);
-  model->add_face(v4, v5, v0);
-  model->add_face(v5, v1, v0);
-  EXPECT_EQ(model->get_half_edge(v0, v1), model->get_half_edge(v0, v1)->get_pair()->get_pair());
+  model->add_face(v0, v1, v2, 0);
+  auto pair_id = model->get_half_edge_r(v1, v2).pair;
+  EXPECT_EQ(model->exist_half_edge(pair_id), false);
+
+  model->add_face(v1, v3, v2, 1);
+  auto& he = model->get_half_edge_r(v1, v2);
+  pair_id = model->get_half_edge_r(v1, v2).pair;
+  EXPECT_EQ(model->get_half_edge_r(v1, v2).this_id, model->get_half_edge_r(pair_id).pair);
+
+  model->add_face(v2, v3, v4, 2);
+  model->add_face(v3, v5, v4, 3);
+  model->add_face(v4, v5, v0, 4);
+  model->add_face(v5, v1, v0, 5);
+  pair_id = model->get_half_edge_r(v0, v1).pair;
+  EXPECT_EQ(model->get_half_edge_r(v0, v1).this_id, model->get_half_edge_r(pair_id).pair);
+
   // invalid half-edge
-  EXPECT_EQ(model->get_half_edge(v0, v3), nullptr);
+  EXPECT_EQ(model->exist_half_edge(v0, v3), false);
+
   // unpaired half-edge
-  EXPECT_EQ(model->get_half_edge(v2, v0)->get_pair(), nullptr);
+  pair_id = model->get_half_edge_r(v2, v0).pair;
+  EXPECT_EQ(model->exist_half_edge(pair_id), false);
 }
 } // namespace hnll::geometry

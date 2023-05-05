@@ -62,10 +62,15 @@ class mesh_model
     face&            get_face_r(face_id id)         { return face_map_.at(id); }
     vertex&          get_vertex_r(vertex_id id)     { return vertex_map_.at(id); }
     half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
+    half_edge&       get_half_edge_r(half_edge_id id) { return half_edge_id_map_.at(id); }
     const bounding_volume& get_bounding_volume() const;
     const std::vector<u_ptr<bounding_volume>>& get_bounding_volumes() const;
     u_ptr<bounding_volume> get_bounding_volume_copy() const;
     u_ptr<bounding_volume> get_ownership_of_bounding_volume();
+
+    // for test
+    bool exist_half_edge(half_edge_id id) { return half_edge_id_map_.find(id) != half_edge_id_map_.end(); }
+    bool exist_half_edge(const vertex& v0, const vertex& v1);
 
     std::vector<graphics::vertex> move_raw_vertices() { return std::move(raw_vertices_); }
 
@@ -87,6 +92,10 @@ class mesh_model
     std::vector<u_ptr<bounding_volume>> bounding_volumes_;
     // move to graphics::meshlet_model
     std::vector<graphics::vertex> raw_vertices_;
+
+    uint32_t v_count_;
+    uint32_t f_count_;
+    uint32_t he_count_;
 };
 
 

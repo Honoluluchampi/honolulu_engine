@@ -18,9 +18,11 @@ using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
 using half_edge_map = std::unordered_map<half_edge_key, half_edge>;
 using half_edge_id_map = std::unordered_map<half_edge_id, half_edge>;
 
+// all ids should be set manually
+
 struct vertex
 {
-  vertex(const vec3& pos, vertex_id v_id_ = -1)
+  vertex(const vec3& pos, vertex_id v_id_)
   {
     position = pos;
     v_id = v_id_;
@@ -44,7 +46,7 @@ struct vertex
 
 struct face
 {
-  face(face_id f_id_ = -1, half_edge_id he_id_ = -1)
+  face(face_id f_id_, half_edge_id he_id_ = -1)
   {
     f_id = f_id_;
     he_id = he_id_;
@@ -58,15 +60,17 @@ struct face
 class half_edge
 {
   public:
-    half_edge(vertex& v)
+    half_edge(vertex& v, half_edge_id he_id)
     {
+      this_id = he_id;
+
       if (v.he_id == -1)
         v.he_id = this_id;
       // set vertex to this he
       v_id = v.v_id;
     }
 
-    half_edge_id this_id = -1, next = -1, prev = -1, pair = -1;
+    half_edge_id this_id, next = -1, prev = -1, pair = -1;
     vertex_id    v_id = -1; // start point of this half_edge
     face_id      f_id = -1; // half_edges run in a counterclockwise direction around this face
 };

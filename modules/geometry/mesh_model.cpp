@@ -32,9 +32,9 @@ half_edge& mesh_model::get_half_edge_r(const vertex& v0, const vertex& v1)
   return half_edge_map_.at(hash_key);
 }
 
-vertex translate_vertex_graphics_to_geometry(const graphics::vertex& pseudo)
+vertex translate_vertex_graphics_to_geometry(const graphics::vertex& pseudo, vertex_id id)
 {
-  vertex v {pseudo.position};
+  vertex v {pseudo.position, id};
   v.color    = pseudo.color;
   v.normal   = pseudo.normal;
   v.uv       = pseudo.uv;
@@ -46,7 +46,6 @@ s_ptr<mesh_model> mesh_model::create_from_obj_file(const std::string& filename)
   auto mesh_model = mesh_model::create();
 
   mesh_model->raw_vertices_.clear();
-  std::vector<vertex_id> indices{};
 
   // load data
   graphics::obj_loader loader;
@@ -55,11 +54,12 @@ s_ptr<mesh_model> mesh_model::create_from_obj_file(const std::string& filename)
   // assign to mesh model
   for (int i = 0; i < loader.vertices.size(); i++) {
     auto& gra_v = loader.vertices[i];
-    auto geo_v = translate_vertex_graphics_to_geometry(gra_v);
+    auto geo_v = translate_vertex_graphics_to_geometry(gra_v, mesh_model->get_vertex_count());
     mesh_model->add_vertex(geo_v);
     mesh_model->raw_vertices_.emplace_back(std::move(gra_v));
   }
-  indices = std::move(loader.indices);
+
+  std::vector<vertex_id> indices = std::move(loader.indices);
 
   if (indices.size() % 3 != 0)
     throw std::runtime_error("vertex count is not multiple of 3");
@@ -78,9 +78,8 @@ s_ptr<mesh_model> mesh_model::create_from_obj_file(const std::string& filename)
 
 vertex translate_vertex(const graphics::frame_anim_utils::dynamic_attributes& pseudo, uint32_t id)
 {
-  vertex v { pseudo.position };
+  vertex v { pseudo.position, id};
   v.normal = pseudo.normal;
-  v.v_id   = id;
   return v;
 }
 
@@ -141,13 +140,17 @@ bool mesh_model::associate_half_edge_pair(half_edge &he)
   half_edge_key pair_hash_key = { end_v, start_v };
 
   // register this half edge
-  half_edge_map_.at(hash_key) = he;
+  half_edge_map_.emplace(hash_key, he);
 
   // check if those hash_key already have a value
   if (half_edge_map_.find(pair_hash_key) != half_edge_map_.end()) {
     // if the pair has added to the map, associate with it
-    he.pair = half_edge_map_.at(pair_hash_key).this_id;
-    half_edge_map_.at(pair_hash_key).this_id = he.this_id;
+    half_edge_map_.at(hash_key).pair      = half_edge_map_.at(pair_hash_key).this_id;
+    half_edge_map_.at(pair_hash_key).pair = he.this_id;
+
+    auto pair_id = half_edge_map_.at(pair_hash_key).this_id;
+    half_edge_id_map_.at(pair_id).pair = he.this_id;
+    half_edge_id_map_.at(he.this_id).pair = pair_id;
     return true;
   }
   return false;
@@ -157,10 +160,7 @@ vertex_id mesh_model::add_vertex(vertex &v)
 {
   // if the vertex has not been involved
   if (vertex_map_.count(v.v_id) == 0) {
-    // if vertex id is not assigned
-    if (v.v_id == -1)
-      v.v_id = raw_vertices_.size();
-    vertex_map_.at(v.v_id) = v;
+    vertex_map_.emplace(v.v_id, v);
   }
   return v.v_id;
 }
@@ -171,18 +171,23 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   add_vertex(v1);
   add_vertex(v2);
 
+  half_edge_id current_he_count = get_half_edge_count();
   // create new half_edge
-  std::array<half_edge, 3> hes = { v0, v1, v2 };
+  std::array<half_edge, 3> hes = {
+    half_edge{ v0, current_he_count },
+    half_edge{ v1, current_he_count + 1 },
+    half_edge{ v2, current_he_count + 2 }
+  };
 
   // half_edge circle
   hes[0].next = hes[1].this_id; hes[0].prev = hes[2].this_id;
-  hes[1].next = hes[2].this_id; hes[0].prev = hes[0].this_id;
-  hes[2].next = hes[0].this_id; hes[0].prev = hes[1].this_id;
+  hes[1].next = hes[2].this_id; hes[1].prev = hes[0].this_id;
+  hes[2].next = hes[0].this_id; hes[2].prev = hes[1].this_id;
 
   // assign to id map
-  half_edge_id_map_.at(hes[0].this_id) = hes[0];
-  half_edge_id_map_.at(hes[1].this_id) = hes[1];
-  half_edge_id_map_.at(hes[2].this_id) = hes[2];
+  half_edge_id_map_.emplace(hes[0].this_id, hes[0]);
+  half_edge_id_map_.emplace(hes[1].this_id, hes[1]);
+  half_edge_id_map_.emplace(hes[2].this_id, hes[2]);
 
   // register to the hash_table
   for (int i = 0; i < 3; i++) {
@@ -196,7 +201,7 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   fc.normal = ((v1.position - v0.position).cross(v2.position - v0.position)).normalized();
 
   // register to each owner
-  face_map_[fc.f_id] = fc;
+  face_map_.emplace(fc.f_id, fc);
   hes[0].f_id = fc.f_id;
   hes[1].f_id = fc.f_id;
   hes[2].f_id = fc.f_id;
@@ -234,5 +239,11 @@ void mesh_model::set_bounding_volumes(std::vector<u_ptr<bounding_volume>> &&bvs)
 
 void mesh_model::set_bv_type(bv_type type)
 { bounding_volume_->set_bv_type(type); }
+
+bool mesh_model::exist_half_edge(const vertex& v0, const vertex& v1)
+{
+  half_edge_key hash_key = { v0, v1 };
+  return half_edge_map_.find(hash_key) != half_edge_map_.end();
+}
 
 } // namespace hnll::geometry
