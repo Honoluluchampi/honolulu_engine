@@ -184,16 +184,6 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   hes[1].next = hes[2].this_id; hes[1].prev = hes[0].this_id;
   hes[2].next = hes[0].this_id; hes[2].prev = hes[1].this_id;
 
-  // assign to id map
-  half_edge_id_map_.emplace(hes[0].this_id, hes[0]);
-  half_edge_id_map_.emplace(hes[1].this_id, hes[1]);
-  half_edge_id_map_.emplace(hes[2].this_id, hes[2]);
-
-  // register to the hash_table
-  for (int i = 0; i < 3; i++) {
-    associate_half_edge_pair(hes[i]);
-  }
-
   // new face
   face fc { id, hes[0].this_id };
 
@@ -206,9 +196,19 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   hes[1].f_id = fc.f_id;
   hes[2].f_id = fc.f_id;
 
-  v0.face_count++;
-  v1.face_count++;
-  v2.face_count++;
+  get_vertex_r(v0.v_id).face_count++;
+  get_vertex_r(v1.v_id).face_count++;
+  get_vertex_r(v2.v_id).face_count++;
+
+  // assign to id map
+  half_edge_id_map_.emplace(hes[0].this_id, hes[0]);
+  half_edge_id_map_.emplace(hes[1].this_id, hes[1]);
+  half_edge_id_map_.emplace(hes[2].this_id, hes[2]);
+
+  // register to the hash_table
+  for (int i = 0; i < 3; i++) {
+    associate_half_edge_pair(hes[i]);
+  }
 
   return fc.f_id;
 }

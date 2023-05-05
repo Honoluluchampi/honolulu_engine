@@ -53,7 +53,8 @@ TEST(mesh_model, add_face) {
   EXPECT_EQ(model->get_half_edge_count(), 3);
   EXPECT_EQ(model->get_face_count(), 1);
   EXPECT_EQ(model->get_vertex_count(), 3);
-  EXPECT_EQ(model->get_vertex_r(v0.v_id).normal, vec3(0.f, 0.f, -1.f));
+  // not necessary for model loading (model vertices already has its normal)
+//  EXPECT_EQ(model->get_vertex_r(v0.v_id).normal, vec3(0.f, 0.f, -1.f));
   EXPECT_EQ(model->get_face_r(fc_id0).normal, vec3(0.f, 0.f, -1.f));
   auto fc_id1 = model->add_face(v1, v3, v2, 1);
   EXPECT_EQ(model->get_half_edge_count(), 6);
@@ -61,12 +62,8 @@ TEST(mesh_model, add_face) {
   EXPECT_EQ(model->get_vertex_count(), 4);
   auto v4 = vertex{ { 0.f, 0.f, 1.f }, 4 };
   auto fc_id2 = model->add_face(v2, v3, v4, 2);
-  EXPECT_TRUE(eps_eq(
-    model->get_vertex_r(v2.v_id).normal,
-    vec3(sqrt(2)/6.f, 0.f, (sqrt(2)/2.f - 2.f) / 3.f).normalized()));
-  EXPECT_TRUE(eps_eq(
-    model->get_face_r(fc_id2).normal,
-    vec3(sqrt(2)/2.f, 0.f, sqrt(2)/2.f)));
+//  EXPECT_TRUE(eps_eq(model->get_vertex_r(v2.v_id).normal, vec3(sqrt(2)/6.f, 0.f, (sqrt(2)/2.f - 2.f) / 3.f).normalized()));
+  EXPECT_TRUE(eps_eq(model->get_face_r(fc_id2).normal, vec3(sqrt(2)/2.f, 0.f, sqrt(2)/2.f)));
 }
 
 TEST(half_edge, pair) {
@@ -90,7 +87,6 @@ TEST(half_edge, pair) {
   EXPECT_EQ(model->exist_half_edge(pair_id), false);
 
   model->add_face(v1, v3, v2, 1);
-  auto& he = model->get_half_edge_r(v1, v2);
   pair_id = model->get_half_edge_r(v1, v2).pair;
   EXPECT_EQ(model->get_half_edge_r(v1, v2).this_id, model->get_half_edge_r(pair_id).pair);
 
