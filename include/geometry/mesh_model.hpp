@@ -13,7 +13,7 @@ struct hash<std::pair<hnll::geometry::vertex, hnll::geometry::vertex>>
   {
     size_t seed = 0;
     // only positions of vertex matter for half edge
-    hnll::graphics::hash_combine(seed, vertex_pair.first.position_, vertex_pair.second.position_, vertex_pair.first.normal_, vertex_pair.second.normal_);
+    hnll::graphics::hash_combine(seed, vertex_pair.first.position, vertex_pair.second.position, vertex_pair.first.normal, vertex_pair.second.normal);
     return seed;
   }
 };
@@ -23,10 +23,10 @@ struct hash<std::pair<hnll::geometry::vertex, hnll::geometry::vertex>>
 // forward declaration
 namespace hnll::graphics
 {
-class mesh_model;
-struct vertex;
-struct mesh_builder;
-namespace frame_anim_utils { struct dynamic_attributes; }
+  class mesh_model;
+  struct vertex;
+  struct mesh_builder;
+  namespace frame_anim_utils { struct dynamic_attributes; }
 }
 
 namespace hnll::geometry {
@@ -38,12 +38,6 @@ enum class bv_type;
 // for adding_face creation
 enum class auto_vertex_normal_calculation { ON, OFF };
 
-using vertex_id     = uint32_t;
-using vertex_map    = std::unordered_map<vertex_id, s_ptr<vertex>>;
-using face_id       = uint32_t;
-using face_map      = std::unordered_map<face_id, s_ptr<face>>;
-using half_edge_key = std::pair<vertex, vertex>;
-using half_edge_map = std::unordered_map<half_edge_key, s_ptr<half_edge>>;
 
 class mesh_model
 {
@@ -71,9 +65,9 @@ class mesh_model
     size_t           get_face_count() const         { return face_map_.size(); }
     size_t           get_vertex_count() const       { return vertex_map_.size(); }
     size_t           get_half_edge_count() const    { return half_edge_map_.size(); }
-    s_ptr<face>      get_face(const face_id id)     { return face_map_[id]; }
-    s_ptr<vertex>    get_vertex(const vertex_id id) { return vertex_map_[id]; }
-    s_ptr<half_edge> get_half_edge(const s_ptr<vertex>& v0, const s_ptr<vertex>& v1);
+    face&            get_face_r(face_id id)         { return face_map_.at(id); }
+    vertex&          get_vertex_r(vertex_id id)     { return vertex_map_.at(id); }
+    half_edge&       get_half_edge_r(vertex_id v0, vertex_id v1);
     const bounding_volume& get_bounding_volume() const;
     const std::vector<u_ptr<bounding_volume>>& get_bounding_volumes() const;
     u_ptr<bounding_volume> get_bounding_volume_copy() const;
