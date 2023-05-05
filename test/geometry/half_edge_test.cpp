@@ -15,11 +15,10 @@ bool eps_eq(const vec3& a, const vec3& b)
 }
 
 TEST(vertex, ctor) {
-  auto v = vertex::create({0.f, 1.f, 0.f});
-  EXPECT_EQ(v->position_, vec3(0.f, 1.f, 0.f));
-  auto he = half_edge::create(v);
-  EXPECT_EQ(v->half_edge_, he);
-  auto v1 = vertex::create({0.f, 0.f, 0.f});
+  vertex v {vec3{0.f, 1.f, 0.f}};
+  EXPECT_EQ(v.position, vec3(0.f, 1.f, 0.f));
+  half_edge he {v};
+  EXPECT_EQ(v.he_id, he.this_id);
 }
 
 TEST(common, id) {

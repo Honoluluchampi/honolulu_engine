@@ -35,10 +35,6 @@ namespace hnll::geometry {
 class  bounding_volume;
 enum class bv_type;
 
-// for adding_face creation
-enum class auto_vertex_normal_calculation { ON, OFF };
-
-
 class mesh_model
 {
   public:
@@ -53,10 +49,8 @@ class mesh_model
     void align_vertex_id();
 
     // vertices are assumed to be in a counter-clockwise order
-    vertex_id add_vertex(const s_ptr<vertex>& v);
-    face_id   add_face(s_ptr<vertex>& v0, s_ptr<vertex>& v1, s_ptr<vertex>& v2, face_id id = 0,
-                       bool auto_id = true,
-                       geometry::auto_vertex_normal_calculation avnc = geometry::auto_vertex_normal_calculation::OFF);
+    vertex_id add_vertex(vertex& v);
+    face_id   add_face(vertex& v0, vertex& v1, vertex& v2, face_id id);
 
     // getter
     vertex_map       get_vertex_map() const         { return vertex_map_; }
@@ -67,7 +61,7 @@ class mesh_model
     size_t           get_half_edge_count() const    { return half_edge_map_.size(); }
     face&            get_face_r(face_id id)         { return face_map_.at(id); }
     vertex&          get_vertex_r(vertex_id id)     { return vertex_map_.at(id); }
-    half_edge&       get_half_edge_r(vertex_id v0, vertex_id v1);
+    half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
     const bounding_volume& get_bounding_volume() const;
     const std::vector<u_ptr<bounding_volume>>& get_bounding_volumes() const;
     u_ptr<bounding_volume> get_bounding_volume_copy() const;
@@ -82,9 +76,10 @@ class mesh_model
     void set_bv_type(bv_type type);
   private:
     // returns false if the pair have not been registered to the map
-    bool associate_half_edge_pair(const s_ptr<half_edge>& he);
+    bool associate_half_edge_pair(half_edge& he);
 
     half_edge_map half_edge_map_;
+    half_edge_id_map half_edge_id_map_;
     face_map      face_map_;
     vertex_map    vertex_map_;
     u_ptr<bounding_volume> bounding_volume_;

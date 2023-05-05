@@ -16,6 +16,7 @@ using face_map      = std::unordered_map<face_id, face>;
 using half_edge_id  = uint32_t;
 using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
 using half_edge_map = std::unordered_map<half_edge_key, half_edge>;
+using half_edge_id_map = std::unordered_map<half_edge_id, half_edge>;
 
 struct vertex
 {
@@ -57,9 +58,8 @@ struct face
 class half_edge
 {
   public:
-    half_edge(vertex_map& v_map, vertex_id v_id_)
+    half_edge(vertex& v)
     {
-      auto& v = v_map.at(v_id_);
       if (v.he_id == -1)
         v.he_id = this_id;
       // set vertex to this he
