@@ -98,6 +98,12 @@ class mesh_model
     u_ptr<bounding_volume<type>> get_bv_copy() const
     { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
+    // primitives
+    inline const vertex&    get_vertex(vertex_id id)   { return mesh_.get_vertex_r(id); }
+    inline const face&      get_face(face_id f_id)     { return mesh_.get_face_r(f_id); }
+    // next, prev, pair should be access by id
+    inline const half_edge& get_he(half_edge_id he_id) { return mesh_.get_half_edge_r(he_id); }
+
     // setter
     void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
     void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }

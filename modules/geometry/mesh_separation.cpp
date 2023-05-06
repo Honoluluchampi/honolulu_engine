@@ -83,28 +83,18 @@ mesh_separation_helper::mesh_separation_helper(const s_ptr<mesh_model> &model)
   std::cout << "h-edge count     : " << model_->get_half_edge_map().size() << std::endl;
 }
 
-u_ptr<geometry::bounding_volume> create_aabb_from_single_face(const s_ptr<face>& fc)
+template <bv_type type>
+u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f, const mesh_model<type>& model)
 {
   std::vector<vec3d> vertices;
-  auto first_he = fc->half_edge_;
-  auto current_he = first_he;
+  const auto& first = model->get_he(f.he_id);
+  auto current_id = first.this_id;
   do {
-    vertices.push_back(current_he->get_vertex()->position_);
-    current_he = current_he->get_next();
-  } while (current_he != first_he);
-  return geometry::bounding_volume::create_aabb(vertices);
-}
-
-u_ptr<geometry::bounding_volume> create_b_sphere_from_single_face(const s_ptr<face>& fc)
-{
-  std::vector<vec3d> vertices;
-  auto first_he = fc->half_edge_;
-  auto current_he = first_he;
-  do {
-    vertices.push_back(current_he->get_vertex()->position_);
-    current_he = current_he->get_next();
-  } while (current_he != first_he);
-  return geometry::bounding_volume::create_bounding_sphere(bv_ctor_type::RITTER, vertices);
+    const auto& current = model->get_he(current_id);
+    vertices.push_back(model.get_vertex(current.v_id).position);
+    current_id = model->get_he(current.next).this_id;
+  } while (current_id != first.this_id);
+  return bounding_volume<type>::create(vertices);
 }
 
 double compute_loss_function(const bounding_volume& current_aabb, const s_ptr<face>& new_face)

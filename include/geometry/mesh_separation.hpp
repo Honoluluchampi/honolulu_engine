@@ -1,6 +1,7 @@
 #pragma once
 
 // hnll
+#include <geometry/bounding_volume.hpp>
 #include <utils/common_alias.hpp>
 
 // std
@@ -22,6 +23,7 @@ struct animated_meshlet_pack;
 namespace geometry {
 
 // forward declaration
+template <bv_type type>
 class mesh_model;
 class vertex;
 class face;
