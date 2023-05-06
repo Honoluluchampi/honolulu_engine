@@ -4,8 +4,8 @@
 #include <geometry/he_mesh.hpp>
 #include <geometry/bounding_volume.hpp>
 #include <geometry/intersection.hpp>
-#include <graphics/mesh_model.hpp>
-#include <graphics/meshlet_model.hpp>
+#include <graphics/graphics_models/static_mesh.hpp>
+#include <graphics/graphics_models/static_meshlet.hpp>
 #include <graphics/utils.hpp>
 #include <utils/utils.hpp>
 
@@ -19,72 +19,6 @@
 namespace hnll::geometry {
 
 #define FRAME_SAMPLING_STRIDE 37
-
-std::vector<ray> create_sampling_rays(const face &_face, uint32_t _sampling_count)
-{
-  std::vector<ray> sampling_rays;
-
-  // returns no ray
-  if (_sampling_count <= 0) return sampling_rays;
-
-  auto& v0 = _face.half_edge_->get_vertex()->position_;
-  auto& v1 = _face.half_edge_->get_next()->get_vertex()->position_;
-  auto& v2 = _face.half_edge_->get_next()->get_next()->get_vertex()->position_;
-
-  auto  origin = (v0 + v1 + v2) / 3.f;
-
-  // default ray
-  sampling_rays.emplace_back(ray{origin, _face.normal_});
-
-  for (int i = 0; i < _sampling_count - 1; i++) {
-
-  }
-
-  return sampling_rays;
-}
-
-// returns -1 if the ray doesn't intersect with any triangle
-double mesh_separation_helper::compute_shape_diameter(const ray& _ray)
-{
-  for (const auto& f_kv : face_map_) {
-    auto& he = f_kv.second->half_edge_;
-    std::vector<vec3d> vertices = {
-      he->get_vertex()->position_,
-      he->get_next()->get_vertex()->position_,
-      he->get_next()->get_next()->get_vertex()->position_,
-    };
-
-    intersection::test_ray_triangle(_ray, vertices);
-  }
-  return -1;
-}
-
-void mesh_separation_helper::compute_whole_shape_diameters()
-{
-  for (auto& f_kv : face_map_) {
-    auto& f = *f_kv.second;
-
-    // compute shape diameter
-    auto sampling_rays = create_sampling_rays(f, 1);
-
-    double sdf_mean = 0.f;
-
-    // compute values for each sampling rays
-    for (const auto& r : sampling_rays) {
-      if (auto tmp = compute_shape_diameter(r); tmp != -1)
-        sdf_mean += compute_shape_diameter(r);
-    }
-
-    sdf_mean /= sampling_rays.size();
-
-    f.shape_diameter_ = sdf_mean;
-  }
-}
-
-std::vector<mesh_model> mesh_separation_helper::separate_using_sdf()
-{
-
-}
 
 // colors are same as mesh shader
 #define COLOR_COUNT 10
@@ -106,7 +40,7 @@ void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
 {
   int i = 0;
   for (auto& m : meshlets) {
-    m->colorize_whole_mesh(meshlet_colors[i++].cast<double>());
+    m->he_mesh.colorize_whole_mesh(meshlet_colors[i++].cast<double>());
     i %= COLOR_COUNT;
   }
 }

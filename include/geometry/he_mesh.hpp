@@ -92,7 +92,7 @@ class mesh_model
 {
   public:
     // getter
-    const bounding_volume<type>& get_bv() const { return *bv_; }
+    const bounding_volume<type>&                     get_bv() const { return *bv_; }
     const std::vector<u_ptr<bounding_volume<type>>>& get_bvs() const { return bvs_; }
     u_ptr<bounding_volume<type>> move_bv() { return std::move(bv_); }
     u_ptr<bounding_volume<type>> get_bv_copy() const

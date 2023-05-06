@@ -18,13 +18,13 @@ struct mesh_builder;
 struct meshlet;
 struct animated_meshlet_pack;
 }
+
 namespace geometry {
 
 // forward declaration
 class mesh_model;
 class vertex;
 class face;
-struct ray;
 
 using vertex_id  = uint32_t;
 using vertex_map = std::unordered_map<vertex_id, s_ptr<vertex>>;
@@ -99,7 +99,6 @@ class mesh_separation_helper
     );
     explicit mesh_separation_helper(const s_ptr<mesh_model>& model);
 
-    double compute_shape_diameter(const ray& _ray);
     void   compute_whole_shape_diameters();
 
     std::vector<mesh_model> separate_using_sdf();
@@ -120,6 +119,7 @@ class mesh_separation_helper
     void update_adjoining_face_map(face_map& adjoining_face_map, const s_ptr<face>& fc);
     void set_criterion(mesh_separation::criterion crtr) { criterion_ = crtr; }
     void set_model_name(const std::string& _model_name) { model_name_ = _model_name; }
+
   private:
     s_ptr<mesh_model>     model_;
 

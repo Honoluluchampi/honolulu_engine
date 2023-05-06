@@ -146,9 +146,6 @@ bool he_mesh::associate_half_edge_pair(half_edge &he)
     half_edge_map_.at(hash_key).pair      = half_edge_map_.at(pair_hash_key).this_id;
     half_edge_map_.at(pair_hash_key).pair = he.this_id;
 
-    auto pair_id = half_edge_map_.at(pair_hash_key).this_id;
-    half_edge_id_map_.at(pair_id).pair = he.this_id;
-    half_edge_id_map_.at(he.this_id).pair = pair_id;
     return true;
   }
   return false;
@@ -205,7 +202,7 @@ face_id he_mesh::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
 
   // register to the hash_table
   for (int i = 0; i < 3; i++) {
-    associate_half_edge_pair(hes[i]);
+    associate_half_edge_pair(half_edge_id_map_.at(hes[i].this_id));
   }
 
   return fc.f_id;
