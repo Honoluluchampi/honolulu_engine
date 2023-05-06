@@ -29,6 +29,14 @@ u_ptr<aabb> aabb::create(const std::vector<vec3d>& vertices)
 }
 
 template<>
+u_ptr<aabb> aabb::create(const vec3d &center, const vec3d &radius)
+{ return std::make_unique<aabb>(center, radius); }
+
+template <>
+u_ptr<b_sphere> b_sphere::create(const vec3d& center, double radius)
+{ return std::make_unique<b_sphere>(center, radius); }
+
+template<>
 u_ptr<aabb> aabb::create_empty_bv(const vec3d& initial_point)
 { return std::make_unique<aabb>(initial_point, vec3d(0.f, 0.f, 0.f)); }
 

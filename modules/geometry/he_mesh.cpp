@@ -24,8 +24,6 @@ bool operator==(const vertex& rhs, const vertex& lhs)
 s_ptr<he_mesh> he_mesh::create()
 { return std::make_shared<he_mesh>(); }
 
-he_mesh::he_mesh() { aabb_ = aabb::create_empty_bv(); }
-
 half_edge& he_mesh::get_half_edge_r(const vertex& v0, const vertex& v1)
 {
   half_edge_key hash_key = { v0, v1 };
@@ -212,29 +210,6 @@ face_id he_mesh::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
 
   return fc.f_id;
 }
-
-const aabb& he_mesh::get_aabb() const
-{ return *aabb_; }
-
-const std::vector<u_ptr<aabb>>& he_mesh::get_aabbs() const
-{ return aabbs_; }
-
-u_ptr<aabb> he_mesh::move_aabb()
-{ return std::move(aabb_); }
-
-u_ptr<aabb> he_mesh::get_aabb_copy() const
-{
-  auto res = aabb::create_empty_bv();
-  res->set_center_point(aabb_->get_local_center_point());
-  res->set_aabb_radius(aabb_->get_aabb_radius());
-  return res;
-}
-
-void he_mesh::set_aabb(u_ptr<aabb> &&bv)
-{ aabb_ = std::move(bv); }
-
-void he_mesh::set_aabbs(std::vector<u_ptr<aabb>> &&bvs)
-{ aabbs_ = std::move(bvs); }
 
 bool he_mesh::exist_half_edge(const vertex& v0, const vertex& v1)
 {

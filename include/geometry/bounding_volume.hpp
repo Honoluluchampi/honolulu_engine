@@ -34,6 +34,10 @@ class bounding_volume
 
     // bounding_volumes are owned only by rigid_component
     static u_ptr<bounding_volume<type>> create(const std::vector<vec3d> &vertices);
+    // for aabb
+    static u_ptr<bounding_volume<type>> create(const vec3d& center, const vec3d& radius);
+    // for sphere
+    static u_ptr<bounding_volume<type>> create(const vec3d& center, const double radius);
     static u_ptr<bounding_volume<type>> create_empty_bv(const vec3d& initial_point = {0.f, 0.f, 0.f}); // for mesh separation
 
     // getter

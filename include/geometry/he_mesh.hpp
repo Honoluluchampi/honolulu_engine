@@ -36,7 +36,6 @@ namespace hnll::geometry {
 enum class bv_type;
 template <bv_type type> class bounding_volume;
 
-// half edge mesh
 class he_mesh
 {
   public:
@@ -47,7 +46,7 @@ class he_mesh
       const std::vector<std::vector<graphics::frame_anim_utils::dynamic_attributes>>& vertices,
       const std::vector<uint32_t>& indices);
 
-    he_mesh();
+    he_mesh() = default;
     void align_vertex_id();
 
     // vertices are assumed to be in a counter-clockwise order
@@ -66,16 +65,6 @@ class he_mesh
     half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
     half_edge&       get_half_edge_r(half_edge_id id) { return half_edge_id_map_.at(id); }
 
-    const aabb& get_aabb() const;
-    const std::vector<u_ptr<aabb>>& get_aabbs() const;
-    const b_sphere& get_b_sphere() const;
-    const std::vector<u_ptr<b_sphere>>& get_b_spheres() const;
-
-    u_ptr<aabb> get_aabb_copy() const;
-    u_ptr<aabb> move_aabb();
-    u_ptr<b_sphere> get_b_sphere_copy() const;
-    u_ptr<b_sphere> move_b_sphere();
-
     // for test
     bool exist_half_edge(half_edge_id id) { return half_edge_id_map_.find(id) != half_edge_id_map_.end(); }
     bool exist_half_edge(const vertex& v0, const vertex& v1);
@@ -83,11 +72,6 @@ class he_mesh
     std::vector<graphics::vertex> move_raw_vertices() { return std::move(raw_vertices_); }
 
     // setter
-    void set_aabb(u_ptr<aabb>&& bv);
-    void set_aabbs(std::vector<u_ptr<aabb>>&& bvs);
-    void set_b_sphere(u_ptr<b_sphere>&& bv);
-    void set_b_spheres(std::vector<u_ptr<b_sphere>>&& bvs);
-
     void colorize_whole_mesh(const vec3& color);
   private:
     // returns false if the pair have not been registered to the map
@@ -99,21 +83,29 @@ class he_mesh
     face_map      face_map_;
     vertex_map    vertex_map_;
 
-    // bounding_volumes
-    u_ptr<aabb>     aabb_;
-    u_ptr<b_sphere> b_sphere_;
-    // for animation separation
-    std::vector<u_ptr<aabb>> aabbs_;
-    std::vector<u_ptr<b_sphere>> b_spheres_;
-
     // move to graphics::meshlet_model
     std::vector<graphics::vertex> raw_vertices_;
-
-    uint32_t v_count_;
-    uint32_t f_count_;
-    uint32_t he_count_;
 };
 
+template <bv_type type>
+class mesh_model
+{
+  public:
+    // getter
+    const bounding_volume<type>& get_bv() const { return *bv_; }
+    const std::vector<u_ptr<bounding_volume<type>>>& get_bvs() const { return bvs_; }
+    u_ptr<bounding_volume<type>> move_bv() { return std::move(bv_); }
+    u_ptr<bounding_volume<type>> get_bv_copy() const
+    { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
+    // setter
+    void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
+    void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }
+
+  private:
+    he_mesh mesh_;
+    u_ptr<bounding_volume<type>> bv_;
+    std::vector<u_ptr<bounding_volume<type>>> bvs_;
+};
 
 } // namespace hnll::geometry
