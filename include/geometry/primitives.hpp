@@ -26,13 +26,13 @@ namespace geometry {
 
   struct vertex
     {
-    vertex(const vec3& pos, vertex_id v_id_)
+    vertex(const vec3d& pos, vertex_id v_id_)
     {
       position = pos;
       v_id = v_id_;
     }
 
-    void update_normal(const vec3& new_face_normal)
+    void update_normal(const vec3d& new_face_normal)
     {
       // take the mean between all adjoining faces
       auto tmp = normal * face_count + new_face_normal;
@@ -40,10 +40,10 @@ namespace geometry {
     }
 
     vertex_id v_id; // for half-edge hash table
-    vec3 position{0.f, 0.f, 0.f};
-    vec3 color   {1.f, 1.f, 1.f};
-    vec3 normal  {0.f, 0.f, 0.f};
-    vec2 uv;
+    vec3d position{0.f, 0.f, 0.f};
+    vec3d color   {1.f, 1.f, 1.f};
+    vec3d normal  {0.f, 0.f, 0.f};
+    vec2d uv;
     unsigned face_count = 0;
     half_edge_id he_id = -1;
     };
@@ -56,8 +56,8 @@ namespace geometry {
       he_id = he_id_;
     }
     face_id f_id;
-    vec3 normal;
-    vec3 color;
+    vec3d normal;
+    vec3d color;
     half_edge_id he_id;
     };
 

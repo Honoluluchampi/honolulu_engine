@@ -87,19 +87,23 @@ template <bv_type type>
 u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f, const mesh_model<type>& model)
 {
   std::vector<vec3d> vertices;
-  const auto& first = model->get_he(f.he_id);
+  const auto& first = model.get_he(f.he_id);
   auto current_id = first.this_id;
   do {
-    const auto& current = model->get_he(current_id);
+    const auto& current = model.get_he(current_id);
     vertices.push_back(model.get_vertex(current.v_id).position);
-    current_id = model->get_he(current.next).this_id;
+    current_id = model.get_he(current.next).this_id;
   } while (current_id != first.this_id);
   return bounding_volume<type>::create(vertices);
 }
 
-double compute_loss_function(const bounding_volume& current_aabb, const s_ptr<face>& new_face)
+
+template <bv_type type> double compute_loss_function(const aabb&, const face&, const mesh_model<type>&) {}
+
+template<>
+double compute_loss_function(const aabb& curr_aabb, const face& new_f, const mesh_model<bv_type::AABB>& model)
 {
-  auto face_aabb = create_aabb_from_single_face(new_face);
+  auto face_aabb = create_bv_from_single_face(new_f, model);
   double max_x = std::max(current_aabb.get_max_x(), face_aabb->get_max_x());
   double min_x = std::min(current_aabb.get_min_x(), face_aabb->get_min_x());
   double max_y = std::max(current_aabb.get_max_y(), face_aabb->get_max_y());

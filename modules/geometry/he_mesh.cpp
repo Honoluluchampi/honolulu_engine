@@ -32,10 +32,10 @@ half_edge& he_mesh::get_half_edge_r(const vertex& v0, const vertex& v1)
 
 vertex translate_vertex_graphics_to_geometry(const graphics::vertex& pseudo, vertex_id id)
 {
-  vertex v {pseudo.position, id};
-  v.color    = pseudo.color;
-  v.normal   = pseudo.normal;
-  v.uv       = pseudo.uv;
+  vertex v {pseudo.position.cast<double>(), id};
+  v.color    = pseudo.color.cast<double>();
+  v.normal   = pseudo.normal.cast<double>();
+  v.uv       = pseudo.uv.cast<double>();
   return v;
 }
 
@@ -76,8 +76,8 @@ s_ptr<he_mesh> he_mesh::create_from_obj_file(const std::string& filename)
 
 vertex translate_vertex(const graphics::frame_anim_utils::dynamic_attributes& pseudo, uint32_t id)
 {
-  vertex v { pseudo.position, id};
-  v.normal = pseudo.normal;
+  vertex v { pseudo.position.cast<double>(), id};
+  v.normal = pseudo.normal.cast<double>();
   return v;
 }
 
@@ -123,7 +123,7 @@ void he_mesh::align_vertex_id()
   vertex_map_ = new_map;
 }
 
-void he_mesh::colorize_whole_mesh(const vec3& color)
+void he_mesh::colorize_whole_mesh(const vec3d& color)
 { for (auto& kv : face_map_) kv.second.color = color; }
 
 

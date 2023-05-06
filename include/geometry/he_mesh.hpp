@@ -65,6 +65,10 @@ class he_mesh
     half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
     half_edge&       get_half_edge_r(half_edge_id id) { return half_edge_id_map_.at(id); }
 
+    const face&      get_face(face_id id)     const { return face_map_.at(id); }
+    const vertex&    get_vertex(vertex_id id) const { return vertex_map_.at(id); }
+    const half_edge& get_half_edge(half_edge_id id)  const { return half_edge_id_map_.at(id); }
+
     // for test
     bool exist_half_edge(half_edge_id id) { return half_edge_id_map_.find(id) != half_edge_id_map_.end(); }
     bool exist_half_edge(const vertex& v0, const vertex& v1);
@@ -72,7 +76,7 @@ class he_mesh
     std::vector<graphics::vertex> move_raw_vertices() { return std::move(raw_vertices_); }
 
     // setter
-    void colorize_whole_mesh(const vec3& color);
+    void colorize_whole_mesh(const vec3d& color);
   private:
     // returns false if the pair have not been registered to the map
     bool associate_half_edge_pair(half_edge& he);
@@ -99,10 +103,10 @@ class mesh_model
     { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
     // primitives
-    inline const vertex&    get_vertex(vertex_id id)   { return mesh_.get_vertex_r(id); }
-    inline const face&      get_face(face_id f_id)     { return mesh_.get_face_r(f_id); }
+    inline const vertex&    get_vertex(vertex_id id)   const { return mesh_.get_vertex(id); }
+    inline const face&      get_face(face_id f_id)     const { return mesh_.get_face(f_id); }
     // next, prev, pair should be access by id
-    inline const half_edge& get_he(half_edge_id he_id) { return mesh_.get_half_edge_r(he_id); }
+    inline const half_edge& get_he(half_edge_id he_id) const { return mesh_.get_half_edge(he_id); }
 
     // setter
     void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }

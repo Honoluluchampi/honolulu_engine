@@ -11,14 +11,14 @@ const double EPSILON = 0.0001f;
 namespace hnll::geometry {
 
 // half edge -------------------------------------------------------------------------
-bool eps_eq(const vec3& a, const vec3& b)
+bool eps_eq(const vec3d& a, const vec3d& b)
 {
   return (abs(a.x()-b.x()) < EPSILON && abs(a.y()-b.y()) < EPSILON && abs(a.z()-b.z()) < EPSILON);
 }
 
 TEST(vert, ctor) {
-  vertex v { vec3{0.f, 1.f, 0.f}, 2 };
-  EXPECT_EQ(v.position, vec3(0.f, 1.f, 0.f));
+  vertex v { vec3d{0.f, 1.f, 0.f}, 2 };
+  EXPECT_EQ(v.position, vec3d(0.f, 1.f, 0.f));
   half_edge he { v, 4 };
   EXPECT_EQ(v.he_id, he.this_id);
 }
@@ -30,10 +30,10 @@ TEST(common, id) {
    *   | /  |
    *  v1 - v3
    */
-  vertex v0 { vec3{ 0.f, 0.f, 0.f }, 0 };
-  vertex v1 { vec3{ 0.f, 1.f, 0.f }, 1 };
-  vertex v2 { vec3{ 1.f, 0.f, 0.f }, 2 };
-  vertex v3 { vec3{ 1.f, 1.f, 0.f }, 3 };
+  vertex v0 { vec3d{ 0.f, 0.f, 0.f }, 0 };
+  vertex v1 { vec3d{ 0.f, 1.f, 0.f }, 1 };
+  vertex v2 { vec3d{ 1.f, 0.f, 0.f }, 2 };
+  vertex v3 { vec3d{ 1.f, 1.f, 0.f }, 3 };
   auto fc_id0 = model->add_face(v0, v1, v2, 0);
   auto v = model->get_vertex_r(v0.v_id);
   EXPECT_EQ(v.v_id, v0.v_id);
@@ -56,8 +56,7 @@ TEST(he_mesh, add_face) {
   EXPECT_EQ(model->get_face_count(), 1);
   EXPECT_EQ(model->get_vertex_count(), 3);
   // not necessary for model loading (model vertices already has its normal)
-//  EXPECT_EQ(model->get_vertex_r(v0.v_id).normal, vec3(0.f, 0.f, -1.f));
-  EXPECT_EQ(model->get_face_r(fc_id0).normal, vec3(0.f, 0.f, -1.f));
+  EXPECT_EQ(model->get_face(fc_id0).normal, vec3d(0.f, 0.f, -1.f));
   auto fc_id1 = model->add_face(v1, v3, v2, 1);
   EXPECT_EQ(model->get_half_edge_count(), 6);
   EXPECT_EQ(model->get_face_count(), 2);
@@ -65,7 +64,7 @@ TEST(he_mesh, add_face) {
   auto v4 = vertex{ { 0.f, 0.f, 1.f }, 4 };
   auto fc_id2 = model->add_face(v2, v3, v4, 2);
 //  EXPECT_TRUE(eps_eq(model->get_vertex_r(v2.v_id).normal, vec3(sqrt(2)/6.f, 0.f, (sqrt(2)/2.f - 2.f) / 3.f).normalized()));
-  EXPECT_TRUE(eps_eq(model->get_face_r(fc_id2).normal, vec3(sqrt(2)/2.f, 0.f, sqrt(2)/2.f)));
+  EXPECT_TRUE(eps_eq(model->get_face(fc_id2).normal, vec3d(sqrt(2)/2.f, 0.f, sqrt(2)/2.f)));
 }
 
 TEST(half_edge, pair) {
