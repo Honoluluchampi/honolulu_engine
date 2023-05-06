@@ -2,6 +2,7 @@
 
 // hnll
 #include <geometry/primitives.hpp>
+#include <geometry/bounding_volume.hpp>
 #include <graphics/utils.hpp>
 
 // hash for half edge map
@@ -32,9 +33,10 @@ namespace hnll::graphics
 namespace hnll::geometry {
 
 // forward declaration
-class  bounding_volume;
 enum class bv_type;
+template <bv_type type> class bounding_volume;
 
+// TODO : use std::variant to hold bounding_volume
 class mesh_model
 {
   public:
@@ -63,10 +65,16 @@ class mesh_model
     vertex&          get_vertex_r(vertex_id id)     { return vertex_map_.at(id); }
     half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
     half_edge&       get_half_edge_r(half_edge_id id) { return half_edge_id_map_.at(id); }
-    const bounding_volume& get_bounding_volume() const;
-    const std::vector<u_ptr<bounding_volume>>& get_bounding_volumes() const;
-    u_ptr<bounding_volume> get_bounding_volume_copy() const;
-    u_ptr<bounding_volume> get_ownership_of_bounding_volume();
+
+    const aabb& get_aabb() const;
+    const std::vector<u_ptr<aabb>>& get_aabbs() const;
+    const b_sphere& get_b_sphere() const;
+    const std::vector<u_ptr<b_sphere>>& get_b_spheres() const;
+
+    u_ptr<aabb> get_aabb_copy() const;
+    u_ptr<aabb> move_aabb();
+    u_ptr<b_sphere> get_b_sphere_copy() const;
+    u_ptr<b_sphere> move_b_sphere();
 
     // for test
     bool exist_half_edge(half_edge_id id) { return half_edge_id_map_.find(id) != half_edge_id_map_.end(); }
@@ -75,21 +83,29 @@ class mesh_model
     std::vector<graphics::vertex> move_raw_vertices() { return std::move(raw_vertices_); }
 
     // setter
-    void set_bounding_volume(u_ptr<bounding_volume>&& bv);
-    void set_bounding_volumes(std::vector<u_ptr<bounding_volume>>&& bvs);
+    void set_aabb(u_ptr<aabb>&& bv);
+    void set_aabbs(std::vector<u_ptr<aabb>>&& bvs);
+    void set_b_sphere(u_ptr<b_sphere>&& bv);
+    void set_b_spheres(std::vector<u_ptr<b_sphere>>&& bvs);
+
     void colorize_whole_mesh(const vec3& color);
-    void set_bv_type(bv_type type);
   private:
     // returns false if the pair have not been registered to the map
     bool associate_half_edge_pair(half_edge& he);
 
+    // geometric primitives
     half_edge_map half_edge_map_;
     half_edge_id_map half_edge_id_map_;
     face_map      face_map_;
     vertex_map    vertex_map_;
-    u_ptr<bounding_volume> bounding_volume_;
+
+    // bounding_volumes
+    u_ptr<aabb>     aabb_;
+    u_ptr<b_sphere> b_sphere_;
     // for animation separation
-    std::vector<u_ptr<bounding_volume>> bounding_volumes_;
+    std::vector<u_ptr<aabb>> aabbs_;
+    std::vector<u_ptr<b_sphere>> b_spheres_;
+
     // move to graphics::meshlet_model
     std::vector<graphics::vertex> raw_vertices_;
 

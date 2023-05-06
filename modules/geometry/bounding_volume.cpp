@@ -3,7 +3,8 @@
 
 namespace hnll::geometry {
 
-u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3d>& vertices)
+template<>
+u_ptr<aabb> aabb::create(const std::vector<vec3d>& vertices)
 {
   // TODO : compute convex-hull
   auto convex_hull = vertices;
@@ -24,22 +25,16 @@ u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3d>& ve
   }
   vec3d center_point = {(maxx + minx) / 2, (maxy + miny) / 2, (maxz + minz) / 2};
   vec3d radius = {(maxx - minx) / 2, (maxy - miny) / 2, (maxz - minz) / 2};
-  return std::make_unique<bounding_volume>(center_point, radius);
+  return std::make_unique<aabb>(center_point, radius);
 }
 
-u_ptr<bounding_volume> bounding_volume::create_blank_aabb(const vec3d& initial_point)
-{ return std::make_unique<bounding_volume>(initial_point, vec3d(0.f, 0.f, 0.f)); }
+template<>
+u_ptr<aabb> aabb::create_empty_bv(const vec3d& initial_point)
+{ return std::make_unique<aabb>(initial_point, vec3d(0.f, 0.f, 0.f)); }
 
-u_ptr<bounding_volume> bounding_volume::create_bounding_sphere(bv_ctor_type type, const std::vector<vec3d>& vertices)
-{
-  switch (type) {
-    case bv_ctor_type::RITTER:
-      return ritter_ctor(vertices);
-    default:
-      std::runtime_error("invalid bounding-sphere-ctor type");
-      return nullptr;
-  }
-}
+template<>
+u_ptr<b_sphere> b_sphere::create_empty_bv(const hnll::vec3d &initial_point)
+{ return std::make_unique<b_sphere>(initial_point, 0.f); }
 
 std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3d> &vertices)
 {
@@ -70,16 +65,16 @@ std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3d> &verti
   return {min, max};
 }
 
-u_ptr<bounding_volume> sphere_from_distant_points(const std::vector<vec3d> &vertices)
+u_ptr<b_sphere> sphere_from_distant_points(const std::vector<vec3d> &vertices)
 {
   auto separated_idx = most_separated_points_on_aabb(vertices);
   auto center_point = (vertices[separated_idx.first] + vertices[separated_idx.second]) * 0.5f;
   double radius = (vertices[separated_idx.first] - center_point).dot(vertices[separated_idx.first] - center_point);
   radius = std::sqrt(radius);
-  return std::make_unique<bounding_volume>(center_point, radius);
+  return std::make_unique<b_sphere>(center_point, radius);
 }
 
-void extend_sphere_to_point(bounding_volume& sphere, const vec3d& point)
+void extend_sphere_to_point(b_sphere& sphere, const vec3d& point)
 {
   auto diff = point - sphere.get_world_center_point();
   auto dist2 = diff.dot(diff);
@@ -92,7 +87,9 @@ void extend_sphere_to_point(bounding_volume& sphere, const vec3d& point)
   }
 }
 
-u_ptr<bounding_volume> bounding_volume::ritter_ctor(const std::vector<vec3d> &vertices)
+// currently only support ritter's algorithm
+template<>
+u_ptr<b_sphere> b_sphere::create(const std::vector<vec3d>& vertices)
 {
   auto sphere = sphere_from_distant_points(vertices);
   for (const auto& vertex : vertices)

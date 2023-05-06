@@ -24,7 +24,7 @@ bool operator==(const vertex& rhs, const vertex& lhs)
 s_ptr<mesh_model> mesh_model::create()
 { return std::make_shared<mesh_model>(); }
 
-mesh_model::mesh_model() { bounding_volume_ = bounding_volume::create_blank_aabb(); }
+mesh_model::mesh_model() { aabb_ = aabb::create_empty_bv(); }
 
 half_edge& mesh_model::get_half_edge_r(const vertex& v0, const vertex& v1)
 {
@@ -213,32 +213,28 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   return fc.f_id;
 }
 
-const bounding_volume& mesh_model::get_bounding_volume() const
-{ return *bounding_volume_; }
+const aabb& mesh_model::get_aabb() const
+{ return *aabb_; }
 
-const std::vector<u_ptr<bounding_volume>>& mesh_model::get_bounding_volumes() const
-{ return bounding_volumes_; }
+const std::vector<u_ptr<aabb>>& mesh_model::get_aabbs() const
+{ return aabbs_; }
 
-u_ptr<bounding_volume> mesh_model::get_ownership_of_bounding_volume()
-{ return std::move(bounding_volume_); }
+u_ptr<aabb> mesh_model::move_aabb()
+{ return std::move(aabb_); }
 
-u_ptr<bounding_volume> mesh_model::get_bounding_volume_copy() const
+u_ptr<aabb> mesh_model::get_aabb_copy() const
 {
-  auto res = bounding_volume::create_blank_aabb();
-  res->set_bv_type(bounding_volume_->get_bv_type());
-  res->set_center_point(bounding_volume_->get_local_center_point());
-  res->set_aabb_radius(bounding_volume_->get_aabb_radius());
+  auto res = aabb::create_empty_bv();
+  res->set_center_point(aabb_->get_local_center_point());
+  res->set_aabb_radius(aabb_->get_aabb_radius());
   return res;
 }
 
-void mesh_model::set_bounding_volume(u_ptr<bounding_volume> &&bv)
-{ bounding_volume_ = std::move(bv); }
+void mesh_model::set_aabb(u_ptr<aabb> &&bv)
+{ aabb_ = std::move(bv); }
 
-void mesh_model::set_bounding_volumes(std::vector<u_ptr<bounding_volume>> &&bvs)
-{ bounding_volumes_ = std::move(bvs); }
-
-void mesh_model::set_bv_type(bv_type type)
-{ bounding_volume_->set_bv_type(type); }
+void mesh_model::set_aabbs(std::vector<u_ptr<aabb>> &&bvs)
+{ aabbs_ = std::move(bvs); }
 
 bool mesh_model::exist_half_edge(const vertex& v0, const vertex& v1)
 {
