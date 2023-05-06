@@ -42,7 +42,8 @@ target_link_libraries(hnll_engine PUBLIC
 # build test ---------------------------------------------------
 project(hnll_test)
 set(TEST_SRC
-        test/geometry/half_edge_test.cpp
+        test/geometry/primitives_test.cpp
+        test/geometry/intersection_test.cpp
         )
 
 add_executable(hnll_test ${TEST_SRC})
