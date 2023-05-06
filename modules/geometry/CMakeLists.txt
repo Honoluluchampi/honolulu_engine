@@ -1,6 +1,6 @@
 set(SOURCES
 #        mesh_separation.cpp
-        mesh_model.cpp
+        he_mesh.cpp
         bounding_volume.cpp
         intersection.cpp
         primitives.cpp

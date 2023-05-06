@@ -1,6 +1,6 @@
 // hnll
 #include <geometry/primitives.hpp>
-#include <geometry/mesh_model.hpp>
+#include <geometry/he_mesh.hpp>
 #include <utils/utils.hpp>
 
 // lib
@@ -24,7 +24,7 @@ TEST(vert, ctor) {
 }
 
 TEST(common, id) {
-  auto model = mesh_model::create();
+  auto model = he_mesh::create();
   /*
    *  v0 - v2
    *   | /  |
@@ -40,8 +40,8 @@ TEST(common, id) {
   EXPECT_EQ(fc_id0, model->get_face_r(fc_id0).f_id);
 }
 
-TEST(mesh_model, add_face) {
-  auto model = mesh_model::create();
+TEST(he_mesh, add_face) {
+  auto model = he_mesh::create();
   /*
    *  v0 - v2
    *   | /  |
@@ -76,7 +76,7 @@ TEST(half_edge, pair) {
  *    | /          |   /        | /
  * - v1 - ex/ex - v3 - ex/ex - v5 - ex/ex - v1
  */
-  auto model = mesh_model::create();
+  auto model = he_mesh::create();
   auto v0 = vertex{ { 0.f, 0.f, 0.f }, 0};
   auto v1 = vertex{ { 0.f, -1.f, 0.f}, 1};
   auto v2 = vertex{ { 1.f, 0.f, 0.f }, 2};

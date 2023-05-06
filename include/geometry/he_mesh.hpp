@@ -36,18 +36,18 @@ namespace hnll::geometry {
 enum class bv_type;
 template <bv_type type> class bounding_volume;
 
-// TODO : use std::variant to hold bounding_volume
-class mesh_model
+// half edge mesh
+class he_mesh
 {
   public:
-    static s_ptr<mesh_model> create();
-    static s_ptr<mesh_model> create_from_obj_file(const std::string& filename);
+    static s_ptr<he_mesh> create();
+    static s_ptr<he_mesh> create_from_obj_file(const std::string& filename);
     // for frame_anim_meshlet_model
-    static std::vector<s_ptr<mesh_model>> create_from_dynamic_attributes(
+    static std::vector<s_ptr<he_mesh>> create_from_dynamic_attributes(
       const std::vector<std::vector<graphics::frame_anim_utils::dynamic_attributes>>& vertices,
       const std::vector<uint32_t>& indices);
 
-    mesh_model();
+    he_mesh();
     void align_vertex_id();
 
     // vertices are assumed to be in a counter-clockwise order

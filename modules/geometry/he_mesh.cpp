@@ -1,5 +1,5 @@
 // hnll
-#include <geometry/mesh_model.hpp>
+#include <geometry/he_mesh.hpp>
 #include <geometry/primitives.hpp>
 #include <geometry/bounding_volume.hpp>
 #include <graphics/utils.hpp>
@@ -21,12 +21,12 @@ bool operator==(const vertex& rhs, const vertex& lhs)
          && (rhs.uv       == lhs.uv);
 }
 
-s_ptr<mesh_model> mesh_model::create()
-{ return std::make_shared<mesh_model>(); }
+s_ptr<he_mesh> he_mesh::create()
+{ return std::make_shared<he_mesh>(); }
 
-mesh_model::mesh_model() { aabb_ = aabb::create_empty_bv(); }
+he_mesh::he_mesh() { aabb_ = aabb::create_empty_bv(); }
 
-half_edge& mesh_model::get_half_edge_r(const vertex& v0, const vertex& v1)
+half_edge& he_mesh::get_half_edge_r(const vertex& v0, const vertex& v1)
 {
   half_edge_key hash_key = { v0, v1 };
   return half_edge_map_.at(hash_key);
@@ -41,9 +41,9 @@ vertex translate_vertex_graphics_to_geometry(const graphics::vertex& pseudo, ver
   return v;
 }
 
-s_ptr<mesh_model> mesh_model::create_from_obj_file(const std::string& filename)
+s_ptr<he_mesh> he_mesh::create_from_obj_file(const std::string& filename)
 {
-  auto mesh_model = mesh_model::create();
+  auto mesh_model = he_mesh::create();
 
   mesh_model->raw_vertices_.clear();
 
@@ -83,17 +83,17 @@ vertex translate_vertex(const graphics::frame_anim_utils::dynamic_attributes& ps
   return v;
 }
 
-std::vector<s_ptr<mesh_model>> mesh_model::create_from_dynamic_attributes(
+std::vector<s_ptr<he_mesh>> he_mesh::create_from_dynamic_attributes(
   const std::vector<std::vector<graphics::frame_anim_utils::dynamic_attributes>> &vertices_pack,
   const std::vector<uint32_t> &indices)
 {
-  std::vector<s_ptr<mesh_model>> models;
+  std::vector<s_ptr<he_mesh>> models;
 
   if (indices.size() % 3 != 0)
     throw std::runtime_error("index count is not multiple of 3.");
 
   for (const auto& vertices : vertices_pack) {
-    auto model = mesh_model::create();
+    auto model = he_mesh::create();
 
     // translate vertices
     for (int i = 0; i < vertices.size(); i++) {
@@ -114,7 +114,7 @@ std::vector<s_ptr<mesh_model>> mesh_model::create_from_dynamic_attributes(
   return models;
 }
 
-void mesh_model::align_vertex_id()
+void he_mesh::align_vertex_id()
 {
   vertex_map new_map;
   vertex_id new_id = 0;
@@ -125,12 +125,12 @@ void mesh_model::align_vertex_id()
   vertex_map_ = new_map;
 }
 
-void mesh_model::colorize_whole_mesh(const vec3& color)
+void he_mesh::colorize_whole_mesh(const vec3& color)
 { for (auto& kv : face_map_) kv.second.color = color; }
 
 
 // assumes that he.next has already assigned
-bool mesh_model::associate_half_edge_pair(half_edge &he)
+bool he_mesh::associate_half_edge_pair(half_edge &he)
 {
   auto& start_v = vertex_map_.at(he.v_id);
   auto end_v_id = half_edge_id_map_.at(he.next).v_id;
@@ -156,7 +156,7 @@ bool mesh_model::associate_half_edge_pair(half_edge &he)
   return false;
 }
 
-vertex_id mesh_model::add_vertex(vertex &v)
+vertex_id he_mesh::add_vertex(vertex &v)
 {
   // if the vertex has not been involved
   if (vertex_map_.count(v.v_id) == 0) {
@@ -164,7 +164,7 @@ vertex_id mesh_model::add_vertex(vertex &v)
   }
   return v.v_id;
 }
-face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
+face_id he_mesh::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
 {
   // register to the vertex hash table
   add_vertex(v0);
@@ -213,16 +213,16 @@ face_id mesh_model::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
   return fc.f_id;
 }
 
-const aabb& mesh_model::get_aabb() const
+const aabb& he_mesh::get_aabb() const
 { return *aabb_; }
 
-const std::vector<u_ptr<aabb>>& mesh_model::get_aabbs() const
+const std::vector<u_ptr<aabb>>& he_mesh::get_aabbs() const
 { return aabbs_; }
 
-u_ptr<aabb> mesh_model::move_aabb()
+u_ptr<aabb> he_mesh::move_aabb()
 { return std::move(aabb_); }
 
-u_ptr<aabb> mesh_model::get_aabb_copy() const
+u_ptr<aabb> he_mesh::get_aabb_copy() const
 {
   auto res = aabb::create_empty_bv();
   res->set_center_point(aabb_->get_local_center_point());
@@ -230,13 +230,13 @@ u_ptr<aabb> mesh_model::get_aabb_copy() const
   return res;
 }
 
-void mesh_model::set_aabb(u_ptr<aabb> &&bv)
+void he_mesh::set_aabb(u_ptr<aabb> &&bv)
 { aabb_ = std::move(bv); }
 
-void mesh_model::set_aabbs(std::vector<u_ptr<aabb>> &&bvs)
+void he_mesh::set_aabbs(std::vector<u_ptr<aabb>> &&bvs)
 { aabbs_ = std::move(bvs); }
 
-bool mesh_model::exist_half_edge(const vertex& v0, const vertex& v1)
+bool he_mesh::exist_half_edge(const vertex& v0, const vertex& v1)
 {
   half_edge_key hash_key = { v0, v1 };
   return half_edge_map_.find(hash_key) != half_edge_map_.end();
