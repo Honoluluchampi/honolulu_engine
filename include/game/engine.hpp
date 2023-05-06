@@ -15,11 +15,12 @@
 #include <GLFW/glfw3.h>
 
 // macro for crtp
-#define DEFINE_ENGINE(new_engine, shading_systems, actors) class new_engine : public game::engine_base<new_engine, shading_systems, actors, game::dummy_compute_shader_list>
-#define DEFINE_ENGINE_WITH_COMPUTE(new_engine, shading_systems, actors, compute_shaders) class new_engine : public game::engine_base<new_engine, shading_systems, actors, compute_shaders>
-#define SELECT_SHADING_SYSTEM(name, ...) using name = game::shading_system_list<__VA_ARGS__>
-#define SELECT_ACTOR(name, ...) using name = game::actor_list<__VA_ARGS__>
-#define SELECT_COMPUTE_SHADER(name, ...) using name = game::compute_shader_list<__VA_ARGS__>
+#define DEFINE_ENGINE(name) class name : public game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>
+#define SELECT_SHADING_SYSTEM(...) using selected_shading_systems = game::shading_system_list<__VA_ARGS__>
+#define SELECT_ACTOR(...)          using selected_actors = game::actor_list<__VA_ARGS__>
+#define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
+#define ENGINE_CTOR(name) name(const std::string& app_name = "app", hnll::utils::rendering_type type = hnll::utils::rendering_type::VERTEX_SHADING) \
+                          : game::engine_base<my_engine, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
 
 namespace hnll {
 
@@ -74,7 +75,6 @@ class engine_core
 template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
 template <ComputeShader... C> struct compute_shader_list {};
-using dummy_compute_shader_list = compute_shader_list<>;
 using no_actor = actor_list<>;
 template <class Derived, typename... T> class engine_base;
 

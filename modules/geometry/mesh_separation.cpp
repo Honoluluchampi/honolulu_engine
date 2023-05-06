@@ -1,7 +1,7 @@
 // hnll
 #include <geometry/mesh_separation.hpp>
 #include <geometry/primitives.hpp>
-#include <geometry/mesh_model.hpp>
+#include <geometry/he_mesh.hpp>
 #include <geometry/bounding_volume.hpp>
 #include <geometry/intersection.hpp>
 #include <graphics/mesh_model.hpp>

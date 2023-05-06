@@ -4,7 +4,7 @@
 #include <graphics/graphics_model.hpp>
 
 // forward declaration
-namespace hnll::geometry { class mesh_model; }
+namespace hnll::geometry { class he_mesh; }
 
 namespace hnll::graphics {
 
@@ -18,7 +18,7 @@ DEFINE_GRAPHICS_MODEL(static_mesh, utils::shading_type::MESH) {
     static_mesh(device& _device, const obj_loader &builder);
 
     static u_ptr<static_mesh> create_from_file(device &device, const std::string &filename);
-    static u_ptr<static_mesh> create_from_geometry_mesh_model(device &device, const s_ptr<geometry::mesh_model> &gm);
+    static u_ptr<static_mesh> create_from_geometry_mesh_model(device &device, const s_ptr<geometry::he_mesh> &gm);
 
     void bind(VkCommandBuffer command_buffer);
     void draw(VkCommandBuffer command_buffer);

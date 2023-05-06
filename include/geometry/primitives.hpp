@@ -2,98 +2,138 @@
 
 #include <utils/common_alias.hpp>
 
-namespace hnll::geometry {
+namespace hnll {
 
-// forward declaration
-struct vertex;
-struct face;
-class  half_edge;
+namespace utils { struct transform; }
 
-using vertex_id     = uint32_t;
-using vertex_map    = std::unordered_map<vertex_id, s_ptr<vertex>>;
-using face_id       = uint32_t;
-using face_map      = std::unordered_map<face_id, s_ptr<face>>;
-using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
+namespace geometry {
 
-struct vertex
-{
-  static s_ptr<vertex> create(const vec3& position, const vertex_id v_id = -1)
-  {
-    auto vertex_sp = std::make_shared<vertex>();
-    vertex_sp->position_ = position;
-    // identical id for each vertex object
-    vertex_sp->id_ = v_id;
-    return vertex_sp;
-  }
+  // forward declaration
+  struct vertex;
+  struct face;
+  class  half_edge;
 
-  void update_normal(const vec3& new_face_normal)
-  {
-    auto tmp = normal_ * face_count_ + new_face_normal;
-    normal_ = (tmp / ++face_count_).normalized();
-  }
+  using vertex_id     = uint32_t;
+  using vertex_map    = std::unordered_map<vertex_id, vertex>;
+  using face_id       = uint32_t;
+  using face_map      = std::unordered_map<face_id, face>;
+  using half_edge_id  = uint32_t;
+  using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
+  using half_edge_map = std::unordered_map<half_edge_key, half_edge>;
+  using half_edge_id_map = std::unordered_map<half_edge_id, half_edge>;
 
-  vertex_id id_; // for half-edge hash table
-  vec3 position_{0.f, 0.f, 0.f};
-  vec3 color_   {1.f, 1.f, 1.f};
-  vec3 normal_  {0.f, 0.f, 0.f};
-  vec2 uv_;
-  unsigned face_count_ = 0;
-  s_ptr<half_edge> half_edge_ = nullptr;
-};
+  // all ids should be set manually
 
-struct face
-{
-  static s_ptr<face> create(const s_ptr<half_edge>& he)
-  {
-    auto face_sp = std::make_shared<face>();
-    face_sp->half_edge_ = he;
-    static face_id id = 0;
-    face_sp->id_ = id++;
-    return face_sp;
-  }
-  face_id id_;
-  vec3 normal_;
-  vec3 color_;
-  s_ptr<half_edge> half_edge_ = nullptr;
-  // for sdf separation
-  double shape_diameter_ = -1;
-};
-
-class half_edge
-{
-  public:
-    static s_ptr<half_edge> create(const s_ptr<vertex>& v)
+  struct vertex
     {
-      auto half_edge_sp = std::make_shared<half_edge>();
-      if (v->half_edge_ == nullptr) v->half_edge_ = half_edge_sp;
-      half_edge_sp->set_vertex(v);
-      return half_edge_sp;
+    vertex(const vec3& pos, vertex_id v_id_)
+    {
+      position = pos;
+      v_id = v_id_;
     }
 
-    // getter
-    inline s_ptr<half_edge> get_next() const   { return next_; }
-    inline s_ptr<half_edge> get_prev() const   { return prev_; }
-    inline s_ptr<half_edge> get_pair() const   { return pair_; }
-    inline s_ptr<face>      get_face() const   { return face_; }
-    inline s_ptr<vertex>    get_vertex() const { return vertex_; }
-    // setter
-    inline void set_next(const s_ptr<half_edge>& next)  { next_ = next; }
-    inline void set_prev(const s_ptr<half_edge>& prev)  { prev_ = prev; }
-    inline void set_pair(const s_ptr<half_edge>& pair)  { pair_ = pair; }
-    inline void set_face(const s_ptr<face>& face)       { face_ = face; }
-    inline void set_vertex(const s_ptr<vertex>& vertex) { vertex_ = vertex; }
+    void update_normal(const vec3& new_face_normal)
+    {
+      // take the mean between all adjoining faces
+      auto tmp = normal * face_count + new_face_normal;
+      normal = (tmp / ++face_count).normalized();
+    }
 
-  private:
-    s_ptr<half_edge> next_   = nullptr, prev_ = nullptr, pair_ = nullptr;
-    s_ptr<vertex>    vertex_ = nullptr; // start point of this half_edge
-    s_ptr<face>      face_   = nullptr; // half_edges run in a counterclockwise direction around this face
-};
+    vertex_id v_id; // for half-edge hash table
+    vec3 position{0.f, 0.f, 0.f};
+    vec3 color   {1.f, 1.f, 1.f};
+    vec3 normal  {0.f, 0.f, 0.f};
+    vec2 uv;
+    unsigned face_count = 0;
+    half_edge_id he_id = -1;
+    };
 
-// for shape diameter function
-struct ray
-{
-  vec3 origin;
-  vec3 direction;
-};
+  struct face
+    {
+    face(face_id f_id_, half_edge_id he_id_ = -1)
+    {
+      f_id = f_id_;
+      he_id = he_id_;
+    }
+    face_id f_id;
+    vec3 normal;
+    vec3 color;
+    half_edge_id he_id;
+    };
 
-} // namespace hnll::geometry
+  class half_edge
+    {
+      public:
+        half_edge(vertex& v, half_edge_id he_id)
+        {
+          this_id = he_id;
+
+          if (v.he_id == -1)
+            v.he_id = this_id;
+          // set vertex to this he
+          v_id = v.v_id;
+        }
+
+        half_edge_id this_id, next = -1, prev = -1, pair = -1;
+        vertex_id    v_id = -1; // start point of this half_edge
+        face_id      f_id = -1; // half_edges run in a counterclockwise direction around this face
+    };
+
+
+  struct plane
+    {
+    vec3d point;
+    vec3d normal;
+    // plane's normal is guaranteed to be normalized
+    plane(const vec3d& point_, const vec3d& normal_) : point(point_), normal(normal_) { normal.normalize(); }
+    plane() : normal({0.f, -1.f, 0.f}) {}
+    };
+
+  class perspective_frustum
+    {
+      public:
+        enum class update_fov_x { ON, OFF };
+
+        static s_ptr<perspective_frustum> create(double fov_x, double fov_y, double near_z, double far_z);
+        perspective_frustum(double fov_x, double fov_y, double near_z, double far_z);
+        void update_planes(const utils::transform& tf);
+
+        // getter
+        vec3d get_near_n()   const { return near_.normal; }
+        vec3d get_far_n()    const { return far_.normal; }
+        vec3d get_left_n()   const { return left_.normal; }
+        vec3d get_right_n()  const { return right_.normal; }
+        vec3d get_top_n()    const { return top_.normal; }
+        vec3d get_bottom_n() const { return bottom_.normal; }
+        vec3d get_near_p()   const { return near_.point;}
+        vec3d get_far_p()    const { return far_.point;}
+        vec3d get_left_p()   const { return left_.point;}
+        vec3d get_right_p()  const { return right_.point;}
+        vec3d get_top_p()    const { return top_.point;}
+        vec3d get_bottom_p() const { return bottom_.point;}
+        const plane& get_near()   const { return near_; }
+        const plane& get_far()    const { return far_; }
+        const plane& get_left()   const { return left_; }
+        const plane& get_right()  const { return right_; }
+        const plane& get_top()    const { return top_; }
+        const plane& get_bottom() const { return bottom_; }
+        double get_near_z() const { return near_z_; }
+        double get_far_z()  const { return far_z_; }
+        const std::array<vec3d, 4>& get_default_points() const { return default_points_; }
+
+        // setter
+        void set_fov_x(double fx)  { fov_x_ = fx; }
+        void set_fov_y(double fy)  { fov_y_ = fy; }
+        void set_near_z(double nz) { near_z_ = nz; }
+        void set_far_z(double fz)  { far_z_ = fz; }
+
+      private:
+        plane  near_, far_, left_, right_, top_, bottom_;
+        double fov_x_ = M_PI / 4.f, fov_y_ = M_PI / 4.f, near_z_, far_z_;
+        update_fov_x update_fov_x_ = update_fov_x::ON;
+        // start from upper left point, and goes around near plane in counter-clockwise direction
+        std::array<vec3d, 4> default_points_;
+    };
+
+
+}} // namespace hnll::geometry
