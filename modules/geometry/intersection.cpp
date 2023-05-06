@@ -30,7 +30,7 @@ double intersection::test_aabb_aabb(const bounding_volume &aabb_a, const boundin
 
 double intersection::test_sphere_sphere(const bounding_volume &sphere_a, const bounding_volume &sphere_b)
 {
-  Eigen::Vector3f difference = sphere_a.get_world_center_point() - sphere_b.get_world_center_point();
+  Eigen::Vector3d difference = sphere_a.get_world_center_point() - sphere_b.get_world_center_point();
   double distance2 = difference.dot(difference);
   float radius_sum = sphere_a.get_sphere_radius() + sphere_b.get_sphere_radius();
   return distance2 <= radius_sum * radius_sum;

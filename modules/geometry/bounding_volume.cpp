@@ -3,11 +3,11 @@
 
 namespace hnll::geometry {
 
-u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3>& vertices)
+u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3d>& vertices)
 {
   // TODO : compute convex-hull
   auto convex_hull = vertices;
-  float minx = convex_hull[0].x(),
+  double minx = convex_hull[0].x(),
     maxx = convex_hull[0].x(),
     miny = convex_hull[0].y(),
     maxy = convex_hull[0].y(),
@@ -22,15 +22,15 @@ u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3>& ver
     if (minz > vertex.z()) minz = vertex.z();
     if (maxz < vertex.z()) maxz = vertex.z();
   }
-  vec3 center_point = {(maxx + minx) / 2, (maxy + miny) / 2, (maxz + minz) / 2};
-  vec3 radius = {(maxx - minx) / 2, (maxy - miny) / 2, (maxz - minz) / 2};
+  vec3d center_point = {(maxx + minx) / 2, (maxy + miny) / 2, (maxz + minz) / 2};
+  vec3d radius = {(maxx - minx) / 2, (maxy - miny) / 2, (maxz - minz) / 2};
   return std::make_unique<bounding_volume>(center_point, radius);
 }
 
-u_ptr<bounding_volume> bounding_volume::create_blank_aabb(const vec3& initial_point)
-{ return std::make_unique<bounding_volume>(initial_point, vec3(0.f, 0.f, 0.f)); }
+u_ptr<bounding_volume> bounding_volume::create_blank_aabb(const vec3d& initial_point)
+{ return std::make_unique<bounding_volume>(initial_point, vec3d(0.f, 0.f, 0.f)); }
 
-u_ptr<bounding_volume> bounding_volume::create_bounding_sphere(bv_ctor_type type, const std::vector<vec3>& vertices)
+u_ptr<bounding_volume> bounding_volume::create_bounding_sphere(bv_ctor_type type, const std::vector<vec3d>& vertices)
 {
   switch (type) {
     case bv_ctor_type::RITTER:
@@ -41,7 +41,7 @@ u_ptr<bounding_volume> bounding_volume::create_bounding_sphere(bv_ctor_type type
   }
 }
 
-std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3> &vertices)
+std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3d> &vertices)
 {
   // represents min/max point's index of each axis
   int minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0, min = 0, max = 0;
@@ -70,7 +70,7 @@ std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3> &vertic
   return {min, max};
 }
 
-u_ptr<bounding_volume> sphere_from_distant_points(const std::vector<vec3> &vertices)
+u_ptr<bounding_volume> sphere_from_distant_points(const std::vector<vec3d> &vertices)
 {
   auto separated_idx = most_separated_points_on_aabb(vertices);
   auto center_point = (vertices[separated_idx.first] + vertices[separated_idx.second]) * 0.5f;
@@ -79,7 +79,7 @@ u_ptr<bounding_volume> sphere_from_distant_points(const std::vector<vec3> &verti
   return std::make_unique<bounding_volume>(center_point, radius);
 }
 
-void extend_sphere_to_point(bounding_volume& sphere, const vec3& point)
+void extend_sphere_to_point(bounding_volume& sphere, const vec3d& point)
 {
   auto diff = point - sphere.get_world_center_point();
   auto dist2 = diff.dot(diff);
@@ -92,7 +92,7 @@ void extend_sphere_to_point(bounding_volume& sphere, const vec3& point)
   }
 }
 
-u_ptr<bounding_volume> bounding_volume::ritter_ctor(const std::vector<vec3> &vertices)
+u_ptr<bounding_volume> bounding_volume::ritter_ctor(const std::vector<vec3d> &vertices)
 {
   auto sphere = sphere_from_distant_points(vertices);
   for (const auto& vertex : vertices)
