@@ -28,7 +28,7 @@ using half_edge_set = std::set<half_edge_id>;
 using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
 using half_edge_map = std::unordered_map<half_edge_key, half_edge&>;
 using half_edge_id_map = std::unordered_map<half_edge_id, half_edge>;
-uint32_t NULL_ID = static_cast<uint32_t>(-1);
+static uint32_t NULL_ID = static_cast<uint32_t>(-1);
 
 // all ids should be set manually
 

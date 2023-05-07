@@ -21,7 +21,7 @@ DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
 {
   public:
 
-    static_meshlet(device& device, std::vector<vertex>&& raw_vertices, std::vector<meshlet>&& meshlets);
+    static_meshlet(device& device, std::vector<vertex>&& raw_vertices, std::vector<meshletBS>&& meshlets);
 
     static u_ptr<static_meshlet> create_from_file(device& device, std::string filename);
 
@@ -50,7 +50,7 @@ DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
 
     device& device_;
     std::vector<vertex>  raw_vertices_;
-    std::vector<meshlet> meshlets_;
+    std::vector<meshletBS> meshlets_;
     u_ptr<desc_pool>                desc_pool_;
     std::vector<u_ptr<buffer>>      desc_buffers_;
     std::vector<u_ptr<desc_layout>> desc_layouts_;
