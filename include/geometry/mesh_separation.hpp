@@ -43,12 +43,12 @@ std::vector<graphics::meshletBS> separate_meshletBS(const he_mesh& original, con
  */
 
 void write_meshlet_cache(
-  const std::vector<graphics::meshlet>& _meshlets,
+  const std::vector<graphics::meshletBS>& meshlets,
   const size_t vertex_count,
-  const std::string& _filename);
+  const std::string& filename);
 
 // returns true if the cache exists
-std::vector<graphics::meshlet> load_meshlet_cache(const std::string& _filename);
+std::vector<graphics::meshletBS> load_meshlet_cache(const std::string& _filename);
 
 } // namespace mesh_separation
 

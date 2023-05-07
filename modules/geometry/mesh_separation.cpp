@@ -327,38 +327,38 @@ std::vector<graphics::meshletBS> mesh_separation::separate_meshletBS(const he_me
     meshlets.emplace_back(translate_to_meshletBS(*meshlet, original));
   }
 
-  write_meshlet_cache(meshlets, vertex_count, helper->get_model_name(), helper->get_criterion());
+  write_meshlet_cache(meshlets, vertex_count, name);
 
   return meshlets;
 }
 
-void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
-{
-  int i = 0;
-  for (auto& m : meshlets) {
-    m->he_mesh.colorize_whole_mesh(meshlet_colors[i++].cast<double>());
-    i %= COLOR_COUNT;
-  }
-}
-
-separation_helper::separation_helper(const s_ptr<mesh_model> &model)
-  : model_(model), vertex_map_(model->get_vertex_map()), face_map_(model->get_face_map())
-{
-  for (const auto& fc_kv : face_map_) {
-    remaining_face_id_set_.insert(fc_kv.first);
-  }
-
-  unsigned int absent_pair_count = 0;
-  for (const auto& he_kv : model_->get_half_edge_map()) {
-    if (he_kv.second->get_pair() == nullptr) {
-      absent_pair_count++;
-    }
-  }
-  std::cout << "odd h-edge count : " << absent_pair_count << std::endl;
-  std::cout << "vertex count     : " << vertex_map_.size() << std::endl;
-  std::cout << "face count       : " << face_map_.size() << std::endl;
-  std::cout << "h-edge count     : " << model_->get_half_edge_map().size() << std::endl;
-}
+//void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
+//{
+//  int i = 0;
+//  for (auto& m : meshlets) {
+//    m->he_mesh.colorize_whole_mesh(meshlet_colors[i++].cast<double>());
+//    i %= COLOR_COUNT;
+//  }
+//}
+//
+//separation_helper::separation_helper(const s_ptr<mesh_model> &model)
+//  : model_(model), vertex_map_(model->get_vertex_map()), face_map_(model->get_face_map())
+//{
+//  for (const auto& fc_kv : face_map_) {
+//    remaining_face_id_set_.insert(fc_kv.first);
+//  }
+//
+//  unsigned int absent_pair_count = 0;
+//  for (const auto& he_kv : model_->get_half_edge_map()) {
+//    if (he_kv.second->get_pair() == nullptr) {
+//      absent_pair_count++;
+//    }
+//  }
+//  std::cout << "odd h-edge count : " << absent_pair_count << std::endl;
+//  std::cout << "vertex count     : " << vertex_map_.size() << std::endl;
+//  std::cout << "face count       : " << face_map_.size() << std::endl;
+//  std::cout << "h-edge count     : " << model_->get_half_edge_map().size() << std::endl;
+//}
 
 //bool check_adjoining_face(const s_ptr<half_edge>& he, const separation_helper& helper)
 //{
@@ -608,19 +608,19 @@ separation_helper::separation_helper(const s_ptr<mesh_model> &model)
 //  return frame_meshlets;
 //}
 
-std::vector<s_ptr<mesh_model>> mesh_separation::separate_into_raw(
-  const s_ptr<hnll::geometry::mesh_model> &_model,
-  const std::string &model_name,
-  hnll::geometry::mesh_separation::criterion crtr)
-{
-  auto helper = separation_helper::create(_model, model_name, crtr);
-
-  auto geometry_meshlets = separate_greedy(helper);
-
-  colorize_meshlets(geometry_meshlets);
-
-  return geometry_meshlets;
-}
+//std::vector<s_ptr<mesh_model>> mesh_separation::separate_into_raw(
+//  const s_ptr<hnll::geometry::mesh_model> &_model,
+//  const std::string &model_name,
+//  hnll::geometry::mesh_separation::criterion crtr)
+//{
+//  auto helper = separation_helper::create(_model, model_name, crtr);
+//
+//  auto geometry_meshlets = separate_greedy(helper);
+//
+//  colorize_meshlets(geometry_meshlets);
+//
+//  return geometry_meshlets;
+//}
 
 //graphics::animated_meshlet_pack mesh_separation::separate_into_meshlet_pack(
 //  const std::vector<s_ptr<mesh_model>>& _models,
@@ -657,10 +657,9 @@ std::vector<s_ptr<mesh_model>> mesh_separation::separate_into_raw(
 //}
 
 void mesh_separation::write_meshlet_cache(
-  const std::vector<graphics::meshlet> &_meshlets,
+  const std::vector<graphics::meshletBS> &_meshlets,
   const size_t vertex_count,
-  const std::string& _filename,
-  criterion _crtr)
+  const std::string& _filename)
 {
   auto directory = utils::create_sub_cache_directory("meshlets");
 
@@ -671,18 +670,8 @@ void mesh_separation::write_meshlet_cache(
   // write contents
   writing_file << filepath << std::endl;
   writing_file << "greedy" << std::endl;
-  switch (_crtr) {
-    case criterion::MINIMIZE_BOUNDING_SPHERE :
-      writing_file << "MINIMIZE_BOUNDING_SPHERE" << std::endl;
-      break;
-    case criterion::MINIMIZE_AABB :
-      writing_file << "MINIMIZE_AABB" << std::endl;
-      // temporary
-      return;
-      break;
-    default :
-      ;
-  }
+  writing_file << "MINIMIZE_BOUNDING_SPHERE" << std::endl;
+
 
   writing_file << "vertex count" << std::endl;
   writing_file << vertex_count << std::endl;
@@ -708,17 +697,17 @@ void mesh_separation::write_meshlet_cache(
     }
     writing_file << std::endl;
     // bonding volume info
-    writing_file << current_ml.center.x() << ',' <<
-                 current_ml.center.y() << ',' <<
-                 current_ml.center.z() << std::endl;
-    writing_file << current_ml.radius << std::endl;
+    writing_file << current_ml.sphere.x() << ',' <<
+                 current_ml.sphere.y() << ',' <<
+                 current_ml.sphere.z() << std::endl;
+    writing_file << current_ml.sphere.w() << std::endl;
   }
   writing_file.close();
 }
 
-std::vector<graphics::meshlet> mesh_separation::load_meshlet_cache(const std::string &_filename)
+std::vector<graphics::meshletBS> mesh_separation::load_meshlet_cache(const std::string &_filename)
 {
-  std::vector<graphics::meshlet> ret{};
+  std::vector<graphics::meshletBS> ret{};
 
   std::string cache_dir = std::string(getenv("HNLL_ENGN")) + "/cache/meshlets/";
   std::string file_path = cache_dir + _filename + ".ml";
@@ -782,14 +771,14 @@ std::vector<graphics::meshlet> mesh_separation::load_meshlet_cache(const std::st
     // bounding volume
     // center
     getline(reading_file, buffer, ',');
-    ret[i].center.x() = std::stof(buffer);
+    ret[i].sphere.x() = std::stof(buffer);
     getline(reading_file, buffer, ',');
-    ret[i].center.y() = std::stof(buffer);
+    ret[i].sphere.y() = std::stof(buffer);
     getline(reading_file, buffer);
-    ret[i].center.z() = std::stof(buffer);
+    ret[i].sphere.z() = std::stof(buffer);
     // radius
     getline(reading_file, buffer);
-    ret[i].radius = std::stof(buffer);
+    ret[i].sphere.w() = std::stof(buffer);
   }
 
   return ret;
