@@ -28,6 +28,7 @@ using half_edge_set = std::set<half_edge_id>;
 using half_edge_key = std::pair<vertex, vertex>; // consists of two vertex_ids
 using half_edge_map = std::unordered_map<half_edge_key, half_edge&>;
 using half_edge_id_map = std::unordered_map<half_edge_id, half_edge>;
+uint32_t NULL_ID = static_cast<uint32_t>(-1);
 
 // all ids should be set manually
 
@@ -52,7 +53,7 @@ struct vertex
   vec3d normal  {0.f, 0.f, 0.f};
   vec2d uv;
   unsigned face_count = 0;
-  half_edge_id he_id = -1;
+  half_edge_id he_id = NULL_ID;
 };
 
 struct face
@@ -77,9 +78,9 @@ class half_edge
       v_id = v.v_id;
     }
 
-    half_edge_id this_id, next = -1, prev = -1, pair = -1;
-    vertex_id    v_id = -1; // start point of this half_edge
-    face_id      f_id = -1; // half_edges run in a counterclockwise direction around this face
+    half_edge_id this_id, next = NULL_ID, prev = NULL_ID, pair = NULL_ID;
+    vertex_id    v_id = NULL_ID; // start point of this half_edge
+    face_id      f_id = NULL_ID; // half_edges run in a counterclockwise direction around this face
 };
 
 

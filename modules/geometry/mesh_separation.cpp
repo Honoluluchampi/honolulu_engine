@@ -36,14 +36,6 @@ vec3 meshlet_colors[COLOR_COUNT] = {
   vec3(1,    0.5,  0.5)
 };
 
-face_id separation_helper::get_random_remaining_face_id()
-{
-  for (const auto& id : remaining_face_ids_) {
-    return id;
-  }
-  return static_cast<face_id>(-1);
-}
-
 template <typename Key, typename Val>
 std::set<Key> extract_keys(const std::unordered_map<Key, Val>& original)
 {
@@ -52,6 +44,57 @@ std::set<Key> extract_keys(const std::unordered_map<Key, Val>& original)
     ret.emplace(kv.first);
   }
   return ret;
+}
+
+void update_adjoining_face_map(
+  face_id_set& adjoining_f_ids,
+  const face_id_set& remaining_f_ids,
+  const face& fc,
+  const he_mesh& original)
+{
+  auto first_he_id = fc.he_id;
+  auto curr_he_id = first_he_id;
+  do {
+    const auto& curr_he = original.get_half_edge(curr_he_id);
+    if (curr_he.pair != NULL_ID) {
+      const auto& pair = original.get_half_edge(curr_he.pair);
+      const auto& new_f = original.get_face(pair.f_id);
+      // if new_f is new
+      if (remaining_f_ids.find(new_f.f_id) != remaining_f_ids.end()) {
+        adjoining_f_ids.emplace(new_f.f_id);
+      }
+    }
+    curr_he_id = curr_he.next;
+  } while (curr_he_id != first_he_id);
+  adjoining_f_ids.erase(fc.f_id);
+}
+
+face_id choose_random_f_id(const face_id_set& f_ids, const he_mesh& original)
+{
+  for (const auto& id : f_ids) {
+    return id;
+  }
+
+  return NULL_ID;
+  // adjoining face count-based selection
+//  int max_adjoining = 0;
+//  s_ptr<face> ret = nullptr;
+//  for (const auto& fc_kv : fc_map) {
+//    int adjoining = 0;
+//    auto& he = fc_kv.second->half_edge_;
+//    if (!check_adjoining_face(he, helper))
+//      adjoining++;
+//    he = he->get_next();
+//    if (!check_adjoining_face(he, helper))
+//      adjoining++;
+//    he = he->get_next();
+//    if (!check_adjoining_face(he, helper))
+//      adjoining++;
+//
+//    if (max_adjoining < adjoining)
+//      ret = fc_kv.second;
+//  }
+//  return ret;
 }
 
 // bv_type dependent part -------------------------------------------------------------
@@ -154,7 +197,7 @@ void update_bv(aabb& curr, const face& f, const he_mesh& original)
 void update_bv(b_sphere& curr, const face& f, const he_mesh& original)
 {
   // calc farthest point
-  half_edge_id far_he_id = static_cast<uint32_t>(-1);
+  half_edge_id far_he_id = NULL_ID;
   auto he_id = f.he_id;
   auto far_dist2 = std::pow(curr.get_sphere_radius(), 2);
 
@@ -168,7 +211,7 @@ void update_bv(b_sphere& curr, const face& f, const he_mesh& original)
     he_id = he.next;
   }
 
-  if (far_he_id == static_cast<uint32_t>(-1)) return;
+  if (far_he_id == NULL_ID) return;
 
   vec3d new_position;
   const auto& far_he = original.get_half_edge(far_he_id);
@@ -196,14 +239,16 @@ std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
   // all he_mesh has a face which id is 0
   face_id curr_f_id = 0;
 
+  // outer loop : add meshlets
   while (!remaining_f_ids.empty()) {
     // compute each meshlet
     // init objects
-    auto ml = bv_mesh<type>::create(original); // meshlet is represented as bv_mesh
+    auto ml = bv_mesh<type>::create(); // meshlet is represented as bv_mesh
     auto bv = create_bv_from_single_face<type>(curr_f_id, original);
 
     face_id_set adjoining_f_ids {curr_f_id};
 
+    // inner loop : add faces
     while (ml->get_vertex_count() < graphics::meshlet_constants::MAX_VERTEX_COUNT
            && ml->get_face_count() < graphics::meshlet_constants::MAX_PRIMITIVE_COUNT
            && !adjoining_f_ids.empty()) {
@@ -215,14 +260,16 @@ std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
       // update each object
       add_face_to_bv_mesh(curr_f_id, *ml, original);
       update_bv(*bv, curr_f, original);
-      update_adjoining_face_map(adjoining_face_map, current_face);
-      remove_face(current_face->id_);
+      update_adjoining_face_map(adjoining_f_ids, remaining_f_ids, curr_f, original);
+      remaining_f_ids.erase(curr_f_id);
     }
     ml->set_bounding_volume(std::move(bv));
     meshlets.emplace_back(ml);
-    current_face = choose_next_face_from_adjoining(adjoining_face_map, *helper);
-    if (current_face == nullptr)
-      current_face = helper->get_random_remaining_face();
+    curr_f_id = choose_random_f_id(adjoining_f_ids, original);
+
+    // if no adjoining faces
+    if (curr_f_id == NULL_ID)
+      curr_f_id = choose_random_f_id(remaining_f_ids, original);
   }
 
   return meshlets;
@@ -235,17 +282,6 @@ void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
     m->he_mesh.colorize_whole_mesh(meshlet_colors[i++].cast<double>());
     i %= COLOR_COUNT;
   }
-}
-
-s_ptr<separation_helper> separation_helper::create(
-  const s_ptr<mesh_model> &model,
-  const std::string& _model_name,
-  mesh_separation::criterion _crtr)
-{
-  auto helper_sp = std::make_shared<separation_helper>(model);
-  helper_sp->set_model_name(_model_name);
-  helper_sp->set_criterion(_crtr);
-  return helper_sp;
 }
 
 separation_helper::separation_helper(const s_ptr<mesh_model> &model)
@@ -267,65 +303,17 @@ separation_helper::separation_helper(const s_ptr<mesh_model> &model)
   std::cout << "h-edge count     : " << model_->get_half_edge_map().size() << std::endl;
 }
 
-void separation_helper::update_adjoining_face_map(face_map& adjoining_face_map, const s_ptr<face>& fc)
-{
-  auto first_he = fc->half_edge_;
-  auto current_he = first_he;
-  do {
-    auto he_pair = current_he->get_pair();
-    if (he_pair != nullptr) {
-      auto current_face = current_he->get_pair()->get_face();
-      // if current_face is new to the map
-      if (remaining_face_id_set_.find(current_face->id_) != remaining_face_id_set_.end()) {
-        adjoining_face_map[current_face->id_] = current_face;
-      }
-    }
-    current_he = current_he->get_next();
-  } while (current_he != first_he);
-  adjoining_face_map.erase(fc->id_);
-}
-
-s_ptr<face> choose_random_face_from_map(const face_map& fc_map)
-{
-  for (const auto& fc_kv : fc_map) {
-    return fc_kv.second;
-  }
-  return nullptr;
-}
-
-bool check_adjoining_face(const s_ptr<half_edge>& he, const separation_helper& helper)
-{
-  // no pair
-  if (!he->get_pair())
-    return false;
-  const auto& pair = he->get_pair();
-  // no face
-  if (!pair->get_face())
-    return false;
-  return helper.face_is_remaining(pair->get_face()->id_);
-}
-
-s_ptr<face> choose_next_face_from_adjoining(const face_map& fc_map, const separation_helper& helper)
-{
-  int max_adjoining = 0;
-  s_ptr<face> ret = nullptr;
-  for (const auto& fc_kv : fc_map) {
-    int adjoining = 0;
-    auto& he = fc_kv.second->half_edge_;
-    if (!check_adjoining_face(he, helper))
-      adjoining++;
-    he = he->get_next();
-    if (!check_adjoining_face(he, helper))
-      adjoining++;
-    he = he->get_next();
-    if (!check_adjoining_face(he, helper))
-      adjoining++;
-
-    if (max_adjoining < adjoining)
-      ret = fc_kv.second;
-  }
-  return ret;
-}
+//bool check_adjoining_face(const s_ptr<half_edge>& he, const separation_helper& helper)
+//{
+//  // no pair
+//  if (!he->get_pair())
+//    return false;
+//  const auto& pair = he->get_pair();
+//  // no face
+//  if (!pair->get_face())
+//    return false;
+//  return helper.face_is_remaining(pair->get_face()->id_);
+//}
 
 //template<typename T>
 //T my_max(const std::vector<T>& values)
@@ -600,13 +588,12 @@ graphics::meshlet translate_to_meshlet(const s_ptr<mesh_model>& old_mesh)
 //}
 
 std::vector<graphics::meshlet> mesh_separation::separate(
-  const s_ptr<mesh_model>& _model,
+  const he_mesh& original,
   const std::string& _model_name,
   criterion _crtr)
 {
   std::vector<graphics::meshlet> meshlets;
 
-  auto helper = separation_helper::create(_model, _model_name, _crtr);
   auto vertex_count = helper->get_vertex_map().size();
 
   auto geometry_meshlets = separate_greedy(helper);

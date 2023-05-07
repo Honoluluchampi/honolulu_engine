@@ -91,7 +91,7 @@ template <bv_type type>
 class bv_mesh
 {
   public:
-    static u_ptr<bv_mesh<type>> create(const he_mesh& original) { return std::make_unique<bv_mesh<type>>(original); }
+    static u_ptr<bv_mesh<type>> create() { return std::make_unique<bv_mesh<type>>(); }
 
     // getter
     const bounding_volume<type>&                     get_bv() const { return *bv_; }
