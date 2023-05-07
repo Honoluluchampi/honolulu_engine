@@ -100,6 +100,12 @@ class bv_mesh
     u_ptr<bounding_volume<type>> get_bv_copy() const
     { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
+    size_t get_vertex_count() const { return v_ids_.size(); }
+    size_t get_face_count()   const { return f_ids_.size(); }
+
+    const vertex_id_set get_v_ids() const { return v_ids_; }
+    const face_id_set   get_f_ids() const { return f_ids_; }
+
     // setter
     void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
     void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }

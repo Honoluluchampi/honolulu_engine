@@ -263,14 +263,71 @@ std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
       update_adjoining_face_map(adjoining_f_ids, remaining_f_ids, curr_f, original);
       remaining_f_ids.erase(curr_f_id);
     }
-    ml->set_bounding_volume(std::move(bv));
-    meshlets.emplace_back(ml);
+    ml->set_bv(std::move(bv));
+    meshlets.emplace_back(std::move(ml));
     curr_f_id = choose_random_f_id(adjoining_f_ids, original);
 
     // if no adjoining faces
     if (curr_f_id == NULL_ID)
       curr_f_id = choose_random_f_id(remaining_f_ids, original);
   }
+
+  return meshlets;
+}
+
+// interface part ------------------------------------------------------------------------------------------
+
+graphics::meshletBS translate_to_meshletBS(const bv_mesh<bv_type::SPHERE>& bm, const he_mesh& original)
+{
+  graphics::meshletBS ret{};
+
+  std::unordered_map<uint32_t, uint32_t> id_map;
+  uint32_t current_id = 0;
+
+  // fill vertex info
+  for (auto v_id : bm.get_v_ids()) {
+    // register to id_map
+    id_map[v_id] = current_id;
+    // add to meshlet
+    ret.vertex_indices[current_id++] = v_id;
+  }
+  ret.vertex_count = current_id;
+
+  current_id = 0;
+  // fill primitive index info
+  for (auto f_id : bm.get_f_ids()) {
+    const auto& f = original.get_face(f_id);
+    auto he_id = f.he_id;
+    for (int i = 0; i < 3; i++) {
+      const auto& he = original.get_half_edge(he_id);
+      ret.primitive_indices[current_id++] = id_map[he.v_id];
+      he_id = he.next;
+    }
+  }
+  ret.index_count = current_id;
+
+  // fill bounding volume info
+  auto center = bm.get_bv().get_local_center_point().cast<float>();
+  float radius = bm.get_bv().get_sphere_radius();
+
+  ret.sphere = vec4{ center.x(), center.y(), center.z(), radius };
+
+  return ret;
+}
+
+std::vector<graphics::meshletBS> mesh_separation::separate_meshletBS(const he_mesh& original, const std::string& name)
+{
+  std::vector<graphics::meshletBS> meshlets;
+
+  auto vertex_count = original.get_vertex_map().size();
+
+  auto geometry_meshlets = separate_greedy<bv_type::SPHERE>(original);
+
+  for (const auto& meshlet : geometry_meshlets) {
+    meshlets.emplace_back(translate_to_meshletBS(*meshlet, original));
+  }
+
+  write_meshlet_cache(meshlets, vertex_count, helper->get_model_name(), helper->get_criterion());
 
   return meshlets;
 }
@@ -417,42 +474,6 @@ separation_helper::separation_helper(const s_ptr<mesh_model> &model)
 //  return meshlets;
 //}
 
-graphics::meshlet translate_to_meshlet(const s_ptr<mesh_model>& old_mesh)
-{
-  graphics::meshlet ret{};
-
-  std::unordered_map<uint32_t, uint32_t> id_map;
-  uint32_t current_id = 0;
-
-  // fill vertex info
-  for (const auto& v_kv : old_mesh->get_vertex_map()) {
-    auto& v = v_kv.second;
-    // register to id_map
-    id_map[v->id_] = current_id;
-    // add to meshlet
-    ret.vertex_indices[current_id++] = v->id_;
-  }
-  ret.vertex_count = current_id;
-
-  current_id = 0;
-  // fill primitive index info
-  for (const auto& f_kv : old_mesh->get_face_map()) {
-    auto& f = f_kv.second;
-    auto& he = f->half_edge_;
-    for (int i = 0; i < 3; i++) {
-      ret.primitive_indices[current_id++] = id_map[he->get_vertex()->id_];
-      he = he->get_next();
-    }
-  }
-  ret.index_count = current_id;
-
-  // fill bounding volume info
-  ret.center = old_mesh->get_bounding_volume().get_local_center_point().cast<float>();
-  ret.radius = old_mesh->get_bounding_volume().get_sphere_radius();
-
-  return ret;
-}
-
 //graphics::animated_meshlet_pack translate_to_animated_meshlet_pack(const std::vector<s_ptr<mesh_model>>& old_meshes)
 //{
 //  graphics::animated_meshlet_pack meshlet_pack;
@@ -586,26 +607,6 @@ graphics::meshlet translate_to_meshlet(const s_ptr<mesh_model>& old_mesh)
 //
 //  return frame_meshlets;
 //}
-
-std::vector<graphics::meshlet> mesh_separation::separate(
-  const he_mesh& original,
-  const std::string& _model_name,
-  criterion _crtr)
-{
-  std::vector<graphics::meshlet> meshlets;
-
-  auto vertex_count = helper->get_vertex_map().size();
-
-  auto geometry_meshlets = separate_greedy(helper);
-
-  for (auto& meshlet : geometry_meshlets) {
-    meshlets.emplace_back(translate_to_meshlet(meshlet));
-  }
-
-  write_meshlet_cache(meshlets, vertex_count, helper->get_model_name(), helper->get_criterion());
-
-  return meshlets;
-}
 
 std::vector<s_ptr<mesh_model>> mesh_separation::separate_into_raw(
   const s_ptr<hnll::geometry::mesh_model> &_model,

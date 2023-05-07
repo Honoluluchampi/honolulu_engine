@@ -14,7 +14,17 @@ constexpr uint32_t VERTEX_DESC_ID  = 0;
 constexpr uint32_t MESHLET_DESC_ID = 1;
 constexpr uint32_t DESC_SET_COUNT  = 2;
 
-struct meshlet
+struct meshletBS
+{
+  uint32_t vertex_indices   [meshlet_constants::MAX_VERTEX_COUNT]; // indicates position in a vertex buffer
+  uint32_t primitive_indices[meshlet_constants::MAX_PRIMITIVE_INDICES_COUNT];
+  uint32_t vertex_count;
+  uint32_t index_count;
+  // for frustum culling (for bounding sphere)
+  vec4 sphere; // xyz : center, w : radius
+};
+
+struct meshletAABB
 {
   uint32_t vertex_indices   [meshlet_constants::MAX_VERTEX_COUNT]; // indicates position in a vertex buffer
   uint32_t primitive_indices[meshlet_constants::MAX_PRIMITIVE_INDICES_COUNT];
@@ -22,9 +32,7 @@ struct meshlet
   uint32_t index_count;
   // for frustum culling (for bounding sphere)
   alignas(16) vec3 center;
-  float            radius;
-  // for aabb
-  // alignas(16) vec3 radius;
+  alignas(16) vec3 radius;
 };
 
 struct animated_meshlet_pack

@@ -16,28 +16,18 @@ namespace hnll {
 // forward declaration
 namespace graphics {
 struct mesh_builder;
-struct meshlet;
+struct meshletBS;
 struct animated_meshlet_pack;
 }
 
 namespace geometry {
 
+class he_mesh;
+
 // ---------------------------------------------------------------------------------------
 namespace mesh_separation {
 
-std::vector<graphics::meshlet> separate_into_graphics_meshlet(
-  const s_ptr<mesh_model>& _model,
-  const std::string& _model_name = "tmp");
-
-std::vector<s_ptr<mesh_model>> separate_into_geometry_mesh(
-  const s_ptr<mesh_model>& _model,
-  const std::string& model_name = "tmp");
-
-graphics::animated_meshlet_pack separate_into_meshlet_pack(
-  const std::vector<s_ptr<mesh_model>>& _models);
-
-std::vector<std::vector<s_ptr<mesh_model>>> separate_into_raw_frame(
-  const std::vector<s_ptr<mesh_model>>& _models);
+std::vector<graphics::meshletBS> separate_meshletBS(const he_mesh& original, const std::string& name);
 
 // meshlet cache file format
 /*
