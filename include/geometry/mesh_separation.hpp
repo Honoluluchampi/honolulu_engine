@@ -22,17 +22,6 @@ struct animated_meshlet_pack;
 
 namespace geometry {
 
-// forward declaration
-template <bv_type type>
-class mesh_model;
-
-// ---------------------------------------------------------------------------------------
-struct mesh_info
-{
-  vertex_id_set v_ids;
-  face_id_set   f_ids;
-};
-
 // ---------------------------------------------------------------------------------------
 namespace mesh_separation {
 
@@ -98,9 +87,6 @@ class separation_helper
 
   private:
     template <bv_type type>
-    u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f);
-    double compute_loss(const aabb&, face_id);
-    double compute_loss(const b_sphere&, face_id);
 
     bv_type type_;
 
@@ -114,19 +100,6 @@ class separation_helper
     std::string                model_name_;
 };
 
-// impl -------------------------------------------------------------------------
-#define SEPHEL_API template <bv_type type>
-SEPHEL_API u_ptr<bounding_volume<type>> separation_helper::create_bv_from_single_face(const face &f)
-{
-  std::vector<vec3d> vertices;
-  const auto& first = he_map_.at(f.he_id);
-  auto current_id = first.this_id;
-  do {
-    const auto& current = he_map_.at(current_id);
-    vertices.push_back(v_map_.at(current.v_id).position);
-    current_id = he_map_.at(current.next).this_id;
-  } while (current_id != first.this_id);
-  return bounding_volume<type>::create(vertices);
-}
+// impl -----------------------------------------------------------------------
 
 }} // namespace hnll::geometry

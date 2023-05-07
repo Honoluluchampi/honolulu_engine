@@ -32,10 +32,6 @@ namespace hnll::graphics
 
 namespace hnll::geometry {
 
-// forward declaration
-enum class bv_type;
-template <bv_type type> class bounding_volume;
-
 class he_mesh
 {
   public:
@@ -92,9 +88,11 @@ class he_mesh
 };
 
 template <bv_type type>
-class mesh_model
+class bv_mesh
 {
   public:
+    static u_ptr<bv_mesh<type>> create(const he_mesh& original) { return std::make_unique<bv_mesh<type>>(original); }
+
     // getter
     const bounding_volume<type>&                     get_bv() const { return *bv_; }
     const std::vector<u_ptr<bounding_volume<type>>>& get_bvs() const { return bvs_; }
@@ -102,18 +100,16 @@ class mesh_model
     u_ptr<bounding_volume<type>> get_bv_copy() const
     { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
-    // primitives
-    inline const vertex&    get_vertex(vertex_id id)   const { return mesh_.get_vertex(id); }
-    inline const face&      get_face(face_id f_id)     const { return mesh_.get_face(f_id); }
-    // next, prev, pair should be access by id
-    inline const half_edge& get_he(half_edge_id he_id) const { return mesh_.get_half_edge(he_id); }
-
     // setter
     void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
     void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }
 
+    void add_v_id(vertex_id id) { v_ids_.emplace(id); }
+    void add_f_id(face_id id)   { f_ids_.emplace(id); }
+
   private:
-    he_mesh mesh_;
+    vertex_id_set v_ids_;
+    face_id_set   f_ids_;
     u_ptr<bounding_volume<type>> bv_;
     std::vector<u_ptr<bounding_volume<type>>> bvs_;
 };

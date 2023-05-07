@@ -36,6 +36,198 @@ vec3 meshlet_colors[COLOR_COUNT] = {
   vec3(1,    0.5,  0.5)
 };
 
+face_id separation_helper::get_random_remaining_face_id()
+{
+  for (const auto& id : remaining_face_ids_) {
+    return id;
+  }
+  return static_cast<face_id>(-1);
+}
+
+template <typename Key, typename Val>
+std::set<Key> extract_keys(const std::unordered_map<Key, Val>& original)
+{
+  std::set<Key> ret;
+  for (const auto& kv : original) {
+    ret.emplace(kv.first);
+  }
+  return ret;
+}
+
+// bv_type dependent part -------------------------------------------------------------
+template <bv_type type>
+u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f, const he_mesh& original)
+{
+  std::vector<vec3d> vertices;
+  auto first_id = f.he_id;
+  auto curr_id = first_id;
+  do {
+    const auto& curr = original.get_half_edge(curr_id);
+    vertices.push_back(original.get_vertex(curr.v_id).position);
+    curr_id = curr.next;
+  } while (curr_id != first_id);
+  return bounding_volume<type>::create(vertices);
+}
+
+double compute_loss(const aabb& curr_aabb, face_id f_id, const he_mesh& original)
+{
+  auto f_aabb = create_bv_from_single_face<bv_type::AABB>(f_id, original);
+  double max_x = std::max(curr_aabb.get_max_x(), f_aabb->get_max_x());
+  double min_x = std::min(curr_aabb.get_min_x(), f_aabb->get_min_x());
+  double max_y = std::max(curr_aabb.get_max_y(), f_aabb->get_max_y());
+  double min_y = std::min(curr_aabb.get_min_y(), f_aabb->get_min_y());
+  double max_z = std::max(curr_aabb.get_max_z(), f_aabb->get_max_z());
+  double min_z = std::min(curr_aabb.get_min_z(), f_aabb->get_min_z());
+  auto x_diff = max_x - min_x;
+  auto y_diff = max_y - min_y;
+  auto z_diff = max_z - min_z;
+
+  auto ret = std::max(x_diff, y_diff);
+  ret = std::max(ret, z_diff);
+
+  return ret;
+}
+
+double dist2(const vec3d& a, const vec3d& b)
+{
+  auto ba = b - a;
+  return ba.x() * ba.x() + ba.y() * ba.y() + ba.z() * ba.z();
+}
+
+double compute_loss(const b_sphere& curr_s, face_id f_id, const he_mesh& original)
+{
+  const auto& f = original.get_face(f_id);
+  const auto& he = original.get_half_edge(f.he_id);
+  const auto& next = original.get_half_edge(he.next);
+  const auto& prev = original.get_half_edge(he.prev);
+
+  auto radius2 = std::pow(curr_s.get_sphere_radius(), 2);
+  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), original.get_vertex(he.v_id).position));
+  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), original.get_vertex(next.v_id).position));
+  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), original.get_vertex(prev.v_id).position));
+  return radius2;
+}
+
+template <bv_type type>
+face_id choose_best_face_id(const face_id_set& adjoining_face_ids, const bounding_volume<type>& bv, const he_mesh& original)
+{
+  double loss = 1e9 + 7;
+  face_id ret = -1;
+  for (auto fc_id : adjoining_face_ids) {
+    auto new_loss = compute_loss(bv, fc_id, original);
+    if (new_loss < loss) {
+      loss = new_loss;
+      ret = fc_id;
+    }
+  }
+  return ret;
+}
+
+template <bv_type type>
+void add_face_to_bv_mesh(const face& f, bv_mesh<type>& bm, const he_mesh& original)
+{
+  bm.add_f_id(f.f_id);
+  const auto& he = original.get_half_edge(f.he_id);
+  bm.add_v_id(he.v_id);
+  const auto& next = original.get_half_edge(he.next);
+  bm.add_v_id(next.v_id);
+  const auto& prev = original.get_half_edge(he.prev);
+  bm.add_v_id(prev.v_id);
+}
+
+void update_bv(aabb& curr, const face& f, const he_mesh& original)
+{
+  auto face_aabb = create_bv_from_single_face<bv_type::AABB>(f, original);
+  vec3d max_vec3, min_vec3;
+  max_vec3.x() = std::max(curr.get_max_x(), face_aabb->get_max_x());
+  min_vec3.x() = std::min(curr.get_min_x(), face_aabb->get_min_x());
+  max_vec3.y() = std::max(curr.get_max_y(), face_aabb->get_max_y());
+  min_vec3.y() = std::min(curr.get_min_y(), face_aabb->get_min_y());
+  max_vec3.z() = std::max(curr.get_max_z(), face_aabb->get_max_z());
+  min_vec3.z() = std::min(curr.get_min_z(), face_aabb->get_min_z());
+  auto center_vec3 = (max_vec3 + min_vec3) / 2.f;
+  auto radius_vec3 = max_vec3 - center_vec3;
+  curr.set_center_point(center_vec3);
+  curr.set_aabb_radius(radius_vec3);
+}
+
+void update_bv(b_sphere& curr, const face& f, const he_mesh& original)
+{
+  // calc farthest point
+  half_edge_id far_he_id = static_cast<uint32_t>(-1);
+  auto he_id = f.he_id;
+  auto far_dist2 = std::pow(curr.get_sphere_radius(), 2);
+
+  for (int i = 0; i < 3; i++) {
+    const auto& he = original.get_half_edge(he_id);
+    auto d2 = dist2(curr.get_local_center_point(), original.get_vertex(he.v_id).position);
+    if (d2 > far_dist2) {
+      far_dist2 = d2;
+      far_he_id = he.this_id;
+    }
+    he_id = he.next;
+  }
+
+  if (far_he_id == static_cast<uint32_t>(-1)) return;
+
+  vec3d new_position;
+  const auto& far_he = original.get_half_edge(far_he_id);
+  new_position = original.get_vertex(far_he.v_id).position;
+
+  // compute new center and radius
+  auto center = curr.get_local_center_point();
+  auto radius = curr.get_sphere_radius();
+  auto new_dir = (new_position - center).normalized();
+  auto opposite = center - radius * new_dir;
+  auto new_center = 0.5f * (new_position + opposite);
+  curr.set_center_point(new_center);
+
+  auto new_radius = std::sqrt(dist2(new_center, new_position));
+  curr.set_sphere_radius(new_radius);
+}
+
+// separation part ------------------------------------------------------------------------
+template<bv_type type>
+std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
+{
+  std::vector<u_ptr<bv_mesh<type>>> meshlets;
+  auto remaining_f_ids = extract_keys(original.get_face_map());
+
+  // all he_mesh has a face which id is 0
+  face_id curr_f_id = 0;
+
+  while (!remaining_f_ids.empty()) {
+    // compute each meshlet
+    // init objects
+    auto ml = bv_mesh<type>::create(original); // meshlet is represented as bv_mesh
+    auto bv = create_bv_from_single_face<type>(curr_f_id, original);
+
+    face_id_set adjoining_f_ids {curr_f_id};
+
+    while (ml->get_vertex_count() < graphics::meshlet_constants::MAX_VERTEX_COUNT
+           && ml->get_face_count() < graphics::meshlet_constants::MAX_PRIMITIVE_COUNT
+           && !adjoining_f_ids.empty()) {
+
+      // algorithm dependent part
+      curr_f_id = choose_best_face_id(adjoining_f_ids, *bv, original);
+      const auto& curr_f = original.get_face(curr_f_id);
+
+      // update each object
+      add_face_to_bv_mesh(curr_f_id, *ml, original);
+      update_bv(*bv, curr_f, original);
+      update_adjoining_face_map(adjoining_face_map, current_face);
+      remove_face(current_face->id_);
+    }
+    ml->set_bounding_volume(std::move(bv));
+    meshlets.emplace_back(ml);
+    current_face = choose_next_face_from_adjoining(adjoining_face_map, *helper);
+    if (current_face == nullptr)
+      current_face = helper->get_random_remaining_face();
+  }
+
+  return meshlets;
+}
+
 void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
 {
   int i = 0;
@@ -43,14 +235,6 @@ void colorize_meshlets(std::vector<s_ptr<mesh_model>>& meshlets)
     m->he_mesh.colorize_whole_mesh(meshlet_colors[i++].cast<double>());
     i %= COLOR_COUNT;
   }
-}
-
-face_id separation_helper::get_random_remaining_face_id()
-{
-  for (const auto& id : remaining_face_ids_) {
-    return id;
-  }
-  return static_cast<face_id>(-1);
 }
 
 s_ptr<separation_helper> separation_helper::create(
@@ -81,128 +265,6 @@ separation_helper::separation_helper(const s_ptr<mesh_model> &model)
   std::cout << "vertex count     : " << vertex_map_.size() << std::endl;
   std::cout << "face count       : " << face_map_.size() << std::endl;
   std::cout << "h-edge count     : " << model_->get_half_edge_map().size() << std::endl;
-}
-
-
-double separation_helper::compute_loss(const aabb& curr_aabb, face_id f_id)
-{
-  const auto& new_f = get_face(f_id);
-  auto f_aabb = create_bv_from_single_face<bv_type::AABB>(new_f);
-  double max_x = std::max(curr_aabb.get_max_x(), f_aabb->get_max_x());
-  double min_x = std::min(curr_aabb.get_min_x(), f_aabb->get_min_x());
-  double max_y = std::max(curr_aabb.get_max_y(), f_aabb->get_max_y());
-  double min_y = std::min(curr_aabb.get_min_y(), f_aabb->get_min_y());
-  double max_z = std::max(curr_aabb.get_max_z(), f_aabb->get_max_z());
-  double min_z = std::min(curr_aabb.get_min_z(), f_aabb->get_min_z());
-  auto x_diff = max_x - min_x;
-  auto y_diff = max_y - min_y;
-  auto z_diff = max_z - min_z;
-
-  auto ret = std::max(x_diff, y_diff);
-  ret = std::max(ret, z_diff);
-
-  return ret;
-}
-
-double dist2(const vec3d& a, const vec3d& b)
-{
-  auto ba = b - a;
-  return ba.x() * ba.x() + ba.y() * ba.y() + ba.z() * ba.z();
-}
-
-double separation_helper::compute_loss(const b_sphere& curr_s, face_id f_id)
-{
-  const auto& new_f = get_face(f_id);
-  const auto& he = he_map_.at(new_f.he_id);
-  const auto& next = he_map_.at(he.next);
-  const auto& prev = he_map_.at(he.prev);
-
-  auto radius2 = std::pow(curr_s.get_sphere_radius(), 2);
-  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), v_map_.at(he.v_id).position));
-  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), v_map_.at(next.v_id).position));
-  radius2 = std::max(radius2, dist2(curr_s.get_local_center_point(), v_map_.at(prev.v_id).position));
-  return radius2;
-}
-
-template <bv_type type>
-face_id choose_best_face_id(const face_id_set& adjoining_face_ids, const bounding_volume<type>& bv)
-{
-  double loss = 1e9 + 7;
-  face_id ret = -1;
-  for (auto fc_id : adjoining_face_ids) {
-    auto new_loss = compute_loss(bv, fc_id);
-    if (new_loss < loss) {
-      loss = new_loss;
-      ret = fc_id;
-    }
-  }
-  return ret;
-}
-
-void add_face_to_meshlet(const s_ptr<face>& fc, s_ptr<mesh_model>& ml)
-{
-  auto he = fc->half_edge_;
-  auto v0 = he->get_vertex();
-  he = he->get_next();
-  auto v1 = he->get_vertex();
-  he = he->get_next();
-  auto v2 = he->get_vertex();
-  ml->add_face(v0, v1, v2, fc->id_, false);
-}
-
-void update_aabb(bounding_volume& current_aabb, const s_ptr<face>& new_face)
-{
-  auto face_aabb = create_aabb_from_single_face(new_face);
-  vec3d max_vec3, min_vec3;
-  max_vec3.x() = std::max(current_aabb.get_max_x(), face_aabb->get_max_x());
-  min_vec3.x() = std::min(current_aabb.get_min_x(), face_aabb->get_min_x());
-  max_vec3.y() = std::max(current_aabb.get_max_y(), face_aabb->get_max_y());
-  min_vec3.y() = std::min(current_aabb.get_min_y(), face_aabb->get_min_y());
-  max_vec3.z() = std::max(current_aabb.get_max_z(), face_aabb->get_max_z());
-  min_vec3.z() = std::min(current_aabb.get_min_z(), face_aabb->get_min_z());
-  auto center_vec3 = (max_vec3 + min_vec3) / 2.f;
-  auto radius_vec3 = max_vec3 - center_vec3;
-  current_aabb.set_center_point(center_vec3);
-  current_aabb.set_aabb_radius(radius_vec3);
-}
-
-void update_sphere(bounding_volume& current_sphere, const s_ptr<face>& new_face)
-{
-  // calc farthest point
-  int far_id = -1;
-  auto he = new_face->half_edge_;
-  auto far_dist2 = std::pow(current_sphere.get_sphere_radius(), 2);
-  if (auto dist = calc_dist(current_sphere.get_local_center_point(), he->get_vertex()->position_); dist > far_dist2 ){
-    far_dist2 = dist;
-    far_id = 0;
-  }
-  if (auto dist = calc_dist(current_sphere.get_local_center_point(), he->get_next()->get_vertex()->position_); dist > far_dist2 ){
-    far_dist2 = dist;
-    far_id = 1;
-  }
-  if (auto dist = calc_dist(current_sphere.get_local_center_point(), he->get_next()->get_next()->get_vertex()->position_); dist > far_dist2 ){
-    far_dist2 = dist;
-    far_id = 2;
-  }
-
-  if (far_id == -1) return;
-
-  vec3d new_position;
-  for (int i = 0; i < far_id; i++) {
-    he = he->get_next();
-  }
-  new_position = he->get_vertex()->position_;
-
-  // compute new center and radius
-  auto center = current_sphere.get_local_center_point();
-  auto radius = current_sphere.get_sphere_radius();
-  auto new_dir = (new_position - center).normalized();
-  auto opposite = center - radius * new_dir;
-  auto new_center = 0.5f * (new_position + opposite);
-  current_sphere.set_center_point(new_center);
-
-  auto new_radius = std::sqrt(calc_dist(new_center, new_position));
-  current_sphere.set_sphere_radius(new_radius);
 }
 
 void separation_helper::update_adjoining_face_map(face_map& adjoining_face_map, const s_ptr<face>& fc)
@@ -263,48 +325,6 @@ s_ptr<face> choose_next_face_from_adjoining(const face_map& fc_map, const separa
       ret = fc_kv.second;
   }
   return ret;
-}
-
-template<bv_type type>
-std::vector<s_ptr<mesh_model<type>>> separate_greedy(const s_ptr<separation_helper>& helper)
-{
-  std::vector<s_ptr<mesh_model<type>>> meshlets;
-  auto crtr = helper->get_criterion();
-  auto curr_f_id = helper->get_random_remaining_face_id();
-  const auto& curr_f = helper->get_face(curr_f_id);
-
-  while (!helper->all_face_is_registered()) {
-    // compute each meshlet
-    // init objects
-    auto ml = mesh_model<type>::create();
-    auto bv = helper->create_bv_from_single_face<type>(curr_f);
-
-    face_id_set adjoining_face_ids {curr_f_id};
-
-    while (ml->get_vertex_count() < graphics::meshlet_constants::MAX_VERTEX_COUNT
-           && ml->get_face_count() < graphics::meshlet_constants::MAX_PRIMITIVE_COUNT
-           && adjoining_face_ids.size() != 0) {
-
-      // algorithm dependent part
-      curr_f_id = choose_best_face_id(adjoining_face_ids, *bv);
-
-      // update each object
-      add_face_to_meshlet(current_face, ml);
-      if (crtr == mesh_separation::criterion::MINIMIZE_AABB)
-        update_aabb(*bv, current_face);
-      if (crtr == mesh_separation::criterion::MINIMIZE_BOUNDING_SPHERE)
-        update_sphere(*bv, current_face);
-      helper->update_adjoining_face_map(adjoining_face_map, current_face);
-      helper->remove_face(current_face->id_);
-    }
-    ml->set_bounding_volume(std::move(bv));
-    meshlets.emplace_back(ml);
-    current_face = choose_next_face_from_adjoining(adjoining_face_map, *helper);
-    if (current_face == nullptr)
-      current_face = helper->get_random_remaining_face();
-  }
-
-  return meshlets;
 }
 
 //template<typename T>
