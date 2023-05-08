@@ -25,10 +25,6 @@ DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
 
     static u_ptr<static_meshlet> create_from_file(device& device, std::string filename);
 
-    void bind(
-      VkCommandBuffer               command_buffer,
-      std::vector<VkDescriptorSet>  external_desc_set,
-      VkPipelineLayout              pipeline_layout);
     void draw(VkCommandBuffer  command_buffer);
 
     // getter
@@ -38,6 +34,8 @@ DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
     inline void* get_meshlets_data()     { return meshlets_.data(); }
     inline uint32_t get_meshlets_count() { return meshlet_count_; }
     std::vector<VkDescriptorSetLayout> get_raw_desc_layouts() const;
+
+    const std::vector<VkDescriptorSet> get_desc_sets() const { return desc_sets_; }
 
     static std::vector<u_ptr<desc_layout>> default_desc_layouts(device& _device);
 

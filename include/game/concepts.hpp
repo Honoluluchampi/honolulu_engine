@@ -18,7 +18,7 @@ class device;
 
 template <typename T>
 concept GraphicsModel =
-requires(T a, VkCommandBuffer cb) { a.bind(cb); a.draw(cb); } &&
+requires(T a, VkCommandBuffer cb) { a.draw(cb); } &&
 requires(const T a) { T::get_shading_type(); a.is_textured(); };
 
 }

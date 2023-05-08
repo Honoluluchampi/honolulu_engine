@@ -39,32 +39,6 @@ u_ptr<static_meshlet> static_meshlet::create_from_file(hnll::graphics::device &d
   return std::make_unique<static_meshlet>(device, mesh->move_raw_vertices(), std::move(meshlets));
 }
 
-void static_meshlet::bind(
-  VkCommandBuffer              _command_buffer,
-  std::vector<VkDescriptorSet> _external_desc_set,
-  VkPipelineLayout             _pipeline_layout)
-{
-  // prepare desc sets
-  std::vector<VkDescriptorSet> desc_sets;
-  for (const auto& set : _external_desc_set) {
-    desc_sets.push_back(set);
-  }
-  for (const auto& set : desc_sets_) {
-    desc_sets.push_back(set);
-  }
-
-  vkCmdBindDescriptorSets(
-    _command_buffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    _pipeline_layout,
-    0,
-    static_cast<uint32_t>(desc_sets.size()),
-    desc_sets.data(),
-    0,
-    nullptr
-  );
-}
-
 void static_meshlet::draw(VkCommandBuffer _command_buffer)
 {
   // draw
