@@ -3,7 +3,6 @@
 #include <geometry/primitives.hpp>
 #include <geometry/he_mesh.hpp>
 #include <geometry/bounding_volume.hpp>
-#include <geometry/intersection.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/graphics_models/static_meshlet.hpp>
 #include <graphics/utils.hpp>

@@ -51,7 +51,7 @@ DEFINE_GRAPHICS_MODEL(static_meshlet, utils::shading_type::MESHLET)
     device& device_;
     std::vector<vertex>  raw_vertices_;
     std::vector<meshletBS> meshlets_;
-    u_ptr<desc_pool>                desc_pool_;
+    s_ptr<desc_pool>                desc_pool_;
     std::vector<u_ptr<buffer>>      desc_buffers_;
     std::vector<u_ptr<desc_layout>> desc_layouts_;
     std::vector<VkDescriptorSet>    desc_sets_;

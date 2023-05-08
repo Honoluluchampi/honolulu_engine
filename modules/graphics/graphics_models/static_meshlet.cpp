@@ -4,6 +4,7 @@
 #include <graphics/desc_set.hpp>
 #include <graphics/utils.hpp>
 #include <geometry/mesh_separation.hpp>
+#include <geometry/he_mesh.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -11,7 +12,7 @@
 
 namespace hnll::graphics {
 
-static_meshlet::static_meshlet(device& device, std::vector<vertex> &&raw_vertices, std::vector<meshlet> &&meshlets)
+static_meshlet::static_meshlet(device& device, std::vector<vertex> &&raw_vertices, std::vector<meshletBS> &&meshlets)
  : device_(device)
 {
   raw_vertices_ = std::move(raw_vertices);
@@ -22,20 +23,20 @@ static_meshlet::static_meshlet(device& device, std::vector<vertex> &&raw_vertice
 
 u_ptr<static_meshlet> static_meshlet::create_from_file(hnll::graphics::device &device, std::string filename)
 {
-  std::vector<meshlet> meshlets;
+  std::vector<meshletBS> meshlets;
 
   auto filepath = utils::get_full_path(filename);
 
   // prepare required data
-//  auto geometry_model = geometry::mesh_model::create_from_obj_file(filepath);
-//
-//  // if model's cache exists
-//  meshlets = geometry::mesh_separation::load_meshlet_cache(filename);
-//  if (meshlets.size() == 0) {
-//    meshlets = geometry::mesh_separation::separate_into_graphics_meshlet(geometry_model, filename);
-//  }
-//
-//  return std::make_unique<static_meshlet>(device, geometry_model->move_raw_vertices(), std::move(meshlets));
+  auto mesh = geometry::he_mesh::create_from_obj_file(filepath);
+
+  // if model's cache exists
+  meshlets = geometry::mesh_separation::load_meshlet_cache(filename);
+  if (meshlets.size() == 0) {
+    meshlets = geometry::mesh_separation::separate_meshletBS(*mesh, filename);
+  }
+
+  return std::make_unique<static_meshlet>(device, mesh->move_raw_vertices(), std::move(meshlets));
 }
 
 void static_meshlet::bind(
@@ -105,7 +106,7 @@ void static_meshlet::create_desc_buffers()
 
   desc_buffers_[MESHLET_DESC_ID] = graphics::buffer::create_with_staging(
     device_,
-    sizeof(meshlet),
+    sizeof(meshletBS),
     meshlets_.size(),
     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -120,7 +121,6 @@ void static_meshlet::create_desc_set_layouts()
   for (int i = 0; i < DESC_SET_COUNT; i++) {
     desc_layouts_[i] = desc_layout::builder(device_)
       .add_binding(
-        0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         VK_SHADER_STAGE_TASK_BIT_NV | VK_SHADER_STAGE_MESH_BIT_NV)
       .build();
@@ -164,7 +164,6 @@ std::vector<u_ptr<desc_layout>> static_meshlet::default_desc_layouts(device& dev
   for (int i = 0; i < DESC_SET_COUNT; i++) {
     ret[i] = desc_layout::builder(device)
       .add_binding(
-        0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         VK_SHADER_STAGE_TASK_BIT_NV | VK_SHADER_STAGE_MESH_BIT_NV)
       .build();
