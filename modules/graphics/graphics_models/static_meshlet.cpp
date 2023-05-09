@@ -39,7 +39,7 @@ u_ptr<static_meshlet> static_meshlet::create_from_file(hnll::graphics::device &d
   return std::make_unique<static_meshlet>(device, mesh->move_raw_vertices(), std::move(meshlets));
 }
 
-void static_meshlet::draw(VkCommandBuffer _command_buffer)
+void static_meshlet::draw(VkCommandBuffer _command_buffer) const
 {
   // draw
   vkCmdDrawMeshTasksNV(

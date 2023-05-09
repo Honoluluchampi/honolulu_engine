@@ -52,9 +52,10 @@ void static_meshlet_shading_system::setup()
   // global
   desc_set_layouts.emplace_back(graphics_engine_core::get_global_desc_layout());
   // task desc
-  desc_set_layouts.emplace_back(task_desc_sets_->get_layout());
+  desc_set_layouts.emplace_back(desc_layout_->get_descriptor_set_layout());
   // meshlet
-  auto mesh_descs = graphics::meshlet_model::default_desc_set_layouts(device_);
+  auto mesh_descs = graphics::static_meshlet::default_desc_layouts(device_);
+
   for (auto&& layout : mesh_descs) {
     desc_set_layouts.emplace_back(std::move(layout->get_descriptor_set_layout()));
   }
@@ -81,20 +82,22 @@ void static_meshlet_shading_system::setup()
 
 void static_meshlet_shading_system::setup_task_desc()
 {
-  task_desc_sets_ = graphics::desc_set::create(device_);
-
   // pool
-  task_desc_sets_->create_pool(
-    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT,
-    graphics::swap_chain::MAX_FRAMES_IN_FLIGHT,
-    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-  );
+  task_desc_pool_ = graphics::desc_pool::builder(device_)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, utils::FRAMES_IN_FLIGHT)
+    .build();
 
-  // layout
-  task_desc_sets_->add_layout(VK_SHADER_STAGE_TASK_BIT_NV);
+  // desc sets
+  const std::vector<graphics::binding_info> bindings = {
+    { VK_SHADER_STAGE_TASK_BIT_NV, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }
+  };
+
+  graphics::desc_set_info set_info { bindings };
+
+  desc_layout_ = graphics::desc_layout::create_from_bindings(device_, bindings);
 
   // buffer
-  for (int i = 0; i < graphics::swap_chain::MAX_FRAMES_IN_FLIGHT; i++) {
+  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     // buffer has no actual data at this point
     auto new_buffer = graphics::buffer::create(
       device_,
@@ -104,46 +107,44 @@ void static_meshlet_shading_system::setup_task_desc()
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
       nullptr
     );
-    task_desc_sets_->add_buffer(std::move(new_buffer));
+    task_desc_sets_->set_buffer(0, 0, i, std::move(new_buffer));
   }
 
-  task_desc_sets_->build_sets();
+  task_desc_sets_->build();
 }
 
-void static_meshlet_shading_system::render(const utils::frame_info &frame_info)
+void static_meshlet_shading_system::render(const utils::graphics_frame_info &frame_info)
 {
-  auto command_buffer = frame_info.command_buffer;
-  pipeline_->bind(command_buffer);
+  set_current_command_buffer(frame_info.command_buffer);
+  bind_pipeline();
 
   for (auto &target: targets_) {
-    auto obj = dynamic_cast<meshlet_component *>(&target.second);
+    const auto& obj = target.second;
 
+    // update push
     meshlet_push_constant push{};
-    push.model_matrix = obj->get_transform().transform_mat4().cast<float>();
-    push.normal_matrix = obj->get_transform().normal_matrix().cast<float>();
-
-    // task desc set update
-
-    vkCmdPushConstants(
-      command_buffer,
-      pipeline_layout_,
-      VK_SHADER_STAGE_TASK_BIT_NV | VK_SHADER_STAGE_MESH_BIT_NV | VK_SHADER_STAGE_FRAGMENT_BIT,
-      0,
-      sizeof(meshlet_push_constant),
-      &push
-    );
+    push.model_matrix = obj.get_transform().transform_mat4().cast<float>();
+    push.normal_matrix = obj.get_transform().normal_matrix().cast<float>();
+    bind_push(push, VK_SHADER_STAGE_TASK_BIT_NV | VK_SHADER_STAGE_MESH_BIT_NV | VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // update task desc set
     size_t index = frame_info.frame_index;
-    task_desc_sets_->write_to_buffer(index, (void *) &frame_info.view_frustum);
-    task_desc_sets_->flush_buffer(index);
+    task_desc_sets_->write_to_buffer(0, 0, index, (void *) &frame_info.view_frustum);
+    task_desc_sets_->flush_buffer(0, 0, index);
 
-    obj->bind_and_draw(
-      command_buffer,
-      {frame_info.global_descriptor_set, task_desc_sets_->get_set(frame_info.frame_index)},
-      pipeline_layout_
-    );
+    const auto& mesh_desc_sets = obj.get_model().get_desc_sets();
+
+    std::vector<VkDescriptorSet> vk_desc_sets = {
+      frame_info.global_descriptor_set,
+      task_desc_sets_->get_vk_desc_sets(frame_info.frame_index)[0],
+      mesh_desc_sets[0],
+      mesh_desc_sets[1]
+    };
+
+    bind_desc_sets(vk_desc_sets);
+
+    obj.draw(frame_info.command_buffer);
   }
 }
 
-} // namespace hnll::game
+}} // namespace hnll::game

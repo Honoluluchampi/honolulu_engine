@@ -34,7 +34,7 @@ class renderable_comp
     template <typename... T>
     inline void bind(VkCommandBuffer cb, T... args) { model_.bind(cb, args...); }
     template <typename... T>
-    inline void draw(VkCommandBuffer cb, T... args) { model_.draw(cb, args...); }
+    inline void draw(VkCommandBuffer cb, T... args) const { model_.draw(cb, args...); }
 
     // getter
     inline rc_id get_rc_id() const { return rc_id_; }
@@ -42,6 +42,7 @@ class renderable_comp
     inline VkDescriptorSet get_texture_desc_set()
     { return model_.get_texture_desc_set(); }
     inline const utils::transform& get_transform() const { return transform_; }
+    inline const M& get_model() const { return model_; }
 
     bool is_textured() const { return model_.is_textured(); }
 
