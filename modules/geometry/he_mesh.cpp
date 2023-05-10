@@ -1,7 +1,6 @@
 // hnll
 #include <geometry/he_mesh.hpp>
 #include <geometry/primitives.hpp>
-#include <geometry/bounding_volume.hpp>
 #include <graphics/utils.hpp>
 #include <graphics/frame_anim_utils.hpp>
 

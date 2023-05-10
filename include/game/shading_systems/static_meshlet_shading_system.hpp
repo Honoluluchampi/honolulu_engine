@@ -12,6 +12,7 @@ using static_meshlet_comp = renderable_comp<graphics::static_meshlet>;
 DEFINE_SHADING_SYSTEM(static_meshlet_shading_system, static_meshlet_comp)
 {
   public:
+    DEFAULT_SHADING_SYSTEM_CTOR(static_meshlet_shading_system, static_meshlet_comp);
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
   private:

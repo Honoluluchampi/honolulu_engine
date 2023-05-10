@@ -15,31 +15,7 @@ struct meshlet_push_constant
   mat4 normal_matrix = mat4::Identity();
 };
 
-//void static_meshlet::bind(
-//  VkCommandBuffer              _command_buffer,
-//  std::vector<VkDescriptorSet> _external_desc_set,
-//  VkPipelineLayout             _pipeline_layout)
-//{
-//  // prepare desc sets
-//  std::vector<VkDescriptorSet> desc_sets;
-//  for (const auto& set : _external_desc_set) {
-//    desc_sets.push_back(set);
-//  }
-//  for (const auto& set : desc_sets_) {
-//    desc_sets.push_back(set);
-//  }
-//
-//  vkCmdBindDescriptorSets(
-//    _command_buffer,
-//    VK_PIPELINE_BIND_POINT_GRAPHICS,
-//    _pipeline_layout,
-//    0,
-//    static_cast<uint32_t>(desc_sets.size()),
-//    desc_sets.data(),
-//    0,
-//    nullptr
-//  );
-//}
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(static_meshlet_shading_system, static_meshlet_comp);
 
 void static_meshlet_shading_system::setup()
 {
