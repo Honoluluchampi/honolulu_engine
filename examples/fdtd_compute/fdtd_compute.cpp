@@ -19,8 +19,8 @@ DEFINE_ENGINE(fdtd_compute)
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        .x_len = 2.2f,
-        .y_len = 2.2f,
+        .x_len = 10.f,
+        .y_len = 10.f,
         .sound_speed = 10.f,
         .kappa = 0.1f,
         .rho = 0.001f,
