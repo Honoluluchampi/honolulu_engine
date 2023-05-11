@@ -3,6 +3,7 @@
 #include <physics/fdtd2_field.hpp>
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
+#include "common/fdtd_struct.h"
 
 namespace hnll::physics {
 
@@ -71,9 +72,9 @@ void fdtd2_field::setup_desc_sets()
   int press_grid_count = x_grid_ * y_grid_;
   int vx_grid_count = (x_grid_ + 1) * y_grid_;
   int vy_grid_count = x_grid_ * (y_grid_ + 1);
-  std::vector<float> initial_press(press_grid_count, 0.f);
-  std::vector<float> initial_vx(vx_grid_count, 0.f);
-  std::vector<float> initial_vy(vy_grid_count, 0.f);
+  std::vector<particle> initial_press(press_grid_count, {.value = 0.f, .state =  1});
+  std::vector<particle> initial_vx(vx_grid_count, {.value = 0.f, .state = 1});
+  std::vector<particle> initial_vy(vy_grid_count, {.value = 0.f, .state = 1});
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
@@ -83,21 +84,21 @@ void fdtd2_field::setup_desc_sets()
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * initial_press.size(),
+      sizeof(particle) * initial_press.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_press.data());
     auto vx_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * initial_vx.size(),
+      sizeof(particle) * initial_vx.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_vx.data());
     auto vy_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * initial_vy.size(),
+      sizeof(particle) * initial_vy.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

@@ -9,21 +9,22 @@
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(graphics_shaders, physics::fdtd2_shading_system);
-SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd2_compute_shader);
+SELECT_SHADING_SYSTEM(physics::fdtd2_shading_system);
+SELECT_COMPUTE_SHADER(physics::fdtd2_compute_shader);
+SELECT_ACTOR();
 
-DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compute_shaders)
+DEFINE_ENGINE(fdtd_compute)
 {
   public:
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        100.f,
-        100.f,
-        10.f,
-        0.1f,
-        0.001f,
-        100.f
+        .x_len = 2.2f,
+        .y_len = 2.2f,
+        .sound_speed = 10.f,
+        .kappa = 0.1f,
+        .rho = 0.001f,
+        .f_max = 100.f
       };
 
       field_ = physics::fdtd2_field::create(info);
