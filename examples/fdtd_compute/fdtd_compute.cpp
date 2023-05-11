@@ -19,12 +19,14 @@ DEFINE_ENGINE(fdtd_compute)
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        .x_len = 10.f,
-        .y_len = 10.f,
-        .sound_speed = 10.f,
-        .kappa = 0.01f,
-        .rho = 0.1f,
-        .f_max = 100.f
+        .x_len = x_len_,
+        .y_len = y_len_,
+        .x_impulse = x_impulse_,
+        .y_impulse = y_impulse_,
+        .sound_speed = sound_speed_,
+        .kappa = kappa_,
+        .rho = rho_,
+        .f_max = f_max_
       };
 
       field_ = physics::fdtd2_field::create(info);
@@ -40,6 +42,8 @@ DEFINE_ENGINE(fdtd_compute)
 
       ImGui::SliderFloat("x length", &x_len_, 1.f, 100.f);
       ImGui::SliderFloat("y length", &y_len_, 1.f, 100.f);
+      ImGui::SliderFloat("x impulse", &x_impulse_, 1.f, 100.f);
+      ImGui::SliderFloat("y impulse", &y_impulse_, 1.f, 100.f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 310.f);
       ImGui::SliderFloat("kappa", &kappa_, 0.f, 10.f);
       ImGui::SliderFloat("rho", &rho_, 0.f, 0.1f);
@@ -50,6 +54,8 @@ DEFINE_ENGINE(fdtd_compute)
           {
             x_len_,
             y_len_,
+            x_impulse_,
+            y_impulse_,
             sound_speed_,
             kappa_,
             rho_,
@@ -63,12 +69,14 @@ DEFINE_ENGINE(fdtd_compute)
   private:
     u_ptr<physics::fdtd2_field> field_;
 
-    float x_len_       = 10.f;
-    float y_len_       = 10.f;
-    float sound_speed_ = 10.f;
-    float kappa_       = 0.01f;
-    float rho_         = 0.1f;
-    float f_max_       = 100.f;
+    float x_len_       = 100.f;
+    float y_len_       = 100.f;
+    float x_impulse_   = 50.f;
+    float y_impulse_   = 50.f;
+    float sound_speed_ = 310.f;
+    float kappa_       = 10.f;
+    float rho_         = 0.05f;
+    float f_max_       = 120.f;
 };
 
 } // namespace hnll
