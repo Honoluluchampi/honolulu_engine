@@ -38,9 +38,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.y_len = target_->get_y_len();
     push.v_fac = dt * target_->get_v_fac();
     push.p_fac = dt * target_->get_p_fac();
-    push.reset = target_->get_restart();
 
-    target_->set_restart(std::max(0, push.reset - 1));
     target_->add_duration(dt);
 
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
@@ -48,8 +46,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     auto desc_sets = target_->get_frame_desc_sets();
     bind_desc_sets(command, desc_sets);
 
-    auto x = (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x;
-    auto y = (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y;
     dispatch_command(
       command,
       (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,

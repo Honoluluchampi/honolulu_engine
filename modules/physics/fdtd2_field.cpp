@@ -6,11 +6,15 @@
 
 namespace hnll::physics {
 
+//#include "common/fdtd_struct.h"
+struct particle {
+  int state;
+  alignas(16) vec3 values; // x : vx, y : vy, z : pressure
+//  int state; // 0 : fixed, 1 : free
+};
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
@@ -34,7 +38,7 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
   f_max_ = info.f_max;
 
   compute_constants();
-  setup_desc_sets();
+  setup_desc_sets(info);
 }
 
 fdtd2_field::~fdtd2_field()
@@ -52,7 +56,7 @@ void fdtd2_field::compute_constants()
   y_grid_ = std::ceil(y_len_ / grid_size_);
 }
 
-void fdtd2_field::setup_desc_sets()
+void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 3)
@@ -68,44 +72,27 @@ void fdtd2_field::setup_desc_sets()
     frame_count_);
 
   // initial data
-  int press_grid_count = x_grid_ * y_grid_;
-  int vx_grid_count = (x_grid_ + 1) * y_grid_;
-  int vy_grid_count = x_grid_ * (y_grid_ + 1);
-  std::vector<float> initial_press(press_grid_count, 0.f);
-  std::vector<float> initial_vx(vx_grid_count, 0.f);
-  std::vector<float> initial_vy(vy_grid_count, 0.f);
+  int grid_count = x_grid_ * y_grid_;
+  std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f}});
+
+  int impulse_grid_x = info.x_impulse / info.x_len * x_grid_;
+  int impulse_grid_y = info.y_impulse / info.y_len * y_grid_;
+  int impulse_grid_id = impulse_grid_x + impulse_grid_y * x_grid_;
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
-    int center_grid_id = x_grid_ / 2 + y_grid_ / 2 * x_grid_;
-//    initial_press[center_grid_id] = 500.f;
+    initial_grid[impulse_grid_id].values.z() = 128.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * initial_press.size(),
+      sizeof(particle) * initial_grid.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_press.data());
-    auto vx_buffer = graphics::buffer::create_with_staging(
-      device_,
-      sizeof(float) * initial_vx.size(),
-      1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_vx.data());
-    auto vy_buffer = graphics::buffer::create_with_staging(
-      device_,
-      sizeof(float) * initial_vy.size(),
-      1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_vy.data());
+      initial_grid.data());
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
-    desc_sets_->set_buffer(0, 1, i, std::move(vx_buffer));
-    desc_sets_->set_buffer(0, 2, i, std::move(vy_buffer));
   }
 
   desc_sets_->build();

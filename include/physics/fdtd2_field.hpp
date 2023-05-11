@@ -9,6 +9,8 @@ namespace hnll::physics {
 struct fdtd_info {
   float x_len;
   float y_len;
+  float x_impulse;
+  float y_impulse;
   float sound_speed;
   float kappa;
   float rho;
@@ -34,19 +36,16 @@ class fdtd2_field
     float get_v_fac() const { return 1 / (rho_ * grid_size_);  }
     float get_p_fac() const { return kappa_ / grid_size_; }
     float get_f_max() const { return f_max_; }
-    int get_restart() const { return restart_; }
     float get_duration() const { return duration_; }
 
     // setter
-    void set_restart(int state) { restart_ = state; }
-    void reset_duration() { duration_ = 0.f; }
     void add_duration(float dt) { duration_ += dt; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 
   private:
     void compute_constants();
-    void setup_desc_sets();
+    void setup_desc_sets(const fdtd_info& info);
 
     graphics::device& device_;
     u_ptr<graphics::desc_sets> desc_sets_;
@@ -68,7 +67,6 @@ class fdtd2_field
 
     uint32_t field_id_;
 
-    int restart_ = 2;
     float duration_ = 0.f;
 };
 } // namespace hnll::physics

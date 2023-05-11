@@ -13,5 +13,4 @@ struct fdtd2_push {
   // physical
   float p_fac;
   float v_fac;
-  int reset;
 };

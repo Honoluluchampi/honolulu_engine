@@ -3,52 +3,38 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "../../common/fdtd2_config.h"
+#include "../../common/fdtd_struct.h"
 
 layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
 
 // pressure
-layout(std430, set = 0, binding = 0) buffer CurrentP { float curr_p[]; };
-layout(std430, set = 0, binding = 1) buffer CurrentVx { float curr_vx[]; };
-layout(std430, set = 0, binding = 2) buffer CurrentVy { float curr_vy[]; };
-
-layout(std430, set = 1, binding = 0) readonly buffer PreviousP { float prev_p[]; };
-layout(std430, set = 1, binding = 1) readonly buffer PreviousVx { float prev_vx[]; };
-layout(std430, set = 1, binding = 2) readonly buffer PreviousVy { float prev_vy[]; };
+layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
+layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
 
 // push constants
 layout(push_constant) uniform Push { fdtd2_push push; };
 
-uint p_id(uint x, uint y) { return x + y * push.x_grid; }
-uint vx_id(uint x, uint y) { return (x + 1) + y * (push.x_grid + 1); }
-uint vy_id(uint x, uint y) { return x + (y + 1) * push.x_grid; }
+// grid id
+uint g_id(uint x, uint y) { return x + y * push.x_grid; }
 
 void main() {
-  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * gl_WorkGroupSize.x;
-  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * gl_WorkGroupSize.y;
-
-  if (push.reset >= 1) {
-    curr_p[p_id(i, j)] = 0.f;
-    curr_vx[vx_id(i, j)] = 0.f;
-    curr_vy[vy_id(i, j)] = 0.f;
-    if (i == push.x_grid / 2 && j == push.y_grid / 2)
-      curr_p[p_id(i, j)] = 128.f;
-    return;
-  }
+  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
+  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
 
   // update particle velocity
   // neumann bc
   if (i < push.x_grid - 1) {
-    curr_vx[vx_id(i, j)] = prev_vx[vx_id(i, j)] - push.v_fac *
-                          (prev_p[p_id(i + 1, j)] - prev_p[p_id(i, j)]); }
+    curr_p[g_id(i, j)].values.x = prev_p[g_id(i, j)].values.x - push.v_fac *
+                          (prev_p[g_id(i + 1, j)].values.z - prev_p[g_id(i, j)].values.z); }
   if (j < push.y_grid - 1) {
-    curr_vy[vy_id(i, j)] = prev_vy[vy_id(i, j)] - push.v_fac *
-                          (prev_p[p_id(i, j + 1)] - prev_p[p_id(i, j)]); }
+    curr_p[g_id(i, j)].values.y = prev_p[g_id(i, j)].values.y - push.v_fac *
+                          (prev_p[g_id(i, j + 1)].values.z - prev_p[g_id(i, j)].values.z); }
 
   barrier();
-  if (i < push.x_grid && j < push.y_grid) {
+  if (i < push.x_grid && j < push.y_grid && i > 0 && j > 0) {
     // update pressure
-    curr_p[p_id(i, j)] = prev_p[p_id(i, j)] - push.p_fac *
-                        (curr_vx[vx_id(i, j)] - curr_vx[vx_id(i - 1, j)] +
-                         curr_vy[vy_id(i, j)] - curr_vy[vy_id(i, j - 1)]);
+    curr_p[g_id(i, j)].values.z = prev_p[g_id(i, j)].values.z - push.p_fac *
+                        (curr_p[g_id(i, j)].values.x - curr_p[g_id(i - 1, j)].values.x +
+                         curr_p[g_id(i, j)].values.y - curr_p[g_id(i, j - 1)].values.y);
   }
 }

@@ -9,21 +9,24 @@
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(graphics_shaders, physics::fdtd2_shading_system);
-SELECT_COMPUTE_SHADER(compute_shaders, physics::fdtd2_compute_shader);
+SELECT_SHADING_SYSTEM(physics::fdtd2_shading_system);
+SELECT_COMPUTE_SHADER(physics::fdtd2_compute_shader);
+SELECT_ACTOR();
 
-DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compute_shaders)
+DEFINE_ENGINE(fdtd_compute)
 {
   public:
     fdtd_compute()
     {
       physics::fdtd_info info = {
-        100.f,
-        100.f,
-        10.f,
-        0.1f,
-        0.001f,
-        100.f
+        .x_len = x_len_,
+        .y_len = y_len_,
+        .x_impulse = x_impulse_,
+        .y_impulse = y_impulse_,
+        .sound_speed = sound_speed_,
+        .kappa = kappa_,
+        .rho = rho_,
+        .f_max = f_max_
       };
 
       field_ = physics::fdtd2_field::create(info);
@@ -36,15 +39,44 @@ DEFINE_ENGINE_WITH_COMPUTE(fdtd_compute, graphics_shaders, game::no_actor, compu
       ImGui::Text("x grid : %d", field_->get_x_grid());
       ImGui::Text("y grid : %d", field_->get_y_grid());
       ImGui::Text("duration : %f", field_->get_duration());
+
+      ImGui::SliderFloat("x length", &x_len_, 1.f, 100.f);
+      ImGui::SliderFloat("y length", &y_len_, 1.f, 100.f);
+      ImGui::SliderFloat("x impulse", &x_impulse_, 1.f, 100.f);
+      ImGui::SliderFloat("y impulse", &y_impulse_, 1.f, 100.f);
+      ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 310.f);
+      ImGui::SliderFloat("kappa", &kappa_, 0.f, 10.f);
+      ImGui::SliderFloat("rho", &rho_, 0.f, 0.1f);
+      ImGui::SliderFloat("max freq", &f_max_, 0.f, 1000.f);
+
       if (ImGui::Button("restart")) {
-        field_->set_restart(2);
-        field_->reset_duration();
+        field_ = physics::fdtd2_field::create(
+          {
+            x_len_,
+            y_len_,
+            x_impulse_,
+            y_impulse_,
+            sound_speed_,
+            kappa_,
+            rho_,
+            f_max_
+          }
+          );
       }
       ImGui::End();
     }
 
   private:
     u_ptr<physics::fdtd2_field> field_;
+
+    float x_len_       = 100.f;
+    float y_len_       = 100.f;
+    float x_impulse_   = 50.f;
+    float y_impulse_   = 50.f;
+    float sound_speed_ = 310.f;
+    float kappa_       = 10.f;
+    float rho_         = 0.05f;
+    float f_max_       = 120.f;
 };
 
 } // namespace hnll
