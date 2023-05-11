@@ -33,7 +33,7 @@ DEFINE_ENGINE(fdtd_compute)
     void update_this(float dt)
     {
       ImGui::Begin("stats");
-      ImGui::Text("fps : %d", int(1.f/dt))
+      ImGui::Text("fps : %d", int(1.f/dt));
       ImGui::Text("x grid : %d", field_->get_x_grid());
       ImGui::Text("y grid : %d", field_->get_y_grid());
       ImGui::Text("duration : %f", field_->get_duration());
@@ -41,13 +41,11 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("x length", &x_len_, 1.f, 100.f);
       ImGui::SliderFloat("y length", &y_len_, 1.f, 100.f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 310.f);
-      ImGui::SliderFloat("kappa", &kappa_, 0.f, 1.f);
-      ImGui::SliderFloat("rho", &rho_, 0.f, 1.f);
+      ImGui::SliderFloat("kappa", &kappa_, 0.f, 10.f);
+      ImGui::SliderFloat("rho", &rho_, 0.f, 0.1f);
       ImGui::SliderFloat("max freq", &f_max_, 0.f, 1000.f);
 
       if (ImGui::Button("restart")) {
-//        field_->set_restart(2);
-//        field_->reset_duration();
         field_ = physics::fdtd2_field::create(
           {
             x_len_,

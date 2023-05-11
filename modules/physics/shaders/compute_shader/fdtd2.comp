@@ -21,18 +21,6 @@ void main() {
   uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
   uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
 
-//  if (push.reset >= 1) {
-//    curr_p[p_id(i, j)].value = 0.f;
-//    curr_vx[vx_id(i, j)].value = 0.f;
-//    curr_vy[vy_id(i, j)].value = 0.f;
-//    if (i == push.x_grid / 2 && j == push.y_grid / 2)
-//      curr_p[p_id(i, j)].value = 128.f;
-//
-//    if (i == push.x_grid / 4 && j == push.y_grid / 4)
-//      curr_p[p_id(i, j)].value = -16.f;
-//    return;
-//  }
-
   // update particle velocity
   // neumann bc
   if (i < push.x_grid - 1) {
@@ -43,10 +31,10 @@ void main() {
                           (prev_p[g_id(i, j + 1)].values.z - prev_p[g_id(i, j)].values.z); }
 
   barrier();
-//  if (i < push.x_grid && j < push.y_grid && i > 0 && j > 0) {
+  if (i < push.x_grid && j < push.y_grid && i > 0 && j > 0) {
     // update pressure
     curr_p[g_id(i, j)].values.z = prev_p[g_id(i, j)].values.z - push.p_fac *
                         (curr_p[g_id(i, j)].values.x - curr_p[g_id(i - 1, j)].values.x +
                          curr_p[g_id(i, j)].values.y - curr_p[g_id(i, j - 1)].values.y);
-//  }
+  }
 }
