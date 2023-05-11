@@ -8,6 +8,7 @@ namespace hnll::physics {
 
 //#include "common/fdtd_struct.h"
 struct particle {
+  int state;
   alignas(16) vec3 values; // x : vx, y : vy, z : pressure
 //  int state; // 0 : fixed, 1 : free
 };
