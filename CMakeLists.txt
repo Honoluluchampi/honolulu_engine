@@ -32,9 +32,9 @@ target_link_libraries(hnll_engine PUBLIC
     hnll_gui
     hnll_physics
     hnll_audio
-    hnll_utils
     hnll_graphics
     hnll_geometry
+    hnll_utils
     libvulkan.so.1.3.224
     glfw
 )

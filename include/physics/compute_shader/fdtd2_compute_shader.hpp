@@ -22,6 +22,5 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
 
   private:
     static fdtd2_field* target_;
-    u_ptr<graphics::timeline_semaphore> semaphore_;
 };
 } // namespace hnll::physics

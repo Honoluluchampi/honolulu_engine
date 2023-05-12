@@ -4,6 +4,7 @@ set(SOURCES
     renderer.cpp
     swap_chain.cpp
     pipeline.cpp
+    compute_pipeline.cpp
     desc_set.cpp
     buffer.cpp
     utils.cpp
