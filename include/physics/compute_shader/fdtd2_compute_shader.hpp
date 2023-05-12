@@ -2,6 +2,7 @@
 
 // hnll
 #include <game/compute_shader.hpp>
+#include <graphics/timeline_semaphore.hpp>
 
 namespace hnll::physics {
 
@@ -21,5 +22,6 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
 
   private:
     static fdtd2_field* target_;
+    u_ptr<graphics::timeline_semaphore> semaphore_;
 };
 } // namespace hnll::physics
