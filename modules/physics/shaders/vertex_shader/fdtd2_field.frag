@@ -18,7 +18,7 @@ layout (push_constant) uniform Push { fdtd2_frag_push push; };
 
 layout(std430, set = 0, binding = 0) readonly buffer CurrentP { particle curr_p[]; };
 
-uint g_id(int x, int y) { return x + y * push.x_grid; }
+uint g_id(int x, int y) { return (x + 1) + (y + 1) * (push.x_grid + 1); }
 
 void main()
 {

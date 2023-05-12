@@ -72,17 +72,18 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     frame_count_);
 
   // initial data
-  int grid_count = x_grid_ * y_grid_;
+  int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f}});
 
-  int impulse_grid_x = info.x_impulse / info.x_len * x_grid_;
-  int impulse_grid_y = info.y_impulse / info.y_len * y_grid_;
-  int impulse_grid_id = impulse_grid_x + impulse_grid_y * x_grid_;
+  int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
+  int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);
+  int impulse_grid_id = impulse_grid_x + impulse_grid_y * (x_grid_ + 1);
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
-    initial_grid[impulse_grid_id].values.z() = 128.f;
+    if (i == 1)
+      initial_grid[impulse_grid_id].values.z() = 128.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,

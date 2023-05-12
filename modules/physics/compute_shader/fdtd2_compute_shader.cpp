@@ -38,8 +38,9 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.y_len = target_->get_y_len();
     push.v_fac = dt * target_->get_v_fac();
     push.p_fac = dt * target_->get_p_fac();
+    push.reputation = static_cast<int>(info.dt / dt / 2);
 
-    target_->add_duration(dt);
+    target_->add_duration(dt * push.reputation * 2);
 
     bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
