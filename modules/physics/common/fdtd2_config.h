@@ -4,7 +4,6 @@ const int fdtd2_local_size_x = 32;
 const int fdtd2_local_size_y = 32;
 
 struct fdtd2_push {
-  int reputation;
   // grid count
   int x_grid;
   int y_grid;

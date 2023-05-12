@@ -38,20 +38,24 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.y_len = target_->get_y_len();
     push.v_fac = dt * target_->get_v_fac();
     push.p_fac = dt * target_->get_p_fac();
-    push.reputation = static_cast<int>(info.dt / dt / 2);
 
-    target_->add_duration(dt * push.reputation * 2);
+    auto reputation = static_cast<int>(info.dt / dt);
 
-    bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
+    target_->add_duration(dt * reputation);
 
-    auto desc_sets = target_->get_frame_desc_sets();
-    bind_desc_sets(command, desc_sets);
+    // update velocity and pressure
+    for (int i = 0; i < reputation; i++) {
+      bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
-    dispatch_command(
-      command,
-      (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-      (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-      1);
+      auto desc_sets = target_->get_frame_desc_sets();
+      bind_desc_sets(command, desc_sets);
+
+      dispatch_command(
+        command,
+        (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
+        (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
+        1);
+    }
   }
 }
 
