@@ -49,8 +49,8 @@ fdtd2_field::~fdtd2_field()
 
 void fdtd2_field::compute_constants()
 {
-  dt_ = 1 / (2 * f_max_);
-  grid_size_ = std::sqrt(2) * sound_speed_ * dt_;
+  grid_size_ = sound_speed_ / (2 * f_max_) / 10.f;
+  dt_ = grid_size_ / sound_speed_;
 
   x_grid_ = std::ceil(x_len_ / grid_size_);
   y_grid_ = std::ceil(y_len_ / grid_size_);

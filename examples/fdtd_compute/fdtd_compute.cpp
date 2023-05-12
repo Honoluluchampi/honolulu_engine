@@ -38,6 +38,8 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::Text("fps : %d", int(1.f/dt));
       ImGui::Text("x grid : %d", field_->get_x_grid());
       ImGui::Text("y grid : %d", field_->get_y_grid());
+      ImGui::Text("dt : %f", field_->get_dt());
+      ImGui::Text("grid size : %f", field_->get_grid_size());
       ImGui::Text("duration : %f", field_->get_duration());
 
       ImGui::SliderFloat("x length", &x_len_, 1.f, 100.f);
@@ -69,10 +71,10 @@ DEFINE_ENGINE(fdtd_compute)
   private:
     u_ptr<physics::fdtd2_field> field_;
 
-    float x_len_       = 100.f;
-    float y_len_       = 100.f;
-    float x_impulse_   = 50.f;
-    float y_impulse_   = 50.f;
+    float x_len_       = 10.f;
+    float y_len_       = 10.f;
+    float x_impulse_   = 5.f;
+    float y_impulse_   = 5.f;
     float sound_speed_ = 310.f;
     float kappa_       = 10.f;
     float rho_         = 0.05f;

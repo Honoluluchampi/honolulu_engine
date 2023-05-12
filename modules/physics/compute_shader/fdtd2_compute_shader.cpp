@@ -29,7 +29,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     auto &command = info.command_buffer;
     bind_pipeline(command);
 
-    float dt = 1 / (2 * target_->get_f_max());
+    float dt = target_->get_dt();
 
     fdtd2_push push;
     push.x_grid = target_->get_x_grid();
