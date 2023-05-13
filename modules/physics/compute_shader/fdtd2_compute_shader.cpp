@@ -12,14 +12,17 @@ namespace hnll::physics {
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
 
-DEFAULT_COMPUTE_SHADER_CTOR_IMPL(fdtd2_compute_shader);
-
-void fdtd2_compute_shader::setup()
+fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::compute_shader<fdtd2_compute_shader>(device)
 {
   desc_layout_ = graphics::desc_layout::create_from_bindings(device_, fdtd2_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
+
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2.comp.spv",
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_pressure_update.comp.spv",
+    { vk_layout, vk_layout });
+
+  velocity_pipeline_ = create_pipeline<fdtd2_push>(
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_velocity_update.comp.spv",
     { vk_layout, vk_layout });
 }
 
