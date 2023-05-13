@@ -2,6 +2,7 @@
 
 // hnll
 #include <graphics/desc_set.hpp>
+#include <game/actor.hpp>
 #include <utils/common_alias.hpp>
 
 namespace hnll::physics {
@@ -17,7 +18,7 @@ struct fdtd_info {
   float f_max;
 };
 
-class fdtd2_field
+DEFINE_PURE_ACTOR(fdtd2_field)
 {
   public:
     static u_ptr<fdtd2_field> create(const fdtd_info& info);

@@ -17,7 +17,7 @@
 // macro for crtp
 #define DEFINE_ENGINE(name) class name : public game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>
 #define SELECT_SHADING_SYSTEM(...) using selected_shading_systems = game::shading_system_list<__VA_ARGS__>
-#define SELECT_ACTOR(...)          using selected_actors = game::actor_list<__VA_ARGS__>
+#define SELECT_ACTOR(...)          using selected_actors          = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
 #define ENGINE_CTOR(name) name(const std::string& app_name = "app", hnll::utils::rendering_type type = hnll::utils::rendering_type::VERTEX_SHADING) \
                           : game::engine_base<my_engine, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
@@ -127,7 +127,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 #define ENGN_TYPE engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_shader_list<C...>>
 
 // static members
-ENGN_API ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
+ENGN_API typename ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
  : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),

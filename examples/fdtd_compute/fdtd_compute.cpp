@@ -11,7 +11,7 @@ namespace hnll {
 
 SELECT_SHADING_SYSTEM(physics::fdtd2_shading_system);
 SELECT_COMPUTE_SHADER(physics::fdtd2_compute_shader);
-SELECT_ACTOR();
+SELECT_ACTOR(physics::fdtd2_field);
 
 DEFINE_ENGINE(fdtd_compute)
 {
