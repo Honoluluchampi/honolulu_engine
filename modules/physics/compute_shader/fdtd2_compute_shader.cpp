@@ -31,19 +31,27 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
   if (target_ != nullptr) {
     auto &command = info.command_buffer;
 
-    float dt = target_->get_dt();
+    float local_dt = target_->get_dt();
 
     fdtd2_push push;
     push.x_grid = target_->get_x_grid();
     push.y_grid = target_->get_y_grid();
     push.x_len = target_->get_x_len();
     push.y_len = target_->get_y_len();
-    push.v_fac = dt * target_->get_v_fac();
-    push.p_fac = dt * target_->get_p_fac();
+    push.v_fac = local_dt * target_->get_v_fac();
+    push.p_fac = local_dt * target_->get_p_fac();
 
-    auto reputation = static_cast<int>(info.dt / dt);
+    auto reputation = static_cast<int>(info.dt / local_dt);
 
-    target_->add_duration(dt * reputation);
+    target_->add_duration(local_dt * reputation);
+
+    // barrier for pressure, velocity update synchronization
+    VkMemoryBarrier barrier = {
+      .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+      .pNext = nullptr,
+      .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+      .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+    };
 
     // update velocity and pressure
     for (int i = 0; i < reputation; i++) {
@@ -60,6 +68,35 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
         (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
         1);
+
+      // waite for pressure update (TODO : consider using vkCmdPipelineBarrier2)
+      vkCmdPipelineBarrier(
+        command,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_DEPENDENCY_DEVICE_GROUP_BIT,
+        1, &barrier, 0, nullptr, 0, nullptr
+      );
+
+      // update velocity
+      vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, velocity_pipeline_->get_vk_pipeline());
+      dispatch_command(
+        command,
+        (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
+        (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
+        1
+      );
+
+      // if not the last loop, waite for velocity update
+      if (i != reputation - 1) {
+        vkCmdPipelineBarrier(
+          command,
+          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+          VK_DEPENDENCY_DEVICE_GROUP_BIT,
+          1, &barrier, 0, nullptr, 0, nullptr
+        );
+      }
     }
   }
 }

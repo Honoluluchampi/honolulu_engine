@@ -54,7 +54,7 @@ class compute_shader
 
       template <typename PushConstant>
       inline void bind_push(VkCommandBuffer command, VkShaderStageFlagBits stages, PushConstant push)
-      { vkCmdPushConstants(command, pipeline_->get_vk_layout(), stages, 0,sizeof(PushConstant),&push); }
+      { vkCmdPushConstants(command, pipeline_->get_vk_layout(), stages, 0, sizeof(PushConstant), &push); }
 
       // default objects
       u_ptr<graphics::compute_pipeline> pipeline_;
