@@ -30,7 +30,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 {
   if (target_ != nullptr) {
     auto &command = info.command_buffer;
-    bind_pipeline(command);
 
     float dt = target_->get_dt();
 
@@ -48,6 +47,9 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
     // update velocity and pressure
     for (int i = 0; i < reputation; i++) {
+      // record pressure update 
+      bind_pipeline(command);
+
       bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
       auto desc_sets = target_->get_frame_desc_sets();
