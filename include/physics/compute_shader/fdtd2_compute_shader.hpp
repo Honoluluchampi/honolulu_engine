@@ -18,7 +18,6 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
     void render(const utils::compute_frame_info& info);
 
     static void set_target(fdtd2_field* target);
-    static void remove_target(uint32_t field_id);
 
   private:
     static fdtd2_field* target_;

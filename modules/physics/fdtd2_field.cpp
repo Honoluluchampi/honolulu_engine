@@ -48,8 +48,6 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
 
 fdtd2_field::~fdtd2_field()
 {
-  fdtd2_compute_shader::remove_target(field_id_);
-  fdtd2_shading_system::remove_target(field_id_);
 }
 
 void fdtd2_field::compute_constants()

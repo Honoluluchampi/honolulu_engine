@@ -83,7 +83,4 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
 void fdtd2_shading_system::set_target(fdtd2_field* target)
 { target_ = target; }
 
-void fdtd2_shading_system::remove_target(uint32_t field_id)
-{ if (field_id == target_->get_field_id()) target_ = nullptr; }
-
 } // namespace hnll::physics

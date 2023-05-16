@@ -18,7 +18,6 @@ DEFINE_SHADING_SYSTEM(fdtd2_shading_system, game::dummy_renderable_comp<utils::s
     void setup();
 
     static void set_target(fdtd2_field* target);
-    static void remove_target(uint32_t field_id);
 
   private:
     static fdtd2_field* target_;
