@@ -229,11 +229,13 @@ void device::create_logical_device()
     indices.graphics_family_.value(),
     indices.present_family_.value(),
     indices.compute_family_.value(),
+    indices.transfer_family_.value()
   };
 
   std::cout << "graphics queue : " << queue_family_indices_.graphics_family_.value() << std::endl;
   std::cout << "present queue : " << queue_family_indices_.present_family_.value() << std::endl;
   std::cout << "compute queue : " << queue_family_indices_.compute_family_.value() << std::endl;
+  std::cout << "transfer queue : " << queue_family_indices_.transfer_family_.value() << std::endl;
 
   // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
@@ -390,6 +392,7 @@ void device::create_logical_device()
   vkGetDeviceQueue(device_, indices.graphics_family_.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, indices.present_family_.value(),  0, &present_queue_);
   vkGetDeviceQueue(device_, indices.compute_family_.value(),  0, &compute_queue_);
+  vkGetDeviceQueue(device_, indices.transfer_family_.value(), 0, &transfer_queue_);
 
   if (indices.graphics_family_.value() == indices.compute_family_.value()) {
     std::cout << "same queue family for compute and graphics." << std::endl;
@@ -610,9 +613,18 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
       else
         compute_graphics_common_index = i;
     }
-    if (indices.is_complete()) {
-      break;
+
+    // transfer queue
+    if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+      if (indices.transfer_family_ == std::nullopt) {
+        indices.transfer_family_ = i;
+      }
+      // prefer different queue from graphics and compute
+      if (!(queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && !(queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+        indices.transfer_family_ = i;
+      }
     }
+
     i++;
   }
 

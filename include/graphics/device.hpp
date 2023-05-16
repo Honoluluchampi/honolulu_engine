@@ -32,10 +32,13 @@ struct queue_family_indices
   std::optional<uint32_t> graphics_family_ = std::nullopt;
   std::optional<uint32_t> present_family_  = std::nullopt;
   std::optional<uint32_t> compute_family_  = std::nullopt;
+  std::optional<uint32_t> transfer_family_ = std::nullopt;
+
   inline bool is_complete() { return
     (graphics_family_ != std::nullopt) &&
     (present_family_  != std::nullopt) &&
-    (compute_family_  != std::nullopt); };
+    (compute_family_  != std::nullopt) &&
+    (transfer_family_ != std::nullopt); } ;
 };
 
 enum class command_type { GRAPHICS, COMPUTE };
@@ -136,6 +139,7 @@ class device
     VkQueue graphics_queue_;
     VkQueue present_queue_;
     VkQueue compute_queue_;
+    VkQueue transfer_queue_; // for data preparation (staging buffer etc.)
     queue_family_indices queue_family_indices_; // for hie ctor
     VkDebugUtilsMessengerEXT debug_messenger_;
 
