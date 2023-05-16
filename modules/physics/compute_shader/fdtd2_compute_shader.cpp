@@ -18,11 +18,7 @@ fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::com
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_pressure_update.comp.spv",
-    { vk_layout, vk_layout });
-
-  velocity_pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_velocity_update.comp.spv",
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute.comp.spv",
     { vk_layout, vk_layout });
 }
 
@@ -80,6 +76,8 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
           1, &barrier, 0, nullptr, 0, nullptr
         );
       }
+
+      target_->update_frame();
     }
   }
 }

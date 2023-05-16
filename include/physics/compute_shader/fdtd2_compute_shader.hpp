@@ -22,7 +22,5 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
 
   private:
     static fdtd2_field* target_;
-    // default pipeline is used for pressure update
-    u_ptr<graphics::compute_pipeline> velocity_pipeline_;
 };
 } // namespace hnll::physics

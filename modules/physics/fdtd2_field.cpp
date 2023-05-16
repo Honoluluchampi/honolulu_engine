@@ -87,7 +87,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
-    if (i == 1)
+    if (i == 0)
       initial_grid[impulse_grid_id].values.z() = 128.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(

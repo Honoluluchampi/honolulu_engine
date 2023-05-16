@@ -78,6 +78,7 @@ device::~device()
 {
   vkDestroyCommandPool(device_, graphics_command_pool_, nullptr);
   vkDestroyCommandPool(device_, compute_command_pool_, nullptr);
+  vkDestroyCommandPool(device_, transfer_command_pool_, nullptr);
   // VkQueue is automatically destroyed when its device is deleted
   vkDestroyDevice(device_, nullptr);
 
