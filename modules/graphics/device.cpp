@@ -233,11 +233,6 @@ void device::create_logical_device()
     indices.transfer_family_.value()
   };
 
-  std::cout << "graphics queue : " << queue_family_indices_.graphics_family_.value() << std::endl;
-  std::cout << "present queue : " << queue_family_indices_.present_family_.value() << std::endl;
-  std::cout << "compute queue : " << queue_family_indices_.compute_family_.value() << std::endl;
-  std::cout << "transfer queue : " << queue_family_indices_.transfer_family_.value() << std::endl;
-
   // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
   for (uint32_t queue_family : unique_queue_families) {
@@ -585,7 +580,6 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
   int i = 0;
   int compute_graphics_common_index;
   for (const auto &queue_family : queue_families) {
-    std::cout << "queue value : " << queue_family.queueFlags << std::endl;
     // same i for presentFamily and graphicsFamily improves the performance
     // graphics: No DRI3 support detected - required for presentation
     // Note: you can probably enable DRI3 in your Xorg config

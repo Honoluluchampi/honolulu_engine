@@ -70,24 +70,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
         1);
 
-      // waite for pressure update (TODO : consider using vkCmdPipelineBarrier2)
-      vkCmdPipelineBarrier(
-        command,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_DEPENDENCY_DEVICE_GROUP_BIT,
-        1, &barrier, 0, nullptr, 0, nullptr
-      );
-
-      // update velocity
-      vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, velocity_pipeline_->get_vk_pipeline());
-      dispatch_command(
-        command,
-        (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-        (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-        1
-      );
-
       // if not the last loop, waite for velocity update
       if (i != reputation - 1) {
         vkCmdPipelineBarrier(

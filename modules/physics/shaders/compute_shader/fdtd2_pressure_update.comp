@@ -23,8 +23,29 @@ void main() {
 
   if (i < push.x_grid && j < push.y_grid) {
     // update pressure
-    curr_p[g_id(i, j)].values.z = prev_p[g_id(i, j)].values.z - push.p_fac *
-    (curr_p[g_id(i, j)].values.x - curr_p[g_id(i - 1, j)].values.x +
-    curr_p[g_id(i, j)].values.y - curr_p[g_id(i, j - 1)].values.y);
+    float p =  prev_p[g_id(i, j)].values.z - push.p_fac *
+    (prev_p[g_id(i, j)].values.x - prev_p[g_id(i - 1, j)].values.x +
+    prev_p[g_id(i, j)].values.y - prev_p[g_id(i, j - 1)].values.y);
+
+    curr_p[g_id(i, j)].values.z = p;
+
+    // re-calculate the current pressure not to reduce the barrier synchronization
+    if (i < push.x_grid - 1) {
+      float p_x1 = prev_p[g_id(i + 1, j)].values.z - push.p_fac *
+      (prev_p[g_id(i + 1, j)].values.x - prev_p[g_id(i, j)].values.x +
+      prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y);
+
+      curr_p[g_id(i, j)].values.x =
+        prev_p[g_id(i, j)].values.x - push.v_fac * (p_x1 - p);
+    }
+
+    if (j < push.y_grid - 1) {
+      float p_y1 = prev_p[g_id(i, j + 1)].values.z - push.p_fac *
+      (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
+      prev_p[g_id(i, j + 1)].values.y - prev_p[g_id(i, j)].values.y);
+
+      curr_p[g_id(i, j)].values.y =
+        prev_p[g_id(i, j)].values.y - push.v_fac * (p_y1 - p);
+    }
   }
 }
