@@ -40,9 +40,12 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float get_dt()        const { return dt_; }
     float get_grid_size() const { return grid_size_; }
     float get_duration()  const { return duration_; }
+    int   get_update_per_frame() const { return update_per_frame_; }
+    bool  is_ready()      const { return is_ready_; } // is constructed
 
     // setter
     void add_duration(float dt) { duration_ += dt; }
+    void set_update_per_frame(int rep) { update_per_frame_ = rep; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 
@@ -71,5 +74,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     uint32_t field_id_;
 
     float duration_ = 0.f;
+    int update_per_frame_ = 0;
+    bool  is_ready_ = false;
 };
 } // namespace hnll::physics

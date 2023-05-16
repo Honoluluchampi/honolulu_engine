@@ -4,6 +4,9 @@
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
 
+// std
+#include <thread>
+
 namespace hnll::physics {
 
 //#include "common/fdtd_struct.h"
@@ -39,6 +42,8 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
 
   compute_constants();
   setup_desc_sets(info);
+
+  is_ready_ = true;
 }
 
 fdtd2_field::~fdtd2_field()

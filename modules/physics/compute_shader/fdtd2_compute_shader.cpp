@@ -28,7 +28,7 @@ fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::com
 
 void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 {
-  if (target_ != nullptr) {
+  if (target_ != nullptr && target_->is_ready()) {
     auto &command = info.command_buffer;
 
     float local_dt = target_->get_dt();
@@ -44,6 +44,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     auto reputation = static_cast<int>(info.dt / local_dt);
 
     target_->add_duration(local_dt * reputation);
+    target_->set_update_per_frame(reputation);
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
