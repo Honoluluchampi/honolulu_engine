@@ -32,8 +32,7 @@ DEFINE_ENGINE(fdtd_compute)
         .f_max = f_max_
       };
 
-      staging_field_ = physics::fdtd2_field::create(info);
-      field_ = std::move(staging_field_);
+      field_ = physics::fdtd2_field::create(info);
     }
 
     void update_this(float dt)
@@ -78,7 +77,9 @@ DEFINE_ENGINE(fdtd_compute)
 
       if (wait_for_construction_) {
         if (staging_field_ != nullptr && staging_field_->is_ready()) {
+          auto tmp = std::move(field_);
           field_ = std::move(staging_field_);
+          staging_field_ = std::move(tmp);
           wait_for_construction_ = false;
         }
       }
@@ -96,7 +97,7 @@ DEFINE_ENGINE(fdtd_compute)
     float sound_speed_ = 310.f;
     float kappa_       = 10.f;
     float rho_         = 0.05f;
-    float f_max_       = 120.f;
+    float f_max_       = 1000.f;
 };
 
 } // namespace hnll

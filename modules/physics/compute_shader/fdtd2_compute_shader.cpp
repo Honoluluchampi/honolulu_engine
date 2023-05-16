@@ -41,7 +41,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
 
-    auto reputation = static_cast<int>(info.dt / local_dt);
+    auto reputation = std::min(100, static_cast<int>(info.dt / local_dt));
 
     target_->add_duration(local_dt * reputation);
     target_->set_update_per_frame(reputation);
@@ -56,7 +56,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
     // update velocity and pressure
     for (int i = 0; i < reputation; i++) {
-      // record pressure update 
+      // record pressure update
       bind_pipeline(command);
 
       bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
