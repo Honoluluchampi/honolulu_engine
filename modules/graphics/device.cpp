@@ -70,7 +70,8 @@ device::device(window &window, utils::rendering_type type)
   setup_device_extensions(); // ray tracing
   create_logical_device(); // ray tracing
   graphics_command_pool_ = create_command_pool(command_type::GRAPHICS);
-  compute_command_pool_ = create_command_pool(command_type::COMPUTE);
+  compute_command_pool_  = create_command_pool(command_type::COMPUTE);
+  transfer_command_pool_ = create_command_pool(command_type::TRANSFER);
 }
 
 device::~device()
@@ -419,6 +420,8 @@ VkCommandPool device::create_command_pool(command_type type)
     pool_info.queueFamilyIndex = queue_family_indices_.graphics_family_.value();
   if (type == command_type::COMPUTE)
     pool_info.queueFamilyIndex = queue_family_indices_.compute_family_.value();
+  if (type == command_type::TRANSFER)
+    pool_info.queueFamilyIndex = queue_family_indices_.transfer_family_.value();
 
   VkCommandPool pool;
   if (vkCreateCommandPool(device_, &pool_info, nullptr, &pool) != VK_SUCCESS) {
@@ -746,7 +749,7 @@ VkCommandBuffer device::begin_one_shot_commands()
   VkCommandBufferAllocateInfo allocate_info{};
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = graphics_command_pool_;
+  allocate_info.commandPool = transfer_command_pool_;
   allocate_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
@@ -769,10 +772,10 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer)
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphics_queue_);
+  vkQueueSubmit(transfer_queue_, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(transfer_queue_);
 
-  vkFreeCommandBuffers(device_, graphics_command_pool_, 1, &command_buffer);
+  vkFreeCommandBuffers(device_, transfer_command_pool_, 1, &command_buffer);
 }
 
 void device::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)

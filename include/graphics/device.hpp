@@ -41,7 +41,7 @@ struct queue_family_indices
     (transfer_family_ != std::nullopt); } ;
 };
 
-enum class command_type { GRAPHICS, COMPUTE };
+enum class command_type { GRAPHICS, COMPUTE, TRANSFER };
 
 class device
 {
@@ -88,6 +88,7 @@ class device
       VkMemoryPropertyFlags properties,
       VkBuffer &buffer,
       VkDeviceMemory &buffer_memory);
+    // currently for transfer operation
     VkCommandBuffer begin_one_shot_commands();
     void end_one_shot_commands(VkCommandBuffer command_buffer);
     void copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
@@ -136,6 +137,7 @@ class device
     VkSurfaceKHR surface_;
     VkCommandPool graphics_command_pool_;
     VkCommandPool compute_command_pool_;
+    VkCommandPool transfer_command_pool_;
     VkQueue graphics_queue_;
     VkQueue present_queue_;
     VkQueue compute_queue_;
