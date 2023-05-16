@@ -231,10 +231,14 @@ void device::create_logical_device()
     indices.compute_family_.value(),
   };
 
+  std::cout << "graphics queue : " << queue_family_indices_.graphics_family_.value() << std::endl;
+  std::cout << "present queue : " << queue_family_indices_.present_family_.value() << std::endl;
+  std::cout << "compute queue : " << queue_family_indices_.compute_family_.value() << std::endl;
+
   // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
   for (uint32_t queue_family : unique_queue_families) {
-    // VkDeviceQueueCreateInfo descrives the number of queues we want for a single queue family
+    // VkDeviceQueueCreateInfo describes the number of queues we want for a single queue family
     VkDeviceQueueCreateInfo queue_create_info = {};
     queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_create_info.queueFamilyIndex = queue_family;
@@ -571,19 +575,29 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
   std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
 
-  // check whether at least one queue_family support VK_QUEUEGRAPHICS_BIT
+  // check whether at least one queue_family support VK_QUEUE_GRAPHICS_BIT
   int i = 0;
   int compute_graphics_common_index;
   for (const auto &queue_family : queue_families) {
+    std::cout << "queue value : " << queue_family.queueFlags << std::endl;
     // same i for presentFamily and graphicsFamily improves the performance
     // graphics: No DRI3 support detected - required for presentation
     // Note: you can probably enable DRI3 in your Xorg config
     if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
       indices.graphics_family_ = i;
+
+      // prefer same queue for graphics and present
+      VkBool32 present_support = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &present_support);
+      if (queue_family.queueCount > 0 && present_support) {
+        indices.present_family_ = i;
+      }
     }
+
+    // different queue for present from for graphics
     VkBool32 present_support = false;
     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &present_support);
-    if (queue_family.queueCount > 0 && present_support) {
+    if (!indices.present_family_.has_value() && queue_family.queueCount > 0 && present_support) {
       indices.present_family_ = i;
     }
 
