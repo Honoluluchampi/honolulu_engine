@@ -33,7 +33,7 @@ u_ptr<image_resource> image_resource::create_from_file(device& device, const std
   // create texture image
   VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
-  auto ret = std::make_unique<image_resource>(
+  auto ret = image_resource::create(
     device,
     extent,
     format,
