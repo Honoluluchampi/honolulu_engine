@@ -99,7 +99,7 @@ DEFINE_ENGINE(fdtd_compute)
     float sound_speed_ = 310.f;
     float kappa_       = 10.f;
     float rho_         = 0.05f;
-    float f_max_       = 1000.f;
+    float f_max_       = 120.f;
 };
 
 } // namespace hnll

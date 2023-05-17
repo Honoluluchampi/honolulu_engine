@@ -2,6 +2,7 @@
 
 // hnll
 #include <graphics/desc_set.hpp>
+#include <graphics/image_resource.hpp>
 #include <game/actor.hpp>
 #include <utils/common_alias.hpp>
 
@@ -49,14 +50,19 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     void set_as_target(fdtd2_field* target) const;
 
     static const std::vector<graphics::binding_info> field_bindings;
+    static const std::vector<graphics::binding_info> texture_bindings;
 
   private:
     void compute_constants();
     void setup_desc_sets(const fdtd_info& info);
+    void setup_textures(const fdtd_info& info);
 
     graphics::device& device_;
     u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
+
+    // texture
+    std::vector<VkDescriptorSet> texture_vk_desc_sets_;
 
     // physical constants
     float kappa_;
