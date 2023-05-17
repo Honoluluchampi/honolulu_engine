@@ -46,6 +46,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     // setter
     void add_duration(float dt) { duration_ += dt; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
+    void set_as_target(fdtd2_field* target) const;
 
     static const std::vector<graphics::binding_info> field_bindings;
 

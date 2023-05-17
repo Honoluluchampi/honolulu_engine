@@ -11,6 +11,7 @@ namespace hnll::physics {
 
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
+uint32_t fdtd2_compute_shader::target_id_ = -1;
 
 fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::compute_shader<fdtd2_compute_shader>(device)
 {
@@ -84,5 +85,8 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
 void fdtd2_compute_shader::set_target(fdtd2_field* target)
 { target_ = target; }
+
+void fdtd2_compute_shader::remove_target(uint32_t target_id)
+{ if (target_id_ == target_id) target_ = nullptr; }
 
 } // namespace hnll::physics

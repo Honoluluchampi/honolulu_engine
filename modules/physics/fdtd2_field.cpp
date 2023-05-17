@@ -21,12 +21,7 @@ const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
 };
 
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
-{
-  auto ret = std::make_unique<fdtd2_field>(info);
-  fdtd2_compute_shader::set_target(ret.get());
-  fdtd2_shading_system::set_target(ret.get());
-  return ret;
-}
+{ return std::make_unique<fdtd2_field>(info); }
 
 fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_core::get_device_r())
 {
@@ -48,6 +43,8 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
 
 fdtd2_field::~fdtd2_field()
 {
+  fdtd2_compute_shader::remove_target(id_);
+  fdtd2_shading_system::remove_target(id_);
 }
 
 void fdtd2_field::compute_constants()
@@ -119,6 +116,12 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
   }
 
   return desc_sets;
+}
+
+void fdtd2_field::set_as_target(fdtd2_field* target) const
+{
+  fdtd2_compute_shader::set_target(target);
+  fdtd2_shading_system::set_target(target);
 }
 
 } // namespace hnll::physics

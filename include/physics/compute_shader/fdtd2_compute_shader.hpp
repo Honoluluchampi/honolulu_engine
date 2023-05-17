@@ -18,8 +18,10 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
     void render(const utils::compute_frame_info& info);
 
     static void set_target(fdtd2_field* target);
+    static void remove_target(uint32_t target_id);
 
   private:
     static fdtd2_field* target_;
+    static uint32_t target_id_;
 };
 } // namespace hnll::physics

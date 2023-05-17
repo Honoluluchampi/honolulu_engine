@@ -33,6 +33,7 @@ DEFINE_ENGINE(fdtd_compute)
       };
 
       field_ = physics::fdtd2_field::create(info);
+      field_->set_as_target(field_.get());
     }
 
     void update_this(float dt)
@@ -80,6 +81,7 @@ DEFINE_ENGINE(fdtd_compute)
           auto tmp = std::move(field_);
           field_ = std::move(staging_field_);
           staging_field_ = std::move(tmp);
+          field_->set_as_target(field_.get());
           wait_for_construction_ = false;
         }
       }

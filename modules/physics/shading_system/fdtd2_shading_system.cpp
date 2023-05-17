@@ -6,6 +6,7 @@
 namespace hnll::physics {
 
 fdtd2_field* fdtd2_shading_system::target_ = nullptr;
+uint32_t fdtd2_shading_system::target_id_ = -1;
 
 struct fdtd2_frag_push {
   float width;
@@ -82,5 +83,8 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
 
 void fdtd2_shading_system::set_target(fdtd2_field* target)
 { target_ = target; }
+
+void fdtd2_shading_system::remove_target(uint32_t target_id)
+{ if (target_id_ == target_id) target_ = nullptr; }
 
 } // namespace hnll::physics
