@@ -3,6 +3,7 @@
 #include <game/actor.hpp>
 #include <game/shading_system.hpp>
 #include <game/renderable_component.hpp>
+#include <game/modules/gui_engine.hpp>
 
 namespace hnll {
 
@@ -55,25 +56,25 @@ DEFINE_SHADING_SYSTEM(horn_shading_system, horn)
         bind_pipeline();
 
         // prepare push constants
-        auto window_size = game::graphics_engine_core::get_window_size();
+        auto window_size = game::gui_engine::get_viewport_size();
         horn_push push;
         push.h_length = target_->length;
         push.h_width  = target_->width;
-        push.w_width  = std::get<0>(window_size);
-        push.w_height = std::get<1>(window_size);
+        push.w_width  = window_size.x;
+        push.w_height = window_size.y;
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
         target_->draw(command);
       }
     }
 
-    static void set_target(u_ptr<horn>&& target) { target_ = std::move(target); }
+    static void set_target(const s_ptr<horn>& target) { target_ = target; }
 
   private:
-    static u_ptr<horn> target_;
+    static s_ptr<horn> target_;
 };
 
-u_ptr<horn> horn_shading_system::target_;
+s_ptr<horn> horn_shading_system::target_;
 
 SELECT_ACTOR(horn);
 SELECT_SHADING_SYSTEM(horn_shading_system);
@@ -83,14 +84,28 @@ DEFINE_ENGINE(horn_sound)
 {
   public:
     explicit ENGINE_CTOR(horn_sound)
-    { horn_shading_system::set_target(std::make_unique<horn>()); }
+    {
+      target_ = std::make_shared<horn>();
+      horn_shading_system::set_target(target_);
+    }
+
+    // GUI
+    void update_this(float dt)
+    {
+      ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+      ImGui::Text("horn length : %d mm", int(target_->length));
+      ImGui::End();
+    }
+
+  private:
+    s_ptr<horn> target_;
 };
 
 } // namespace hnll
 
 int main()
 {
-  hnll::horn_sound engine("horn_sound");
+  hnll::horn_sound engine("horn sound");
   try { engine.run(); }
   catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;

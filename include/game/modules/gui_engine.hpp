@@ -54,9 +54,10 @@ class gui_engine {
 
     void frame_render();
 
+    // getter
     const u_ptr<gui::renderer> &renderer_up() const { return renderer_up_; }
-
     graphics::renderer *renderer_p() const;
+    static ImVec2 get_viewport_size() { return viewport_size_; }
 
   private:
     // set up ImGui context
@@ -92,5 +93,7 @@ class gui_engine {
     int min_image_count_ = 2;
     bool swap_chain_rebuild_ = false;
     bool is_gui_engine_running_ = false;
+
+    static ImVec2 viewport_size_;
 };
 }} // namespace hnll::game

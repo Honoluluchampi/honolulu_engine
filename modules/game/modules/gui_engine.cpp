@@ -11,6 +11,8 @@
 
 namespace hnll::game {
 
+ImVec2 gui_engine::viewport_size_;
+
 // take s_ptr<swap_chain> from get_renderer
 gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
   : device_(device)
@@ -132,13 +134,24 @@ void gui_engine::begin_imgui()
 
 void gui_engine::render()
 {
-  ImGui::Begin("Viewport");
+  // render viewport
+  ImGui::SetNextWindowPos(ImVec2(960 / 4, 0));
+  auto original = ImGui::GetStyle().FramePadding;
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
 
-  ImVec2 panel_size = ImGui::GetContentRegionAvail();
-  ImGui::Image(
-    viewport_image_ids_[renderer_up_->get_frame_index()],
-    panel_size);
+  ImVec2 panel_size(960 * 3 / 4, 820 * 3 / 4);
+  ImGui::Image(viewport_image_ids_[renderer_up_->get_frame_index()], panel_size);
 
+  viewport_size_ = ImGui::GetWindowSize();
+
+  ImGui::End();
+  ImGui::PopStyleVar();
+
+  // render stats
+  ImGui::SetNextWindowPos(ImVec2(0, 0));
+  ImGui::SetNextWindowSize(ImVec2(960 / 4, 820));
+  ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize);
   ImGui::End();
 
   // render window
