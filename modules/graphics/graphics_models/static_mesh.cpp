@@ -123,7 +123,7 @@ void static_mesh::bind(VkCommandBuffer command_buffer)
     vkCmdBindIndexBuffer(command_buffer, index_buffer_->get_buffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void static_mesh::draw(VkCommandBuffer command_buffer)
+void static_mesh::draw(VkCommandBuffer command_buffer) const
 {
   if (had_index_buffer_)
     vkCmdDrawIndexed(command_buffer, index_count_, 1, 0, 0, 0);

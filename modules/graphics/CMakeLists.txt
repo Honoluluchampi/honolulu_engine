@@ -4,6 +4,7 @@ set(SOURCES
     renderer.cpp
     swap_chain.cpp
     pipeline.cpp
+    compute_pipeline.cpp
     desc_set.cpp
     buffer.cpp
     utils.cpp
@@ -11,7 +12,7 @@ set(SOURCES
     texture_image.cpp
     timeline_semaphore.cpp
     graphics_models/static_mesh.cpp
-#    graphics_models/static_meshlet.cpp
+    graphics_models/static_meshlet.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

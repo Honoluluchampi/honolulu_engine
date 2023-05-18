@@ -30,11 +30,11 @@ endif()
 
 target_link_libraries(hnll_engine PUBLIC
     hnll_gui
-    hnll_geometry
     hnll_physics
     hnll_audio
-    hnll_utils
     hnll_graphics
+    hnll_geometry
+    hnll_utils
     libvulkan.so.1.3.224
     glfw
 )
@@ -78,3 +78,10 @@ endif (APPLE)
 target_link_libraries(hnll_test hnll_engine gtest gtest_main pthread)
 
 # build applications -------------------------------------------
+# MESH SHADER SAMPLE
+set(SOURCES examples/mesh_shader/mesh_shader.cpp)
+add_executable(mesh_shader ${SOURCES})
+add_custom_target(setup_env COMMAND "bash" "setup-env.sh")
+target_include_directories(mesh_shader PUBLIC $ENV{HNLL_ENGN}/include)
+target_link_libraries(mesh_shader PUBLIC hnll_engine)
+add_subdirectory(examples/fdtd_compute)

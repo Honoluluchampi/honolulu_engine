@@ -36,6 +36,16 @@ class image_resource
 
     ~image_resource();
 
+    void transition_image_layout(
+      VkImageLayout old_layout,
+      VkImageLayout new_layout
+    );
+
+    void copy_buffer_to_image(
+      VkBuffer buffer,
+      VkExtent3D extent
+    );
+
     // getter
     [[nodiscard]] VkImage           get_image()        const { return image_; }
     [[nodiscard]] VkImageView       get_image_view()   const { return image_view_; }
@@ -47,16 +57,6 @@ class image_resource
   private:
     void create_image_view();
     void create_sampler();
-
-    void transition_image_layout(
-      VkImageLayout old_layout,
-      VkImageLayout new_layout
-    );
-
-    void copy_buffer_to_image(
-      VkBuffer buffer,
-      VkExtent3D extent
-    );
 
     device& device_;
     VkImage image_;

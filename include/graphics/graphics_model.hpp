@@ -13,7 +13,7 @@ class graphics_model
 {
   public:
     // getter
-    static utils::shading_type get_shading_type() { return type; }
+    constexpr static utils::shading_type get_shading_type() { return type; }
     inline bool is_textured() const { return is_textured_; }
     inline VkDescriptorSet get_texture_desc_set() const { return texture_image_->get_vk_desc_set(); }
 

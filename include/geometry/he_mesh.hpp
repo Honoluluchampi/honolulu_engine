@@ -32,10 +32,6 @@ namespace hnll::graphics
 
 namespace hnll::geometry {
 
-// forward declaration
-enum class bv_type;
-template <bv_type type> class bounding_volume;
-
 class he_mesh
 {
   public:
@@ -65,6 +61,10 @@ class he_mesh
     half_edge&       get_half_edge_r(const vertex& v0, const vertex& v1);
     half_edge&       get_half_edge_r(half_edge_id id) { return half_edge_id_map_.at(id); }
 
+    const face&      get_face(face_id id)     const { return face_map_.at(id); }
+    const vertex&    get_vertex(vertex_id id) const { return vertex_map_.at(id); }
+    const half_edge& get_half_edge(half_edge_id id)  const { return half_edge_id_map_.at(id); }
+
     // for test
     bool exist_half_edge(half_edge_id id) { return half_edge_id_map_.find(id) != half_edge_id_map_.end(); }
     bool exist_half_edge(const vertex& v0, const vertex& v1);
@@ -72,7 +72,7 @@ class he_mesh
     std::vector<graphics::vertex> move_raw_vertices() { return std::move(raw_vertices_); }
 
     // setter
-    void colorize_whole_mesh(const vec3& color);
+    void colorize_whole_mesh(const vec3d& color);
   private:
     // returns false if the pair have not been registered to the map
     bool associate_half_edge_pair(half_edge& he);
@@ -88,22 +88,34 @@ class he_mesh
 };
 
 template <bv_type type>
-class mesh_model
+class bv_mesh
 {
   public:
+    static u_ptr<bv_mesh<type>> create() { return std::make_unique<bv_mesh<type>>(); }
+
     // getter
-    const bounding_volume<type>& get_bv() const { return *bv_; }
+    const bounding_volume<type>&                     get_bv() const { return *bv_; }
     const std::vector<u_ptr<bounding_volume<type>>>& get_bvs() const { return bvs_; }
     u_ptr<bounding_volume<type>> move_bv() { return std::move(bv_); }
     u_ptr<bounding_volume<type>> get_bv_copy() const
     { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
 
+    size_t get_vertex_count() const { return v_ids_.size(); }
+    size_t get_face_count()   const { return f_ids_.size(); }
+
+    const vertex_id_set get_v_ids() const { return v_ids_; }
+    const face_id_set   get_f_ids() const { return f_ids_; }
+
     // setter
     void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
     void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }
 
+    void add_v_id(vertex_id id) { v_ids_.emplace(id); }
+    void add_f_id(face_id id)   { f_ids_.emplace(id); }
+
   private:
-    he_mesh mesh_;
+    vertex_id_set v_ids_;
+    face_id_set   f_ids_;
     u_ptr<bounding_volume<type>> bv_;
     std::vector<u_ptr<bounding_volume<type>>> bvs_;
 };

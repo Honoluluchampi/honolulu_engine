@@ -1,0 +1,51 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : require
+
+#include "../../common/fdtd2_config.h"
+#include "../../common/fdtd_struct.h"
+
+layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
+
+// pressure
+layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
+layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
+
+// push constants
+layout(push_constant) uniform Push { fdtd2_push push; };
+
+// grid id
+uint g_id(uint x, uint y) { return (x + 1) + (y + 1) * (push.x_grid + 1); }
+
+void main() {
+  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
+  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
+
+  if (i < push.x_grid && j < push.y_grid) {
+    // update pressure
+    float p =  prev_p[g_id(i, j)].values.z - push.p_fac *
+    (prev_p[g_id(i, j)].values.x - prev_p[g_id(i - 1, j)].values.x +
+    prev_p[g_id(i, j)].values.y - prev_p[g_id(i, j - 1)].values.y);
+
+    curr_p[g_id(i, j)].values.z = p;
+
+    // re-calculate the current pressure not to reduce the barrier synchronization
+    if (i < push.x_grid - 1) {
+      float p_x1 = prev_p[g_id(i + 1, j)].values.z - push.p_fac *
+      (prev_p[g_id(i + 1, j)].values.x - prev_p[g_id(i, j)].values.x +
+      prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y);
+
+      curr_p[g_id(i, j)].values.x =
+        prev_p[g_id(i, j)].values.x - push.v_fac * (p_x1 - p);
+    }
+
+    if (j < push.y_grid - 1) {
+      float p_y1 = prev_p[g_id(i, j + 1)].values.z - push.p_fac *
+      (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
+      prev_p[g_id(i, j + 1)].values.y - prev_p[g_id(i, j)].values.y);
+
+      curr_p[g_id(i, j)].values.y =
+        prev_p[g_id(i, j)].values.y - push.v_fac * (p_y1 - p);
+    }
+  }
+}

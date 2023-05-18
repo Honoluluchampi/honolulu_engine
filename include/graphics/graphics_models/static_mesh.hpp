@@ -21,7 +21,7 @@ DEFINE_GRAPHICS_MODEL(static_mesh, utils::shading_type::MESH) {
     static u_ptr<static_mesh> create_from_geometry_mesh_model(device &device, const s_ptr<geometry::he_mesh> &gm);
 
     void bind(VkCommandBuffer command_buffer);
-    void draw(VkCommandBuffer command_buffer);
+    void draw(VkCommandBuffer command_buffer) const;
 
     // setter
     bool has_index_buffer() const { return had_index_buffer_; }

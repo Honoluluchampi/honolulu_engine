@@ -16,15 +16,15 @@ struct fdtd2_frag_push {
 
 layout (push_constant) uniform Push { fdtd2_frag_push push; };
 
-layout(std430, set = 0, binding = 0) readonly buffer CurrentP { particle curr_p[]; };
+layout(set = 0, binding = 0, rgba32f) readonly uniform image2D curr;
 
-uint g_id(int x, int y) { return (x + 1) + (y + 1) * (push.x_grid + 1); }
+ivec2 g_id(uint x, uint y) { return ivec2(x + 1, y + 1); }
 
 void main()
 {
   float i = (gl_FragCoord.x ) / push.width * push.x_grid;
   float j = (1 - gl_FragCoord.y / push.height) * push.y_grid;
-  float p_val = curr_p[g_id(int(i), int(j))].values.z / 128.f;
+  float p_val = imageLoad(curr, g_id(uint(i), uint(j))).z / 128.f;
 
   out_color = vec4(max(p_val, 0.f), 0, max(-p_val, 0.f), 1);
 }

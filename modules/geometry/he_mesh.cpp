@@ -1,7 +1,6 @@
 // hnll
 #include <geometry/he_mesh.hpp>
 #include <geometry/primitives.hpp>
-#include <geometry/bounding_volume.hpp>
 #include <graphics/utils.hpp>
 #include <graphics/frame_anim_utils.hpp>
 
@@ -32,10 +31,10 @@ half_edge& he_mesh::get_half_edge_r(const vertex& v0, const vertex& v1)
 
 vertex translate_vertex_graphics_to_geometry(const graphics::vertex& pseudo, vertex_id id)
 {
-  vertex v {pseudo.position, id};
-  v.color    = pseudo.color;
-  v.normal   = pseudo.normal;
-  v.uv       = pseudo.uv;
+  vertex v {pseudo.position.cast<double>(), id};
+  v.color    = pseudo.color.cast<double>();
+  v.normal   = pseudo.normal.cast<double>();
+  v.uv       = pseudo.uv.cast<double>();
   return v;
 }
 
@@ -76,8 +75,8 @@ s_ptr<he_mesh> he_mesh::create_from_obj_file(const std::string& filename)
 
 vertex translate_vertex(const graphics::frame_anim_utils::dynamic_attributes& pseudo, uint32_t id)
 {
-  vertex v { pseudo.position, id};
-  v.normal = pseudo.normal;
+  vertex v { pseudo.position.cast<double>(), id};
+  v.normal = pseudo.normal.cast<double>();
   return v;
 }
 
@@ -123,7 +122,7 @@ void he_mesh::align_vertex_id()
   vertex_map_ = new_map;
 }
 
-void he_mesh::colorize_whole_mesh(const vec3& color)
+void he_mesh::colorize_whole_mesh(const vec3d& color)
 { for (auto& kv : face_map_) kv.second.color = color; }
 
 
@@ -146,9 +145,6 @@ bool he_mesh::associate_half_edge_pair(half_edge &he)
     half_edge_map_.at(hash_key).pair      = half_edge_map_.at(pair_hash_key).this_id;
     half_edge_map_.at(pair_hash_key).pair = he.this_id;
 
-    auto pair_id = half_edge_map_.at(pair_hash_key).this_id;
-    half_edge_id_map_.at(pair_id).pair = he.this_id;
-    half_edge_id_map_.at(he.this_id).pair = pair_id;
     return true;
   }
   return false;
@@ -205,7 +201,7 @@ face_id he_mesh::add_face(vertex& v0, vertex& v1, vertex& v2, face_id id)
 
   // register to the hash_table
   for (int i = 0; i < 3; i++) {
-    associate_half_edge_pair(hes[i]);
+    associate_half_edge_pair(half_edge_id_map_.at(hes[i].this_id));
   }
 
   return fc.f_id;

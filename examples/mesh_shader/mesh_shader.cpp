@@ -5,7 +5,7 @@
 #include <game/actors/default_camera.hpp>
 #include <game/renderable_component.hpp>
 #include <game/shading_systems/grid_shading_system.hpp>
-#include <game/shading_systems/static_mesh_shading_system.hpp>
+#include <game/shading_systems/static_meshlet_shading_system.hpp>
 
 // std
 #include <iostream>
@@ -15,15 +15,15 @@ namespace hnll {
 DEFINE_PURE_ACTOR(mesh_actor)
 {
   public:
-    mesh_actor() { mesh_model_ = game::static_mesh_comp::create(*this, "viking_room.obj"); }
+    mesh_actor() { mesh_model_ = game::static_meshlet_comp::create(*this, "viking_room.obj"); }
 
-    game::static_mesh_comp& get_mesh_comp() { return *mesh_model_; }
+    game::static_meshlet_comp& get_mesh_comp() { return *mesh_model_; }
 
   private:
-    u_ptr<game::static_mesh_comp> mesh_model_;
+    u_ptr<game::static_meshlet_comp> mesh_model_;
 };
 
-SELECT_SHADING_SYSTEM(game::grid_shading_system, game::static_mesh_shading_system);
+SELECT_SHADING_SYSTEM(game::grid_shading_system, game::static_meshlet_shading_system);
 SELECT_ACTOR(game::default_camera);
 SELECT_COMPUTE_SHADER();
 
@@ -40,7 +40,7 @@ DEFINE_ENGINE(my_engine)
     void add_mesh_model()
     {
       a_ = mesh_actor::create();
-      add_render_target<game::static_mesh_shading_system>(a_->get_mesh_comp());
+      add_render_target<game::static_meshlet_shading_system>(a_->get_mesh_comp());
     }
 
     u_ptr<mesh_actor> a_;

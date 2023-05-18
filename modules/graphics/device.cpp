@@ -70,13 +70,15 @@ device::device(window &window, utils::rendering_type type)
   setup_device_extensions(); // ray tracing
   create_logical_device(); // ray tracing
   graphics_command_pool_ = create_command_pool(command_type::GRAPHICS);
-  compute_command_pool_ = create_command_pool(command_type::COMPUTE);
+  compute_command_pool_  = create_command_pool(command_type::COMPUTE);
+  transfer_command_pool_ = create_command_pool(command_type::TRANSFER);
 }
 
 device::~device()
 {
   vkDestroyCommandPool(device_, graphics_command_pool_, nullptr);
   vkDestroyCommandPool(device_, compute_command_pool_, nullptr);
+  vkDestroyCommandPool(device_, transfer_command_pool_, nullptr);
   // VkQueue is automatically destroyed when its device is deleted
   vkDestroyDevice(device_, nullptr);
 
@@ -229,12 +231,13 @@ void device::create_logical_device()
     indices.graphics_family_.value(),
     indices.present_family_.value(),
     indices.compute_family_.value(),
+    indices.transfer_family_.value()
   };
 
   // if compute queue family is same as graphics, the priority for compute could be less than graphics
   float queue_property = 1.0f;
   for (uint32_t queue_family : unique_queue_families) {
-    // VkDeviceQueueCreateInfo descrives the number of queues we want for a single queue family
+    // VkDeviceQueueCreateInfo describes the number of queues we want for a single queue family
     VkDeviceQueueCreateInfo queue_create_info = {};
     queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_create_info.queueFamilyIndex = queue_family;
@@ -386,6 +389,7 @@ void device::create_logical_device()
   vkGetDeviceQueue(device_, indices.graphics_family_.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, indices.present_family_.value(),  0, &present_queue_);
   vkGetDeviceQueue(device_, indices.compute_family_.value(),  0, &compute_queue_);
+  vkGetDeviceQueue(device_, indices.transfer_family_.value(), 0, &transfer_queue_);
 
   if (indices.graphics_family_.value() == indices.compute_family_.value()) {
     std::cout << "same queue family for compute and graphics." << std::endl;
@@ -412,6 +416,8 @@ VkCommandPool device::create_command_pool(command_type type)
     pool_info.queueFamilyIndex = queue_family_indices_.graphics_family_.value();
   if (type == command_type::COMPUTE)
     pool_info.queueFamilyIndex = queue_family_indices_.compute_family_.value();
+  if (type == command_type::TRANSFER)
+    pool_info.queueFamilyIndex = queue_family_indices_.transfer_family_.value();
 
   VkCommandPool pool;
   if (vkCreateCommandPool(device_, &pool_info, nullptr, &pool) != VK_SUCCESS) {
@@ -571,7 +577,7 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
   std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
 
-  // check whether at least one queue_family support VK_QUEUEGRAPHICS_BIT
+  // check whether at least one queue_family support VK_QUEUE_GRAPHICS_BIT
   int i = 0;
   int compute_graphics_common_index;
   for (const auto &queue_family : queue_families) {
@@ -580,10 +586,19 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
     // Note: you can probably enable DRI3 in your Xorg config
     if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
       indices.graphics_family_ = i;
+
+      // prefer same queue for graphics and present
+      VkBool32 present_support = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &present_support);
+      if (queue_family.queueCount > 0 && present_support) {
+        indices.present_family_ = i;
+      }
     }
+
+    // different queue for present from for graphics
     VkBool32 present_support = false;
     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &present_support);
-    if (queue_family.queueCount > 0 && present_support) {
+    if (!indices.present_family_.has_value() && queue_family.queueCount > 0 && present_support) {
       indices.present_family_ = i;
     }
 
@@ -596,9 +611,18 @@ queue_family_indices device::find_queue_families(VkPhysicalDevice device)
       else
         compute_graphics_common_index = i;
     }
-    if (indices.is_complete()) {
-      break;
+
+    // transfer queue
+    if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+      if (indices.transfer_family_ == std::nullopt) {
+        indices.transfer_family_ = i;
+      }
+      // prefer different queue from graphics and compute
+      if (!(queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && !(queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+        indices.transfer_family_ = i;
+      }
     }
+
     i++;
   }
 
@@ -720,7 +744,7 @@ VkCommandBuffer device::begin_one_shot_commands()
   VkCommandBufferAllocateInfo allocate_info{};
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = graphics_command_pool_;
+  allocate_info.commandPool = transfer_command_pool_;
   allocate_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
@@ -743,10 +767,10 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer)
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphics_queue_);
+  vkQueueSubmit(transfer_queue_, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(transfer_queue_);
 
-  vkFreeCommandBuffers(device_, graphics_command_pool_, 1, &command_buffer);
+  vkFreeCommandBuffers(device_, transfer_command_pool_, 1, &command_buffer);
 }
 
 void device::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)

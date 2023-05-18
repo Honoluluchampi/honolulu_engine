@@ -52,8 +52,7 @@ struct meshlet {
   uint vertex_count; // < MAX_VERTEX_COUNT
   uint index_count; // < MAX_PRIMITIVE_INDICES_COUNT
   // for frustum culling
-  vec3 center;
-  float radius;
+  vec4 sphere;
 };
 
 layout(set = 3, binding = 0) buffer _mesh_buffer {
@@ -98,10 +97,10 @@ void main() {
       uint current_meshlet_index = base_id + meshlet_local;
       meshlet current_meshlet = meshlets[current_meshlet_index];
 
-      vec4 world_center = push.model_matrix * vec4(current_meshlet.center, 1.0);
+      vec4 world_center = push.model_matrix * vec4(current_meshlet.sphere.xyz, 1.0);
 
       // frustum culling 
-      bool render = sphere_frustum_intersection(world_center.xyz, current_meshlet.radius);
+      bool render = sphere_frustum_intersection(world_center.xyz, current_meshlet.sphere.w);
 
       // culling is executed in each invocation and those results are gathred
       uvec4 culling_results = subgroupBallot(render);

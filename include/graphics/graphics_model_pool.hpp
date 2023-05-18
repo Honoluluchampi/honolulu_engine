@@ -5,7 +5,7 @@
 #include <graphics/buffer.hpp>
 #include <graphics/utils.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
-//#include <graphics/graphics_models/static_meshlet.hpp>
+#include <graphics/graphics_models/static_meshlet.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -26,7 +26,7 @@ class graphics_model_pool
     ~graphics_model_pool()
     {
       static_mesh_map_.clear();
-//      static_meshlet_map_.clear();
+      static_meshlet_map_.clear();
 //      skinning_mesh_map_.clear();
 //      frame_anim_mesh_map_.clear();
 //      frame_anim_meshlet_map_.clear();
@@ -37,9 +37,14 @@ class graphics_model_pool
     {
       auto full_path = utils::get_full_path(name);
 
-      if (M::get_shading_type() == utils::shading_type::MESH) {
+      if constexpr (M::get_shading_type() == utils::shading_type::MESH) {
         load_model(full_path, static_mesh_map_, ".obj");
         return *static_mesh_map_[full_path];
+      }
+
+      if constexpr (M::get_shading_type() == utils::shading_type::MESHLET) {
+        load_model(full_path, static_meshlet_map_, ".obj");
+        return *static_meshlet_map_[full_path];
       }
     }
 
@@ -47,7 +52,7 @@ class graphics_model_pool
     template <GraphicsModel M>
     void load_model(const std::string &path, model_map<M>& map_, const std::string& extension) {
       // if already loaded
-      if (static_mesh_map_.find(path) != static_mesh_map_.end()) return;
+      if (map_.find(path) != map_.end()) return;
 
       if (std::filesystem::path(path).extension().string() == extension) {
         auto model = M::create_from_file(device_, path);
@@ -61,7 +66,7 @@ class graphics_model_pool
     device& device_;
 
     model_map<static_mesh> static_mesh_map_;
-//    model_map<static_meshlet> static_meshlet_map_;
+    model_map<static_meshlet> static_meshlet_map_;
 //    model_map<utils::shading_type::SKINNING_MESH> skinning_mesh_map_;
 //    model_map<utils::shading_type::FRAME_ANIM_MESH> frame_anim_mesh_map_;
 //    model_map<utils::shading_type::FRAME_ANIM_MESHLET> frame_anim_meshlet_map_;

@@ -32,13 +32,16 @@ struct queue_family_indices
   std::optional<uint32_t> graphics_family_ = std::nullopt;
   std::optional<uint32_t> present_family_  = std::nullopt;
   std::optional<uint32_t> compute_family_  = std::nullopt;
+  std::optional<uint32_t> transfer_family_ = std::nullopt;
+
   inline bool is_complete() { return
     (graphics_family_ != std::nullopt) &&
     (present_family_  != std::nullopt) &&
-    (compute_family_  != std::nullopt); };
+    (compute_family_  != std::nullopt) &&
+    (transfer_family_ != std::nullopt); } ;
 };
 
-enum class command_type { GRAPHICS, COMPUTE };
+enum class command_type { GRAPHICS, COMPUTE, TRANSFER };
 
 class device
 {
@@ -85,6 +88,7 @@ class device
       VkMemoryPropertyFlags properties,
       VkBuffer &buffer,
       VkDeviceMemory &buffer_memory);
+    // currently for transfer operation
     VkCommandBuffer begin_one_shot_commands();
     void end_one_shot_commands(VkCommandBuffer command_buffer);
     void copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
@@ -133,9 +137,11 @@ class device
     VkSurfaceKHR surface_;
     VkCommandPool graphics_command_pool_;
     VkCommandPool compute_command_pool_;
+    VkCommandPool transfer_command_pool_;
     VkQueue graphics_queue_;
     VkQueue present_queue_;
     VkQueue compute_queue_;
+    VkQueue transfer_queue_; // for data preparation (staging buffer etc.)
     queue_family_indices queue_family_indices_; // for hie ctor
     VkDebugUtilsMessengerEXT debug_messenger_;
 

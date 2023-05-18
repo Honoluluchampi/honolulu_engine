@@ -4,22 +4,28 @@
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
 
+// std
+#include <thread>
+
 namespace hnll::physics {
 
+//#include "common/fdtd_struct.h"
+struct particle {
+  int state;
+  alignas(16) vec3 values; // x : vx, y : vy, z : pressure
+//  int state; // 0 : fixed, 1 : free
+};
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
+};
+
+const std::vector<graphics::binding_info> fdtd2_field::texture_bindings = {
+  {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}
 };
 
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
-{
-  auto ret = std::make_unique<fdtd2_field>(info);
-  fdtd2_compute_shader::set_target(ret.get());
-  fdtd2_shading_system::set_target(ret.get());
-  return ret;
-}
+{ return std::make_unique<fdtd2_field>(info); }
 
 fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_core::get_device_r())
 {
@@ -34,28 +40,30 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
   f_max_ = info.f_max;
 
   compute_constants();
-  setup_desc_sets();
+  setup_desc_sets(info);
+
+  is_ready_ = true;
 }
 
 fdtd2_field::~fdtd2_field()
 {
-  fdtd2_compute_shader::remove_target(field_id_);
-  fdtd2_shading_system::remove_target(field_id_);
+  fdtd2_compute_shader::remove_target(id_);
+  fdtd2_shading_system::remove_target(id_);
 }
 
 void fdtd2_field::compute_constants()
 {
-  dt_ = 1 / (2 * f_max_);
-  grid_size_ = std::sqrt(2) * sound_speed_ * dt_;
+  grid_size_ = sound_speed_ / (2 * f_max_) / 10.f;
+  dt_ = grid_size_ / sound_speed_;
 
   x_grid_ = std::ceil(x_len_ / grid_size_);
   y_grid_ = std::ceil(y_len_ / grid_size_);
 }
 
-void fdtd2_field::setup_desc_sets()
+void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 3)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
@@ -68,47 +76,101 @@ void fdtd2_field::setup_desc_sets()
     frame_count_);
 
   // initial data
-  int press_grid_count = x_grid_ * y_grid_;
-  int vx_grid_count = (x_grid_ + 1) * y_grid_;
-  int vy_grid_count = x_grid_ * (y_grid_ + 1);
-  std::vector<float> initial_press(press_grid_count, 0.f);
-  std::vector<float> initial_vx(vx_grid_count, 0.f);
-  std::vector<float> initial_vy(vy_grid_count, 0.f);
+  int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
+  std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f}});
+
+  int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
+  int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);
+  int impulse_grid_id = impulse_grid_x + impulse_grid_y * (x_grid_ + 1);
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
     // setup initial pressure as impulse signal from the center of the room
-    int center_grid_id = x_grid_ / 2 + y_grid_ / 2 * x_grid_;
-//    initial_press[center_grid_id] = 500.f;
+    if (i == 0)
+      initial_grid[impulse_grid_id].values.z() = 128.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(float) * initial_press.size(),
+      sizeof(particle) * initial_grid.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_press.data());
-    auto vx_buffer = graphics::buffer::create_with_staging(
-      device_,
-      sizeof(float) * initial_vx.size(),
-      1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_vx.data());
-    auto vy_buffer = graphics::buffer::create_with_staging(
-      device_,
-      sizeof(float) * initial_vy.size(),
-      1,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      initial_vy.data());
+      initial_grid.data());
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
-    desc_sets_->set_buffer(0, 1, i, std::move(vx_buffer));
-    desc_sets_->set_buffer(0, 2, i, std::move(vy_buffer));
   }
 
   desc_sets_->build();
+}
+
+void fdtd2_field::setup_textures(const fdtd_info& info)
+{
+  // create desc sets
+  desc_pool_ = graphics::desc_pool::builder(device_)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, frame_count_)
+    .build();
+
+  auto desc_layout = graphics::desc_layout::builder(device_)
+    .add_binding(
+      VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+      VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+    .build();
+
+  // create initial data
+  int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
+  std::vector<vec4> initial_grid(grid_count, vec4{0.f, 0.f, 0.f, 0.f});
+
+  int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
+  int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);
+  int impulse_grid_id = impulse_grid_x + impulse_grid_y * (x_grid_ + 1);
+
+  // assign buffer
+  for (int i = 0; i < frame_count_; i++) {
+    // setup initial pressure as impulse signal from the center of the room
+    if (i == 0)
+      initial_grid[impulse_grid_id].z() = 128.f;
+
+    auto initial_buffer = graphics::buffer::create(
+      device_,
+      4 * initial_grid.size(),
+      1,
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      initial_grid.data());
+
+    // prepare image resource
+    VkExtent3D extent = { static_cast<uint32_t>(x_grid_ + 1), static_cast<uint32_t>(y_grid_ + 1), 1 };
+    auto image = graphics::image_resource::create(
+      device_,
+      extent,
+      VK_FORMAT_R32G32B32A32_SFLOAT,
+      VK_IMAGE_TILING_OPTIMAL,
+      VK_IMAGE_USAGE_STORAGE_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+
+    image->transition_image_layout(
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    );
+
+    image->copy_buffer_to_image(initial_buffer->get_buffer(), extent);
+
+    image->transition_image_layout(
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VK_IMAGE_LAYOUT_GENERAL
+    );
+
+    VkDescriptorImageInfo image_info = {
+      .sampler = nullptr,
+      .imageView = image->get_image_view(),
+      .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+    };
+
+    graphics::desc_writer(*desc_layout, *desc_pool_)
+      .write_image(0, &image_info)
+      .build(texture_vk_desc_sets_[i]);
+  }
 }
 
 std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
@@ -128,6 +190,12 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
   }
 
   return desc_sets;
+}
+
+void fdtd2_field::set_as_target(fdtd2_field* target) const
+{
+  fdtd2_compute_shader::set_target(target);
+  fdtd2_shading_system::set_target(target);
 }
 
 } // namespace hnll::physics
