@@ -12,6 +12,8 @@
 namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
+int gui_engine::left_window_ratio_ = 5;
+int gui_engine::bottom_window_ratio_ = 4;
 
 // take s_ptr<swap_chain> from get_renderer
 gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
@@ -152,6 +154,11 @@ void gui_engine::render()
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   ImGui::SetNextWindowSize(ImVec2(960 / 4, 820));
   ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize);
+  if (ImGui::TreeNode("window ratio")) {
+    ImGui::SliderInt("left window ratio", &left_window_ratio_, 2, 8);
+    ImGui::SliderInt("bottom window ratio", &bottom_window_ratio_, 2, 8);
+    ImGui::TreePop();
+  }
   ImGui::End();
 
   // render window

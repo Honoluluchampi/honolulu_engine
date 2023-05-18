@@ -95,5 +95,8 @@ class gui_engine {
     bool is_gui_engine_running_ = false;
 
     static ImVec2 viewport_size_;
+
+    static int left_window_ratio_;
+    static int bottom_window_ratio_;
 };
 }} // namespace hnll::game
