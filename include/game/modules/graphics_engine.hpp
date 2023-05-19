@@ -8,6 +8,10 @@
 #include <utils/singleton.hpp>
 #include <utils/frame_info.hpp>
 
+#ifndef IMGUI_DISABLED
+#include <game/modules/gui_engine.hpp>
+#endif
+
 // std
 #include <map>
 #include <vector>
@@ -165,7 +169,15 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 
     // draw viewport
     command_buffer = core_.begin_command_buffer(1);
-    core_.begin_render_pass(command_buffer, 1, {960, 820});
+    auto window_extent = core_.get_window_r().get_extent();
+    auto left   = gui_engine::get_left_window_ratio();
+    auto bottom = gui_engine::get_bottom_window_ratio();
+    core_.begin_render_pass(
+      command_buffer,
+      1,
+      window_extent);
+//      {static_cast<uint32_t>(window_extent.width * (1.f - left)),
+//       static_cast<uint32_t>(window_extent.height * (1.f - bottom))});
 #elif
     command_buffer = begin_command_buffer(0);
     core_.begin_render_pass(command_buffer, 0);

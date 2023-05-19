@@ -12,8 +12,8 @@
 namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
-int gui_engine::left_window_ratio_ = 5;
-int gui_engine::bottom_window_ratio_ = 4;
+float gui_engine::left_window_ratio_ = 0.2f;
+float gui_engine::bottom_window_ratio_ = 0.25f;
 
 // take s_ptr<swap_chain> from get_renderer
 gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
@@ -137,12 +137,17 @@ void gui_engine::begin_imgui()
 void gui_engine::render()
 {
   // render viewport
-  ImGui::SetNextWindowPos(ImVec2(960 / 4, 0));
-  auto original = ImGui::GetStyle().FramePadding;
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-  ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
+  auto extent = renderer_up_->get_swap_chain_r().get_swap_chain_extent();
 
-  ImVec2 panel_size(960 * 3 / 4, 820 * 3 / 4);
+  ImGui::SetNextWindowPos(ImVec2(extent.width * left_window_ratio_, 0));
+  ImGui::SetNextWindowSize(ImVec2(
+    extent.width * (1.f - left_window_ratio_),
+    extent.height * (1.f - bottom_window_ratio_)));
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  ImGui::Begin("viewport", nullptr, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
+
+  ImVec2 panel_size(extent.width * (1 - left_window_ratio_), extent.height * (1 - bottom_window_ratio_));
   ImGui::Image(viewport_image_ids_[renderer_up_->get_frame_index()], panel_size);
 
   viewport_size_ = ImGui::GetWindowSize();
@@ -152,11 +157,11 @@ void gui_engine::render()
 
   // render stats
   ImGui::SetNextWindowPos(ImVec2(0, 0));
-  ImGui::SetNextWindowSize(ImVec2(960 / 4, 820));
+  ImGui::SetNextWindowSize(ImVec2(extent.width * left_window_ratio_, extent.height));
   ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize);
   if (ImGui::TreeNode("window ratio")) {
-    ImGui::SliderInt("left window ratio", &left_window_ratio_, 2, 8);
-    ImGui::SliderInt("bottom window ratio", &bottom_window_ratio_, 2, 8);
+    ImGui::SliderFloat("left window ratio", &left_window_ratio_, 0.f, 1.f);
+    ImGui::SliderFloat("bottom window ratio", &bottom_window_ratio_, 0.f, 1.f);
     ImGui::TreePop();
   }
   ImGui::End();
