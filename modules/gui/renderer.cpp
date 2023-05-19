@@ -4,6 +4,9 @@
 
 namespace hnll::gui {
 
+float renderer::left_window_ratio_ = 0.2f;
+float renderer::bottom_window_ratio_ = 0.25f;
+
 u_ptr<renderer> renderer::create(graphics::window& window, graphics::device& device, bool recreate_from_scratch)
 { return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
@@ -165,7 +168,7 @@ std::vector<VkFramebuffer> renderer::create_viewport_frame_buffers()
 
     VkFramebufferCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    // make sure to create renderpass before frame buffers
+    // make sure to create render pass before frame buffers
     info.renderPass = swap_chain_->get_render_pass(VIEWPORT_RENDER_PASS_ID);
     info.attachmentCount = static_cast<uint32_t>(attachments.size());
     info.pAttachments = attachments.data();

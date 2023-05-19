@@ -12,8 +12,6 @@
 namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
-float gui_engine::left_window_ratio_ = 0.2f;
-float gui_engine::bottom_window_ratio_ = 0.25f;
 
 // take s_ptr<swap_chain> from get_renderer
 gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
@@ -138,16 +136,18 @@ void gui_engine::render()
 {
   // render viewport
   auto extent = renderer_up_->get_swap_chain_r().get_swap_chain_extent();
+  float left_window_ratio = gui::renderer::get_left_window_ratio();
+  float bottom_window_ratio = gui::renderer::get_bottom_window_ratio();
 
-  ImGui::SetNextWindowPos(ImVec2(extent.width * left_window_ratio_, 0));
+  ImGui::SetNextWindowPos(ImVec2(extent.width * left_window_ratio, 0));
   ImGui::SetNextWindowSize(ImVec2(
-    extent.width * (1.f - left_window_ratio_),
-    extent.height * (1.f - bottom_window_ratio_)));
+    extent.width * (1.f - left_window_ratio),
+    extent.height * (1.f - bottom_window_ratio)));
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::Begin("viewport", nullptr, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
 
-  ImVec2 panel_size(extent.width * (1 - left_window_ratio_), extent.height * (1 - bottom_window_ratio_));
+  ImVec2 panel_size(extent.width * (1 - left_window_ratio), extent.height * (1 - bottom_window_ratio));
   ImGui::Image(viewport_image_ids_[renderer_up_->get_frame_index()], panel_size);
 
   viewport_size_ = ImGui::GetWindowSize();
@@ -157,11 +157,11 @@ void gui_engine::render()
 
   // render stats
   ImGui::SetNextWindowPos(ImVec2(0, 0));
-  ImGui::SetNextWindowSize(ImVec2(extent.width * left_window_ratio_, extent.height));
+  ImGui::SetNextWindowSize(ImVec2(extent.width * left_window_ratio, extent.height));
   ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize);
   if (ImGui::TreeNode("window ratio")) {
-    ImGui::SliderFloat("left window ratio", &left_window_ratio_, 0.f, 1.f);
-    ImGui::SliderFloat("bottom window ratio", &bottom_window_ratio_, 0.f, 1.f);
+    ImGui::SliderFloat("left window ratio", gui::renderer::get_left_window_ratio_p(), 0.f, 1.f);
+    ImGui::SliderFloat("bottom window ratio", gui::renderer::get_bottom_window_ratio_p(), 0.f, 1.f);
     ImGui::TreePop();
   }
   ImGui::End();
@@ -254,5 +254,8 @@ void gui_engine::upload_font()
 }
 
 graphics::renderer* gui_engine::renderer_p() const { return renderer_up_.get(); }
+
+float gui_engine::get_left_window_ratio() { return gui::renderer::get_left_window_ratio(); }
+float gui_engine::get_bottom_window_ratio() { return gui::renderer::get_bottom_window_ratio(); }
 
 } // namespace hnll::gui
