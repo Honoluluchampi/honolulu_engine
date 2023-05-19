@@ -113,9 +113,7 @@ void renderer::record_default_render_command()
 {
   auto command = begin_command_buffer(HVE_RENDER_PASS_ID);
 
-  begin_render_pass(command, HVE_RENDER_PASS_ID);
-
-//  vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, );
+  begin_render_pass(command, HVE_RENDER_PASS_ID, swap_chain_->get_swap_chain_extent());
 
   end_render_pass(command);
 
@@ -154,7 +152,7 @@ void renderer::end_frame(VkCommandBuffer command)
   }
 }
 
-void renderer::begin_render_pass(VkCommandBuffer command_buffer, int renderPassId)
+void renderer::begin_render_pass(VkCommandBuffer command_buffer, int renderPassId, VkExtent2D extent)
 {
   assert(is_frame_started_ && "Can't call begin_swap_chain_render_pass() while the frame is not in progress.");
 
@@ -172,7 +170,7 @@ void renderer::begin_render_pass(VkCommandBuffer command_buffer, int renderPassI
 
   // the pixels outside this region will have undefined values
   render_pass_info.renderArea.offset = {0, 0};
-  render_pass_info.renderArea.extent = swap_chain_->get_swap_chain_extent();
+  render_pass_info.renderArea.extent = extent;
 
   // default value for color and depth
   std::array<VkClearValue, 2> clear_values;
@@ -196,14 +194,14 @@ void renderer::begin_render_pass(VkCommandBuffer command_buffer, int renderPassI
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
-  viewport.width = static_cast<float>(swap_chain_->get_swap_chain_extent().width);
-  viewport.height = static_cast<float>(swap_chain_->get_swap_chain_extent().height);
+  viewport.width = static_cast<float>(extent.width);
+  viewport.height = static_cast<float>(extent.height);
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
   // cut the region of the framebuffer(swap chain)
   VkRect2D scissor{};
   scissor.offset = {0, 0};
-  scissor.extent = swap_chain_->get_swap_chain_extent();
+  scissor.extent = extent;
   vkCmdSetViewport(command_buffer, 0, 1, &viewport);
   vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 }

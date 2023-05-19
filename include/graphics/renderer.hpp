@@ -46,7 +46,7 @@ class renderer
 
     bool begin_frame();
     void end_frame(VkCommandBuffer command);
-    void begin_render_pass(VkCommandBuffer command_buffer, int render_pass_id);
+    void begin_render_pass(VkCommandBuffer command_buffer, int render_pass_id, VkExtent2D extent);
     void end_render_pass(VkCommandBuffer command_buffer);
     VkCommandBuffer begin_command_buffer(int renderer_id);
 

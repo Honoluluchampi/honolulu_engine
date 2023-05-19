@@ -56,7 +56,7 @@ class graphics_engine_core
 
     int  get_frame_index();
     VkDescriptorSet update_ubo(const utils::global_ubo& ubo, int frame_index);
-    void begin_render_pass(VkCommandBuffer command_buffer, int renderer_id);
+    void begin_render_pass(VkCommandBuffer command_buffer, int renderer_id, VkExtent2D extent);
     void end_render_pass_and_frame(VkCommandBuffer command_buffer);
 
     // getter
@@ -160,9 +160,12 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     VkCommandBuffer command_buffer;
     // setup command buffer which associated with proper render pass
 #ifndef IMGUI_DISABLED
+    // draw whole window
     core_.record_default_render_command();
+
+    // draw viewport
     command_buffer = core_.begin_command_buffer(1);
-    core_.begin_render_pass(command_buffer, 1);
+    core_.begin_render_pass(command_buffer, 1, {960, 820});
 #elif
     command_buffer = begin_command_buffer(0);
     core_.begin_render_pass(command_buffer, 0);

@@ -172,7 +172,7 @@ void gui_engine::frame_render()
   // whether swap chain had been recreated
   if (renderer_up_->begin_frame()) {
     auto command_buffer = renderer_up_->begin_command_buffer(GUI_RENDER_PASS_ID);
-    renderer_up_->begin_render_pass(command_buffer, GUI_RENDER_PASS_ID);
+    renderer_up_->begin_render_pass(command_buffer, GUI_RENDER_PASS_ID, renderer_up_->get_swap_chain_r().get_swap_chain_extent());
 
     // record the draw data to the command buffer
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer);

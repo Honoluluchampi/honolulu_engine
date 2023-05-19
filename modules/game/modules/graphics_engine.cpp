@@ -108,8 +108,8 @@ VkCommandBuffer graphics_engine_core::begin_command_buffer(int renderer_id)
 
 int graphics_engine_core::get_frame_index() { return renderer_->get_frame_index(); }
 
-void graphics_engine_core::begin_render_pass(VkCommandBuffer command_buffer, int renderer_id)
-{ renderer_->begin_render_pass(command_buffer, renderer_id); }
+void graphics_engine_core::begin_render_pass(VkCommandBuffer command_buffer, int renderer_id, VkExtent2D extent)
+{ renderer_->begin_render_pass(command_buffer, renderer_id, extent); }
 
 void graphics_engine_core::end_render_pass_and_frame(VkCommandBuffer command_buffer)
 {
