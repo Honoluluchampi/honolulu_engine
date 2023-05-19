@@ -175,9 +175,8 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     core_.begin_render_pass(
       command_buffer,
       1,
-      window_extent);
-//      {static_cast<uint32_t>(window_extent.width * (1.f - left)),
-//       static_cast<uint32_t>(window_extent.height * (1.f - bottom))});
+      {static_cast<uint32_t>(window_extent.width * (1.f - left)),
+       static_cast<uint32_t>(window_extent.height * (1.f - bottom))});
 #elif
     command_buffer = begin_command_buffer(0);
     core_.begin_render_pass(command_buffer, 0);

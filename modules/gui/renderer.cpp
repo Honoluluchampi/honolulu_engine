@@ -173,8 +173,8 @@ std::vector<VkFramebuffer> renderer::create_viewport_frame_buffers()
     info.attachmentCount = static_cast<uint32_t>(attachments.size());
     info.pAttachments = attachments.data();
     auto extent = swap_chain_->get_swap_chain_extent();
-    info.width = extent.width;
-    info.height = extent.height;
+    info.width  = static_cast<uint32_t>(extent.width * (1 - left_window_ratio_));
+    info.height = static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_));
     info.layers = 1;
 
     if (vkCreateFramebuffer(device_.get_device(), &info, nullptr, &frame_buffers[i]) != VK_SUCCESS)
@@ -216,10 +216,13 @@ void renderer::create_viewport_images()
   auto image_count = swap_chain_->get_image_count();
   vp_images_.resize(image_count);
 
+  auto extent = swap_chain_->get_swap_chain_extent();
+
   for (uint32_t i = 0; i < image_count; i++) {
     vp_images_[i] = graphics::image_resource::create(
       device_,
-      {swap_chain_->get_swap_chain_extent().width, swap_chain_->get_swap_chain_extent().height, 1},
+      {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+       static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
       VK_FORMAT_B8G8R8A8_SRGB,
       VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
