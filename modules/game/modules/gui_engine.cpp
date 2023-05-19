@@ -140,9 +140,9 @@ void gui_engine::render()
   float bottom_window_ratio = gui::renderer::get_bottom_window_ratio();
 
   ImGui::SetNextWindowPos(ImVec2(extent.width * left_window_ratio, 0));
-  ImGui::SetNextWindowSize(ImVec2(
-    extent.width * (1.f - left_window_ratio),
-    extent.height * (1.f - bottom_window_ratio)));
+//  ImGui::SetNextWindowSize(ImVec2(
+//    extent.width * (1.f - left_window_ratio),
+//    extent.height * (1.f - bottom_window_ratio)));
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::Begin("viewport", nullptr, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
