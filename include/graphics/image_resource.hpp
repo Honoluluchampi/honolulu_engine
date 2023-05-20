@@ -24,7 +24,8 @@ class image_resource
       VkFormat image_format,
       VkImageTiling tiling,
       VkImageUsageFlags usage,
-      VkMemoryPropertyFlags properties);
+      VkMemoryPropertyFlags properties,
+      bool for_ray_tracing = false);
 
     explicit image_resource(
       device& device,
@@ -32,7 +33,8 @@ class image_resource
       VkFormat image_format,
       VkImageTiling tiling,
       VkImageUsageFlags usage,
-      VkMemoryPropertyFlags properties);
+      VkMemoryPropertyFlags properties,
+      bool for_ray_tracing = false);
 
     ~image_resource();
 
@@ -55,7 +57,7 @@ class image_resource
     [[nodiscard]] VkImageSubresourceRange get_sub_resource_range() const { return sub_resource_range_; }
 
   private:
-    void create_image_view();
+    void create_image_view(bool for_ray_tracing = false);
     void create_sampler();
 
     device& device_;
