@@ -20,7 +20,7 @@
 #define SELECT_ACTOR(...)          using selected_actors          = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
 #define ENGINE_CTOR(name) name(const std::string& app_name = "app", hnll::utils::rendering_type type = hnll::utils::rendering_type::VERTEX_SHADING) \
-                          : game::engine_base<my_engine, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
+                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
 
 namespace hnll {
 

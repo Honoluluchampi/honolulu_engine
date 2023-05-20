@@ -31,6 +31,7 @@ enum class shading_type : uint32_t
   FRAME_ANIM_MESHLET = 201,
   POINT_LIGHT  = 400,
   LINE         = 0,
+  UNIQUE       = 1,
   WIRE_FRUSTUM = 300,
   GRID         = 500
 };

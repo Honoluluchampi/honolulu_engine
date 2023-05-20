@@ -4,6 +4,9 @@
 
 namespace hnll::gui {
 
+float renderer::left_window_ratio_ = 0.2f;
+float renderer::bottom_window_ratio_ = 0.25f;
+
 u_ptr<renderer> renderer::create(graphics::window& window, graphics::device& device, bool recreate_from_scratch)
 { return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
@@ -165,13 +168,13 @@ std::vector<VkFramebuffer> renderer::create_viewport_frame_buffers()
 
     VkFramebufferCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    // make sure to create renderpass before frame buffers
+    // make sure to create render pass before frame buffers
     info.renderPass = swap_chain_->get_render_pass(VIEWPORT_RENDER_PASS_ID);
     info.attachmentCount = static_cast<uint32_t>(attachments.size());
     info.pAttachments = attachments.data();
     auto extent = swap_chain_->get_swap_chain_extent();
-    info.width = extent.width;
-    info.height = extent.height;
+    info.width  = static_cast<uint32_t>(extent.width * (1 - left_window_ratio_));
+    info.height = static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_));
     info.layers = 1;
 
     if (vkCreateFramebuffer(device_.get_device(), &info, nullptr, &frame_buffers[i]) != VK_SUCCESS)
@@ -213,10 +216,13 @@ void renderer::create_viewport_images()
   auto image_count = swap_chain_->get_image_count();
   vp_images_.resize(image_count);
 
+  auto extent = swap_chain_->get_swap_chain_extent();
+
   for (uint32_t i = 0; i < image_count; i++) {
     vp_images_[i] = graphics::image_resource::create(
       device_,
-      {swap_chain_->get_swap_chain_extent().width, swap_chain_->get_swap_chain_extent().height, 1},
+      {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+       static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
       VK_FORMAT_B8G8R8A8_SRGB,
       VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,

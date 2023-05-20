@@ -11,7 +11,7 @@ using grid_comp = dummy_renderable_comp<utils::shading_type::GRID>;
 DEFINE_SHADING_SYSTEM(grid_shading_system, grid_comp)
 {
   public:
-    DEFAULT_SHADING_SYSTEM_CTOR(grid_shading_system, grid_comp);
+    DEFAULT_SHADING_SYSTEM_CTOR_DECL(grid_shading_system, grid_comp);
     void render(const utils::graphics_frame_info& frame_info);
     void setup();
 };
