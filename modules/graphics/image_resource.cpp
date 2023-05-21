@@ -42,16 +42,12 @@ u_ptr<image_resource> image_resource::create_from_file(device& device, const std
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   // available for copy destination
-  ret->transition_image_layout(
-    VK_IMAGE_LAYOUT_UNDEFINED,
-    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  ret->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   ret->copy_buffer_to_image(staging_buffer->get_buffer(), extent);
 
   // available for shader
-  ret->transition_image_layout(
-    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+  ret->transition_image_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
   );
 
   return ret;
@@ -66,6 +62,9 @@ u_ptr<image_resource> image_resource::create(
   VkMemoryPropertyFlags properties,
   bool for_ray_tracing)
 { return std::make_unique<image_resource>(device, extent, image_format, tiling, usage, properties, for_ray_tracing); }
+
+u_ptr<image_resource> image_resource::create_blank(device& device)
+{ return std::make_unique<image_resource>(device); }
 
 image_resource::image_resource(
   device &device,
@@ -122,6 +121,8 @@ image_resource::image_resource(
   create_image_view(for_ray_tracing);
 }
 
+image_resource::image_resource(device &device) : device_(device) {}
+
 image_resource::~image_resource()
 {
   vkDestroyImageView(device_.get_device(), image_view_, nullptr);
@@ -129,9 +130,7 @@ image_resource::~image_resource()
   vkFreeMemory(device_.get_device(), image_memory_, nullptr);
 }
 
-void image_resource::transition_image_layout(
-  VkImageLayout old_layout,
-  VkImageLayout new_layout)
+void image_resource::transition_image_layout(VkImageLayout new_layout)
 {
   auto command_buffer = device_.begin_one_shot_commands();
 
@@ -139,7 +138,7 @@ void image_resource::transition_image_layout(
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   // this field could be VK_IMAGE_LAYOUT_UNDEFINED
   // if you don't care about  the existing contents
-  barrier.oldLayout = old_layout;
+  barrier.oldLayout = layout_;
   barrier.newLayout = new_layout;
 
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -148,31 +147,32 @@ void image_resource::transition_image_layout(
   barrier.image = image_;
   barrier.subresourceRange = sub_resource_range_;
 
-  VkPipelineStageFlags src_stage;
-  VkPipelineStageFlags dst_stage;
+  VkPipelineStageFlags src_stage = 0;
+  VkPipelineStageFlags dst_stage = 0;
 
-  if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED
-    && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+  // current layout
+  if (layout_ == VK_IMAGE_LAYOUT_UNDEFINED) {
     barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+  }
+  else if (layout_ == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  }
+
+  // new layout
+  if (new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
   }
-  else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  else if (new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   }
-  else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED
-    && new_layout == VK_IMAGE_LAYOUT_GENERAL) {
-    barrier.srcAccessMask = 0;
-    src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-  }
-  else {
-    throw std::invalid_argument("unsupported layout transition!");
-  }
+
+//  else {
+//    throw std::invalid_argument("unsupported layout transition!");
+//  }
 
   vkCmdPipelineBarrier(
     command_buffer,
@@ -184,6 +184,7 @@ void image_resource::transition_image_layout(
   );
 
   device_.end_one_shot_commands(command_buffer);
+  layout_ = new_layout;
 }
 
 void image_resource::copy_buffer_to_image(VkBuffer buffer, VkExtent3D extent)

@@ -13,6 +13,7 @@ set(SOURCES
     timeline_semaphore.cpp
     graphics_models/static_mesh.cpp
     graphics_models/static_meshlet.cpp
+    acceleration_structure.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

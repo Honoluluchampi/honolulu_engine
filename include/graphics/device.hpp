@@ -65,7 +65,8 @@ class device
     { return std::make_unique<device>(window, type); }
 
     // getter
-    VkCommandPool         get_graphics_command_pool()         { return graphics_command_pool_; }
+    VkCommandPool         get_graphics_command_pool(){ return graphics_command_pool_; }
+    VkCommandPool         get_compute_command_pool() { return compute_command_pool_; }
     VkInstance            get_instance()             { return instance_; }
     VkPhysicalDevice      get_physical_device()      { return physical_device_; }
     VkDevice              get_device()               { return device_; }
@@ -89,8 +90,8 @@ class device
       VkBuffer &buffer,
       VkDeviceMemory &buffer_memory);
     // currently for transfer operation
-    VkCommandBuffer begin_one_shot_commands();
-    void end_one_shot_commands(VkCommandBuffer command_buffer);
+    VkCommandBuffer begin_one_shot_commands(command_type type = command_type::TRANSFER);
+    void end_one_shot_commands(VkCommandBuffer command_buffer, command_type type = command_type::TRANSFER);
     void copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
     void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layer_count);
 
