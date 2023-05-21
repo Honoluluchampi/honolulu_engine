@@ -2,24 +2,15 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
-#include <graphics/pipeline.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
-// sub
-//#include <extensions/ray_tracing_extensions.hpp>
-
 // std
 #include <iostream>
 #include <algorithm>
-#include <memory>
 #include <filesystem>
-
-// lib1
-#include <eigen3/Eigen/Dense>
 
 using hnll::get_device_address;
 
@@ -27,11 +18,6 @@ namespace hnll {
 
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/simple_triangle/shaders/spv/";
-
-using vec3 = Eigen::Vector3f;
-using vec4 = Eigen::Vector4f;
-template<typename T> using u_ptr = std::unique_ptr<T>;
-template<typename T> using s_ptr = std::shared_ptr<T>;
 
 enum class shader_stages {
   RAY_GENERATION,
@@ -76,19 +62,16 @@ class hello_triangle {
   public:
     hello_triangle()
     {
-      window_ = std::make_unique<graphics::window>(1920, 946, "hello ray tracing triangle");
+      window_ = std::make_unique<graphics::window>(960, 820, "hello ray tracing triangle");
       device_ = std::make_unique<graphics::device>(
         *window_,
         utils::rendering_type::RAY_TRACING
       );
 
-      // load all available extensions (of course including ray tracing extensions)
-//      load_VK_EXTENSIONS(device_->get_instance(), vkGetInstanceProcAddr, device_->get_device(), vkGetDeviceProcAddr);
-
       create_triangle_as();
     }
 
-    ~hello_triangle()
+    void cleanup()
     {
       auto device = device_->get_device();
       destroy_acceleration_structure(*blas_);
@@ -116,6 +99,7 @@ class hello_triangle {
         render();
       }
       vkDeviceWaitIdle(device_->get_device());
+      cleanup();
     }
 
   private:
@@ -173,8 +157,8 @@ class hello_triangle {
       region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
       region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 
-      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, command);
 
       vkCmdCopyImage(
         command,
@@ -186,8 +170,8 @@ class hello_triangle {
         &region
       );
 
-      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL);
-      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, command);
 
       vkEndCommandBuffer(command);
 
@@ -323,7 +307,7 @@ class hello_triangle {
 
       std::vector<VkAccelerationStructureBuildRangeInfoKHR*> as_build_range_infos = { &as_build_range_info };
 
-      auto command = device_->begin_one_shot_commands(graphics::command_type::COMPUTE);
+      auto command = device_->begin_one_shot_commands(graphics::command_type::GRAPHICS);
       vkCmdBuildAccelerationStructuresKHR(
         command, 1, &as_build_geometry_info, as_build_range_infos.data()
       );
@@ -345,7 +329,7 @@ class hello_triangle {
         0, 0, nullptr, 1, &barrier, 0, nullptr
       );
 
-      device_->end_one_shot_commands(command, graphics::command_type::COMPUTE);
+      device_->end_one_shot_commands(command, graphics::command_type::GRAPHICS);
 
       // destroy scratch buffer
       vkDestroyBuffer(device_->get_device(), scratch_buffer->handle, nullptr);
@@ -480,7 +464,7 @@ class hello_triangle {
       as_build_range_info.transformOffset = 0;
       std::vector<VkAccelerationStructureBuildRangeInfoKHR*> as_build_range_infos = { &as_build_range_info };
 
-      auto command = device_->begin_one_shot_commands(graphics::command_type::COMPUTE);
+      auto command = device_->begin_one_shot_commands(graphics::command_type::GRAPHICS);
       vkCmdBuildAccelerationStructuresKHR(command, 1, &as_build_geometry_info, as_build_range_infos.data());
 
       VkBufferMemoryBarrier barrier { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
@@ -500,7 +484,7 @@ class hello_triangle {
         0, 0, nullptr, 1, &barrier, 0, nullptr
       );
 
-      device_->end_one_shot_commands(command, graphics::command_type::COMPUTE);
+      device_->end_one_shot_commands(command, graphics::command_type::GRAPHICS);
 
       // destroy scratch buffer
       vkDestroyBuffer(device_->get_device(), scratch_buffer->handle, nullptr);
@@ -512,7 +496,6 @@ class hello_triangle {
       // temporary : for format info
       auto extent = window_->get_extent();
       auto format = back_buffer_format_.format;
-      auto device = device_->get_device();
       VkImageUsageFlags usage =
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
         VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -962,23 +945,9 @@ class hello_triangle {
       command_buffers_.resize(image_count);
       for (auto& cb : command_buffers_) {
         cb = std::make_unique<frame_command_buffer>();
-        cb->command = device_->create_command_buffers(1, graphics::command_type::COMPUTE)[0];
+        cb->command = device_->create_command_buffers(1, graphics::command_type::GRAPHICS)[0];
         cb->fence = create_fence();
       }
-    }
-
-    VkCommandBuffer create_command_buffer()
-    {
-      VkCommandBufferAllocateInfo allocate_info {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        nullptr,
-        device_->get_compute_command_pool(),
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        1
-      };
-      VkCommandBuffer command;
-      vkAllocateCommandBuffers(device_->get_device(), &allocate_info, &command);
-      return command;
     }
 
     VkFence create_fence()

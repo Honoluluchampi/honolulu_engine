@@ -130,9 +130,16 @@ image_resource::~image_resource()
   vkFreeMemory(device_.get_device(), image_memory_, nullptr);
 }
 
-void image_resource::transition_image_layout(VkImageLayout new_layout)
+void image_resource::transition_image_layout(VkImageLayout new_layout, VkCommandBuffer manual_command)
 {
-  auto command_buffer = device_.begin_one_shot_commands();
+  VkCommandBuffer command_buffer;
+  // if manual command buffer is not assigned
+  if (manual_command == nullptr) {
+    command_buffer = device_.begin_one_shot_commands();
+  }
+  else {
+    command_buffer = manual_command;
+  }
 
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -183,7 +190,9 @@ void image_resource::transition_image_layout(VkImageLayout new_layout)
     1, &barrier
   );
 
-  device_.end_one_shot_commands(command_buffer);
+  if (manual_command == nullptr) {
+    device_.end_one_shot_commands(command_buffer);
+  }
   layout_ = new_layout;
 }
 

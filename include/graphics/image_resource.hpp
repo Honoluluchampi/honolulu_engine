@@ -40,7 +40,7 @@ class image_resource
 
     ~image_resource();
 
-    void transition_image_layout(VkImageLayout new_layout);
+    void transition_image_layout(VkImageLayout new_layout, VkCommandBuffer manual_command = nullptr);
 
     void copy_buffer_to_image(
       VkBuffer buffer,
