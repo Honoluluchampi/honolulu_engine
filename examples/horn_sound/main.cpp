@@ -4,6 +4,9 @@
 #include <game/shading_system.hpp>
 #include <game/renderable_component.hpp>
 #include <game/modules/gui_engine.hpp>
+#include <audio/engine.hpp>
+#include <audio/audio_data.hpp>
+#include <audio/utils.hpp>
 
 namespace hnll {
 
@@ -15,6 +18,24 @@ DEFINE_PURE_ACTOR(horn)
     void bind(VkCommandBuffer command) {}
     void draw(VkCommandBuffer command) { vkCmdDraw(command, 6, 1, 0, 0); }
 
+    void update_this(const float& dt)
+    {
+      auto audio = audio::utils::create_sine_wave(
+        2,
+        length
+      );
+
+      a_data_
+        .set_sampling_rate(44100)
+        .set_format(AL_FORMAT_MONO16)
+        .set_data(std::move(audio));
+
+      audio::engine::stop_audio_from_source(a_data_.get_source_id());
+      audio::engine::bind_audio_to_buffer(a_data_);
+      audio::engine::bind_buffer_to_source(a_data_);
+      audio::engine::play_audio_from_source(a_data_.get_source_id());
+    }
+
     // to use as renderable component
     uint32_t            get_rc_id() const { return id_; }
     utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
@@ -22,6 +43,8 @@ DEFINE_PURE_ACTOR(horn)
     float length = 100.f;
     float width = 20.f;
     uint32_t id;
+
+    audio::audio_data a_data_;
 };
 
 // include push constant (shared with the shader)
@@ -87,13 +110,22 @@ DEFINE_ENGINE(horn_sound)
     {
       target_ = std::make_shared<horn>();
       horn_shading_system::set_target(target_);
+
+      // start audio engine
+      audio::engine::start_hae_context();
     }
+
+    ~horn_sound()
+    { audio::engine::kill_hae_context(); }
 
     // GUI
     void update_this(float dt)
     {
+      target_->update_this(dt);
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
       ImGui::Text("horn length : %d mm", int(target_->length));
+      ImGui::SliderFloat("length", &target_->length, 1.f, 500.f);
+      ImGui::SliderFloat("width",  &target_->width, 1.f, 500.f);
       ImGui::End();
     }
 
