@@ -13,7 +13,8 @@ namespace hnll {
 DEFINE_PURE_ACTOR(horn)
 {
   public:
-    horn() : game::pure_actor_base<horn>() {}
+    horn() : game::pure_actor_base<horn>()
+      { source = audio::engine::get_available_source_id(); }
 
     void bind(VkCommandBuffer command) {}
     void draw(VkCommandBuffer command) { vkCmdDraw(command, 6, 1, 0, 0); }
@@ -21,19 +22,27 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(const float& dt)
     {
       auto audio = audio::utils::create_sine_wave(
-        2,
+        dt + 1,
         length
       );
 
-      a_data_
+      audio::audio_data data;
+      data
         .set_sampling_rate(44100)
         .set_format(AL_FORMAT_MONO16)
         .set_data(std::move(audio));
 
-      audio::engine::stop_audio_from_source(a_data_.get_source_id());
-      audio::engine::bind_audio_to_buffer(a_data_);
-      audio::engine::bind_buffer_to_source(a_data_);
-      audio::engine::play_audio_from_source(a_data_.get_source_id());
+      audio::engine::erase_finished_audio_on_queue(source);
+
+      if (audio::engine::get_audio_count_on_queue(source) <= queue_capability) {
+        audio::engine::bind_audio_to_buffer(data);
+        audio::engine::queue_buffer_to_source(source, data.get_buffer_id());
+      }
+
+      if (!is_ringing) {
+        audio::engine::play_audio_from_source(source);
+        is_ringing = true;
+      }
     }
 
     // to use as renderable component
@@ -44,7 +53,10 @@ DEFINE_PURE_ACTOR(horn)
     float width = 20.f;
     uint32_t id;
 
-    audio::audio_data a_data_;
+    // audio queue is constructed on this queue
+    audio::source_id source;
+    bool is_ringing = false;
+    int queue_capability = 3;
 };
 
 // include push constant (shared with the shader)
@@ -108,11 +120,11 @@ DEFINE_ENGINE(horn_sound)
   public:
     explicit ENGINE_CTOR(horn_sound)
     {
-      target_ = std::make_shared<horn>();
-      horn_shading_system::set_target(target_);
-
       // start audio engine
       audio::engine::start_hae_context();
+
+      target_ = std::make_shared<horn>();
+      horn_shading_system::set_target(target_);
     }
 
     ~horn_sound()
