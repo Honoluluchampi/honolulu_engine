@@ -149,17 +149,11 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    image->transition_image_layout(
-      VK_IMAGE_LAYOUT_UNDEFINED,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    );
+    image->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     image->copy_buffer_to_image(initial_buffer->get_buffer(), extent);
 
-    image->transition_image_layout(
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VK_IMAGE_LAYOUT_GENERAL
-    );
+    image->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL);
 
     VkDescriptorImageInfo image_info = {
       .sampler = nullptr,

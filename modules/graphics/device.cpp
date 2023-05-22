@@ -739,12 +739,23 @@ void device::create_buffer(
   vkBindBufferMemory(device_, buffer, buffer_memory, 0);
 }
 
-VkCommandBuffer device::begin_one_shot_commands()
+VkCommandBuffer device::begin_one_shot_commands(command_type type)
 {
   VkCommandBufferAllocateInfo allocate_info{};
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = transfer_command_pool_;
+
+  switch (type) {
+    case command_type::TRANSFER :
+      allocate_info.commandPool = transfer_command_pool_;
+
+    case command_type::GRAPHICS :
+      allocate_info.commandPool = graphics_command_pool_;
+
+    case command_type::COMPUTE :
+      allocate_info.commandPool = compute_command_pool_;
+  }
+
   allocate_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
@@ -758,7 +769,7 @@ VkCommandBuffer device::begin_one_shot_commands()
   return command_buffer;
 }
 
-void device::end_one_shot_commands(VkCommandBuffer command_buffer)
+void device::end_one_shot_commands(VkCommandBuffer command_buffer, command_type type)
 {
   vkEndCommandBuffer(command_buffer);
 
@@ -767,10 +778,28 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer)
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vkQueueSubmit(transfer_queue_, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(transfer_queue_);
+  VkQueue queue;
+  VkCommandPool pool;
 
-  vkFreeCommandBuffers(device_, transfer_command_pool_, 1, &command_buffer);
+  switch(type) {
+    case command_type::TRANSFER : {
+      queue = transfer_queue_;
+      pool = transfer_command_pool_;
+    }
+    case command_type::GRAPHICS : {
+      queue = graphics_queue_;
+      pool = graphics_command_pool_;
+    }
+    case command_type::COMPUTE : {
+      queue = compute_queue_;
+      pool = compute_command_pool_;
+    }
+  }
+
+  vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
+
+  vkFreeCommandBuffers(device_, pool, 1, &command_buffer);
 }
 
 void device::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)

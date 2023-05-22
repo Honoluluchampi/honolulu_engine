@@ -24,7 +24,9 @@ class image_resource
       VkFormat image_format,
       VkImageTiling tiling,
       VkImageUsageFlags usage,
-      VkMemoryPropertyFlags properties);
+      VkMemoryPropertyFlags properties,
+      bool for_ray_tracing = false);
+    static u_ptr<image_resource> create_blank(device& device);
 
     explicit image_resource(
       device& device,
@@ -32,14 +34,13 @@ class image_resource
       VkFormat image_format,
       VkImageTiling tiling,
       VkImageUsageFlags usage,
-      VkMemoryPropertyFlags properties);
+      VkMemoryPropertyFlags properties,
+      bool for_ray_tracing = false);
+    image_resource(device& device);
 
     ~image_resource();
 
-    void transition_image_layout(
-      VkImageLayout old_layout,
-      VkImageLayout new_layout
-    );
+    void transition_image_layout(VkImageLayout new_layout, VkCommandBuffer manual_command = nullptr);
 
     void copy_buffer_to_image(
       VkBuffer buffer,
@@ -54,8 +55,11 @@ class image_resource
     [[nodiscard]] const VkExtent2D& get_extent()       const { return extent_; }
     [[nodiscard]] VkImageSubresourceRange get_sub_resource_range() const { return sub_resource_range_; }
 
+    // setter
+    void set_image(VkImage image) { image_ = image; }
+    void set_image_view(VkImageView view) { image_view_ = view; }
   private:
-    void create_image_view();
+    void create_image_view(bool for_ray_tracing = false);
     void create_sampler();
 
     device& device_;
