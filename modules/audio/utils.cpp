@@ -6,16 +6,28 @@ std::vector<ALshort> create_sine_wave(
   float duration,
   float pitch,
   float amplitude,
-  float sampling_rate
+  float sampling_rate,
+  float* phase
 )
 {
-  std::vector<ALshort> data(static_cast<size_t>(sampling_rate * duration));
+  int data_count = static_cast<int>(sampling_rate * duration);
+
+  std::vector<ALshort> data(data_count);
 
   assert(amplitude <= 1.f && "amplitude should be or less than 1");
 
+  float initial_phase = 0;
+  if (phase != nullptr) {
+    initial_phase = *phase;
+  }
+
   for (int i = 0; i < data.size(); i++) {
-    data[i] = std::sin(pitch * M_PI * 2.f * i / sampling_rate)
+    data[i] = std::sin(initial_phase + pitch * M_PI * 2.f * i / sampling_rate)
               * amplitude * std::numeric_limits<ALshort>::max();
+  }
+
+  if (phase != nullptr) {
+    *phase = initial_phase + pitch * M_PI * 2.f * data.size() / sampling_rate;
   }
 
   return data;

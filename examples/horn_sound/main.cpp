@@ -21,20 +21,24 @@ DEFINE_PURE_ACTOR(horn)
 
     void update_this(const float& dt)
     {
-      auto audio = audio::utils::create_sine_wave(
-        dt + 1,
-        length
-      );
-
-      audio::audio_data data;
-      data
-        .set_sampling_rate(44100)
-        .set_format(AL_FORMAT_MONO16)
-        .set_data(std::move(audio));
-
       audio::engine::erase_finished_audio_on_queue(source);
 
+      // add new audio segment
       if (audio::engine::get_audio_count_on_queue(source) <= queue_capability) {
+        auto audio = audio::utils::create_sine_wave(
+          dt + 0.01,
+          length,
+          1,
+          44100,
+          &phase
+        );
+
+        audio::audio_data data;
+        data
+          .set_sampling_rate(44100)
+          .set_format(AL_FORMAT_MONO16)
+          .set_data(std::move(audio));
+
         audio::engine::bind_audio_to_buffer(data);
         audio::engine::queue_buffer_to_source(source, data.get_buffer_id());
       }
@@ -57,6 +61,7 @@ DEFINE_PURE_ACTOR(horn)
     audio::source_id source;
     bool is_ringing = false;
     int queue_capability = 3;
+    float phase = 0.f;
 };
 
 // include push constant (shared with the shader)
