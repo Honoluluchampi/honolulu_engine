@@ -1,6 +1,7 @@
 // hnll
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
+#include <audio/utils.hpp>
 
 // std
 #include <thread>
@@ -17,11 +18,13 @@ int main()
   const unsigned int freq = 44100;
   const float pitch = 440.0f;
   const float duration = 2.0f;
-  std::vector<ALshort> audio(static_cast<size_t>(freq * duration));
-  for (int i = 0; i < audio.size(); i++) {
-    audio[i] = std::sin(pitch * M_PI * 2.0 * i / freq)
-               * std::numeric_limits<ALshort>::max();
-  }
+
+  auto audio = utils::create_sine_wave(
+    duration,
+    pitch,
+    1.f,
+    freq
+    );
 
   // audio data creation
   audio_data audio_data;
