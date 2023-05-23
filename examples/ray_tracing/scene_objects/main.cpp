@@ -8,14 +8,15 @@
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/utils.hpp>
 
 using hnll::graphics::image_resource;
 using hnll::get_device_address;
 
 namespace hnll {
 
-const std::string SHADERS_DIRECTORY = std::string(std::getenv("HNLL_ENGN")) +
-                                      "/applications/ray_tracing/scene_objects/shaders/spv/";
+const std::string SHADERS_DIRECTORY =
+  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
 using vec3 = Eigen::Vector3f;
 using vec4 = Eigen::Vector4f;
@@ -167,8 +168,8 @@ class hello_triangle {
       region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
       region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-      back_buffer->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, command);
 
       vkCmdCopyImage(
         command,
@@ -180,8 +181,8 @@ class hello_triangle {
         &region
       );
 
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_GENERAL);
-      back_buffer->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, command);
 
       vkEndCommandBuffer(command);
 
@@ -218,13 +219,13 @@ class hello_triangle {
       ray_traced_image_ = create_texture_2d(extent, format, usage, device_memory_props);
 
       auto command = device_->begin_one_shot_commands();
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_GENERAL);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, command);
       device_->end_one_shot_commands(command);
     }
 
     u_ptr<image_resource> create_texture_2d(VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memory_props)
     {
-      auto res = std::make_unique<image_resource>();
+      auto res = graphics::image_resource::create_blank(*device_);
 
       // create image
       VkImageCreateInfo create_info {
@@ -274,11 +275,11 @@ class hello_triangle {
 
     void create_layout()
     {
-      descriptor_set_layout_ = graphics::descriptor_set_layout::builder(*device_)
-        .add_binding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-        .add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+      descriptor_set_layout_ = graphics::desc_layout::builder(*device_)
+        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
           // make it dynamic because the ubo is writen by cpu accessed by gpu
-        .add_binding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL)
+        .add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL)
         .build();
 
       VkPipelineLayoutCreateInfo pl_create_info {
@@ -291,9 +292,9 @@ class hello_triangle {
 
     void create_pipeline()
     {
-      auto ray_generation_stage = load_shader("ray_generation.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-      auto miss_stage = load_shader("miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
-      auto closest_hit_stage = load_shader("closest_hit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+      auto ray_generation_stage = load_shader("scene.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+      auto miss_stage = load_shader("scene.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
+      auto closest_hit_stage = load_shader("scene.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
       std::vector<VkPipelineShaderStageCreateInfo> stages = {
         ray_generation_stage,
@@ -372,7 +373,7 @@ class hello_triangle {
         nullptr
       };
 
-      auto shader_spv = graphics::pipeline::read_file(SHADERS_DIRECTORY + shader_name);
+      auto shader_spv = utils::read_file_for_shader(SHADERS_DIRECTORY + shader_name);
       VkShaderModuleCreateInfo module_create_info {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr
       };
@@ -482,7 +483,7 @@ class hello_triangle {
     void create_descriptor_set()
     {
       // create descriptor pool
-      descriptor_pool_ = graphics::descriptor_pool::builder(*device_)
+      descriptor_pool_ = graphics::desc_pool::builder(*device_)
         .set_max_sets(100)
         .add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
@@ -505,7 +506,7 @@ class hello_triangle {
       image_info.imageView = ray_traced_image_->get_image_view();
       image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-      graphics::descriptor_writer(*descriptor_set_layout_, *descriptor_pool_)
+      graphics::desc_writer(*descriptor_set_layout_, *descriptor_pool_)
         .write_acceleration_structure(0, &as_info)
         .write_image(1, &image_info)
         .build(descriptor_set_);
@@ -658,7 +659,7 @@ class hello_triangle {
 
       render_targets_.resize(image_count);
       for (uint32_t i = 0; i < image_count; ++i) {
-        render_targets_[i] = std::make_unique<image_resource>();
+        render_targets_[i] = image_resource::create_blank(*device_);
         render_targets_[i]->set_image(images[i]);
 
         VkImageViewCreateInfo view_create_info {
@@ -685,7 +686,7 @@ class hello_triangle {
 
       auto command = device_->begin_one_shot_commands();
       for (uint32_t i = 0; i < image_count; i++) {
-        render_targets_[i]->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        render_targets_[i]->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, command);
       }
       device_->end_one_shot_commands(command);
 
@@ -709,7 +710,7 @@ class hello_triangle {
       VkCommandBufferAllocateInfo allocate_info {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         nullptr,
-        device_->get_command_pool(),
+        device_->get_graphics_command_pool(),
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         1
       };
@@ -1103,8 +1104,8 @@ class hello_triangle {
     VkPipelineLayout pipeline_layout_;
     VkPipeline       pipeline_;
 
-    u_ptr<graphics::descriptor_set_layout> descriptor_set_layout_;
-    u_ptr<graphics::descriptor_pool>       descriptor_pool_;
+    u_ptr<graphics::desc_layout> descriptor_set_layout_;
+    s_ptr<graphics::desc_pool>       descriptor_pool_;
     VkDescriptorSet                        descriptor_set_;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_group_create_infos_;
@@ -1146,9 +1147,3 @@ int main() {
   }
   return EXIT_SUCCESS;
 }
-
-// empty
-#include <geometry/mesh_model.hpp>
-void hnll::geometry::mesh_model::align_vertex_id() {}
-#include <utils/utils.hpp>
-std::string hnll::utils::get_full_path(const std::string &_filename) {}

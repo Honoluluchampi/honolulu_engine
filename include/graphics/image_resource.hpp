@@ -58,6 +58,8 @@ class image_resource
     // setter
     void set_image(VkImage image) { image_ = image; }
     void set_image_view(VkImageView view) { image_view_ = view; }
+    void set_device_memory(VkDeviceMemory memory) { image_memory_ = memory; }
+
   private:
     void create_image_view(bool for_ray_tracing = false);
     void create_sampler();

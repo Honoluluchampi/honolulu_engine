@@ -4,7 +4,7 @@ fi
 
 if [ $# == 1 ]; then
 
-COMPILER=${VULKAN_DIR}/bin/glslangValidator
+COMPILER=${VULKAN_DIR}/x86_64/bin/glslangValidator
 TARGET_ENV=vulkan1.3
 
 SHADERDIR=$1
