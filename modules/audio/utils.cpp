@@ -27,7 +27,7 @@ std::vector<ALshort> create_sine_wave(
   }
 
   if (phase != nullptr) {
-    *phase = initial_phase + pitch * M_PI * 2.f * data.size() / sampling_rate;
+    *phase = std::fmod(initial_phase + pitch * M_PI * 2.f * data.size() / sampling_rate, 2 * M_PI);
   }
 
   return data;

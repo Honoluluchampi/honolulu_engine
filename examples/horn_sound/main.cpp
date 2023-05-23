@@ -14,7 +14,10 @@ DEFINE_PURE_ACTOR(horn)
 {
   public:
     horn() : game::pure_actor_base<horn>()
-      { source = audio::engine::get_available_source_id(); }
+    {
+      source = audio::engine::get_available_source_id();
+      phases.resize(dominant_frequency_count, 0.f);
+    }
 
     void bind(VkCommandBuffer command) {}
     void draw(VkCommandBuffer command) { vkCmdDraw(command, 6, 1, 0, 0); }
@@ -25,13 +28,32 @@ DEFINE_PURE_ACTOR(horn)
 
       // add new audio segment
       if (audio::engine::get_audio_count_on_queue(source) <= queue_capability) {
-        auto audio = audio::utils::create_sine_wave(
-          dt + 0.01,
-          length,
-          1,
-          44100,
-          &phase
-        );
+        // create resonant frequency sound
+        float duration = dt + 0.01;
+        float sampling_rate = 44100;
+        std::vector<ALshort> audio(sampling_rate * duration, 0.f);
+
+        // reset phases
+        if (length != old_length) {
+          phases.resize(dominant_frequency_count, 0.f);
+          old_length = length;
+          f0 = sound_speed * 500.f / length;
+        }
+
+        // extract first 5 dominant frequency
+        for (int i = 0; i < dominant_frequency_count; i++) {
+          float pitch = (i + 1) * sound_speed * 500.f / length;
+          auto segment = audio::utils::create_sine_wave(
+            duration,
+            pitch,
+            std::pow(0.8 - 0.2 * i, 2),
+            sampling_rate,
+            &phases[i]
+          );
+          for (int j = 0; j < segment.size(); j++) {
+            audio[j] += segment[j];
+          }
+        }
 
         audio::audio_data data;
         data
@@ -53,7 +75,8 @@ DEFINE_PURE_ACTOR(horn)
     uint32_t            get_rc_id() const { return id_; }
     utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
 
-    float length = 100.f;
+    float length = 300.f;
+    float old_length = 0.f;
     float width = 20.f;
     uint32_t id;
 
@@ -61,7 +84,10 @@ DEFINE_PURE_ACTOR(horn)
     audio::source_id source;
     bool is_ringing = false;
     int queue_capability = 3;
-    float phase = 0.f;
+    std::vector<float> phases;
+    int dominant_frequency_count = 4;
+    float sound_speed = 340.f;
+    float f0 = 0.f;
 };
 
 // include push constant (shared with the shader)
@@ -141,6 +167,7 @@ DEFINE_ENGINE(horn_sound)
       target_->update_this(dt);
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
       ImGui::Text("horn length : %d mm", int(target_->length));
+      ImGui::Text("f0 : %d Hz", int(target_->f0));
       ImGui::SliderFloat("length", &target_->length, 1.f, 500.f);
       ImGui::SliderFloat("width",  &target_->width, 1.f, 500.f);
       ImGui::End();
