@@ -2,9 +2,6 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
-#include <graphics/pipeline.hpp>
-#include <graphics/renderer.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <utils/rendering_utils.hpp>
