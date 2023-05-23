@@ -26,48 +26,50 @@ DEFINE_PURE_ACTOR(horn)
     {
       audio::engine::erase_finished_audio_on_queue(source);
 
-      // add new audio segment
-      if (audio::engine::get_audio_count_on_queue(source) <= queue_capability) {
-        // create resonant frequency sound
-        float duration = dt + 0.01;
-        float sampling_rate = 44100;
-        std::vector<ALshort> audio(sampling_rate * duration, 0.f);
+      if (is_ringing) {
+        // add new audio segment
+        if (audio::engine::get_audio_count_on_queue(source) <= queue_capability) {
+          // create resonant frequency sound
+          float duration = dt + 0.01;
+          float sampling_rate = 44100;
+          std::vector<ALshort> audio(sampling_rate * duration, 0.f);
 
-        // reset phases
-        if (length != old_length) {
-          phases.resize(dominant_frequency_count, 0.f);
-          old_length = length;
-          f0 = sound_speed * 500.f / length;
-        }
-
-        // extract first 5 dominant frequency
-        for (int i = 0; i < dominant_frequency_count; i++) {
-          float pitch = (i + 1) * sound_speed * 500.f / length;
-          auto segment = audio::utils::create_sine_wave(
-            duration,
-            pitch,
-            std::pow(0.8 - 0.2 * i, 2),
-            sampling_rate,
-            &phases[i]
-          );
-          for (int j = 0; j < segment.size(); j++) {
-            audio[j] += segment[j];
+          // reset phases
+          if (length != old_length) {
+            phases.resize(dominant_frequency_count, 0.f);
+            old_length = length;
+            f0 = sound_speed * 500.f / length;
           }
+
+          // extract first 5 dominant frequency
+          for (int i = 0; i < dominant_frequency_count; i++) {
+            float pitch = (i + 1) * sound_speed * 500.f / length;
+            auto segment = audio::utils::create_sine_wave(
+              duration,
+              pitch,
+              std::pow(0.3 * (1 - i / dominant_frequency_count), 2),
+              sampling_rate,
+              &phases[i]
+            );
+            for (int j = 0; j < segment.size(); j++) {
+              audio[j] += segment[j];
+            }
+          }
+
+          audio::audio_data data;
+          data
+            .set_sampling_rate(44100)
+            .set_format(AL_FORMAT_MONO16)
+            .set_data(std::move(audio));
+
+          audio::engine::bind_audio_to_buffer(data);
+          audio::engine::queue_buffer_to_source(source, data.get_buffer_id());
         }
-
-        audio::audio_data data;
-        data
-          .set_sampling_rate(44100)
-          .set_format(AL_FORMAT_MONO16)
-          .set_data(std::move(audio));
-
-        audio::engine::bind_audio_to_buffer(data);
-        audio::engine::queue_buffer_to_source(source, data.get_buffer_id());
       }
 
-      if (!is_ringing) {
+      if (!is_started) {
         audio::engine::play_audio_from_source(source);
-        is_ringing = true;
+        is_started = true;
       }
     }
 
@@ -82,10 +84,11 @@ DEFINE_PURE_ACTOR(horn)
 
     // audio queue is constructed on this queue
     audio::source_id source;
-    bool is_ringing = false;
+    bool is_ringing = true;
+    bool is_started = false;
     int queue_capability = 3;
     std::vector<float> phases;
-    int dominant_frequency_count = 4;
+    int dominant_frequency_count = 8;
     float sound_speed = 340.f;
     float f0 = 0.f;
 };
@@ -168,8 +171,12 @@ DEFINE_ENGINE(horn_sound)
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
       ImGui::Text("horn length : %d mm", int(target_->length));
       ImGui::Text("f0 : %d Hz", int(target_->f0));
-      ImGui::SliderFloat("length", &target_->length, 1.f, 500.f);
+      ImGui::SliderFloat("length", &target_->length, 1.f, 1000.f);
       ImGui::SliderFloat("width",  &target_->width, 1.f, 500.f);
+      if (ImGui::Button("play / stop")) {
+        target_->is_ringing = !target_->is_ringing;
+        target_->is_started = !target_->is_started;
+      }
       ImGui::End();
     }
 
