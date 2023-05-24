@@ -59,6 +59,14 @@ struct ray_tracing_scratch_buffer
   VkDeviceAddress device_address = 0;
 };
 
+struct scene_parameters {
+  mat4 view = Eigen::Matrix4f::Identity();
+  mat4 projection = Eigen::Matrix4f::Identity();
+  vec4 light_direction = { -1.f, 1.f, -1.f, 0.f };
+  vec4 light_color = { 1.f, 1.f, 1.f, 1.f };
+  vec4 ambient_color = { 0.2f, 0.2f, 0.2f, 1.f };
+};
+
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
 
@@ -72,17 +80,17 @@ VkTransformMatrixKHR convert_transform(const Eigen::Matrix4f& matrix)
   return ret;
 }
 
-class hello_triangle {
+class hello_scene {
   public:
-    hello_triangle()
+    hello_scene()
     {
-      window_ = std::make_unique<graphics::window>(1920, 1080, "hello ray tracing triangle");
+      window_ = std::make_unique<graphics::window>(960, 820, "hello scene");
       device_ = std::make_unique<graphics::device>(*window_, utils::rendering_type::RAY_TRACING);
 
       create_scene();
     }
 
-    ~hello_triangle()
+    ~hello_scene()
     {
       auto device = device_->get_device();
       destroy_image_resource(*ray_traced_image_);
@@ -276,7 +284,7 @@ class hello_triangle {
         .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
           // make it dynamic because the ubo is writen by cpu accessed by gpu
-        .add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL)
+        .add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL)
         .build();
 
       VkPipelineLayoutCreateInfo pl_create_info {
@@ -405,7 +413,7 @@ class hello_triangle {
 
       const auto raygen_shader_count = 1;
       const auto miss_shader_count = 1;
-      const auto hit_shader_count = 1;
+      const auto hit_shader_count = 2; // plane, cube
 
       const auto base_align = pipeline_props.shaderGroupBaseAlignment;
       auto region_raygen = align(shader_entry_size * raygen_shader_count, base_align);
@@ -503,9 +511,23 @@ class hello_triangle {
       image_info.imageView = ray_traced_image_->get_image_view();
       image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
+      // setup ubo
+      auto initial_param = scene_parameters{};
+      ubo_buffer_ = graphics::buffer::create_with_staging(
+        *device_,
+        sizeof(scene_parameters),
+        1,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+        &initial_param
+      );
+
+      auto buffer_info = ubo_buffer_->desc_info();
+
       graphics::desc_writer(*descriptor_set_layout_, *descriptor_pool_)
         .write_acceleration_structure(0, &as_info)
         .write_image(1, &image_info)
+        .write_buffer(2, &buffer_info)
         .build(descriptor_set_);
     }
 
@@ -1105,6 +1127,9 @@ class hello_triangle {
     s_ptr<graphics::desc_pool>       descriptor_pool_;
     VkDescriptorSet                        descriptor_set_;
 
+    // ubo
+    u_ptr<graphics::buffer> ubo_buffer_;
+
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_group_create_infos_;
     u_ptr<graphics::buffer> shader_binding_table_;
 
@@ -1135,7 +1160,7 @@ class hello_triangle {
 }
 
 int main() {
-  hnll::hello_triangle app {};
+  hnll::hello_scene app {};
 
   try { app.run(); }
   catch (const std::exception& e) {
