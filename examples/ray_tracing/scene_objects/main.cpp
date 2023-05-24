@@ -60,11 +60,11 @@ struct ray_tracing_scratch_buffer
 };
 
 struct scene_parameters {
-  mat4 view = Eigen::Matrix4f::Identity();
-  mat4 projection = Eigen::Matrix4f::Identity();
-  vec4 light_direction = { -1.f, 1.f, -1.f, 0.f };
+  mat4 view = mat4::Identity();
+  mat4 projection = mat4::Identity();
+  vec4 light_direction = { -0.2f, -1.f, -1.f, 0.f };
   vec4 light_color = { 1.f, 1.f, 1.f, 1.f };
-  vec4 ambient_color = { 0.2f, 0.2f, 0.2f, 1.f };
+  vec4 ambient_color = { 0.2f, 0.2f, 0.2f, 0.2f };
 };
 
 template<class T> T align(T size, uint32_t align)
@@ -78,6 +78,22 @@ VkTransformMatrixKHR convert_transform(const Eigen::Matrix4f& matrix)
   memcpy(&ret.matrix[1], &matrix(1), sizeof(float) * 4);
   memcpy(&ret.matrix[2], &matrix(2), sizeof(float) * 4);
   return ret;
+}
+
+void write_hit_shader_binding_table_data(VkDevice device, void* dst, const mesh_model& mesh)
+{
+  uint64_t device_addr = 0;
+  auto p = static_cast<uint8_t*>(dst);
+
+  // index
+  device_addr = hnll::get_device_address(device, mesh.index_buffer->get_buffer());
+  memcpy(p, &device_addr, sizeof(device_addr));
+  p += sizeof(device_addr);
+
+  // vertex
+  device_addr = hnll::get_device_address(device, mesh.vertex_buffer->get_buffer());
+  memcpy(p, &device_addr, sizeof(device_addr));
+  p += sizeof(device_addr);
 }
 
 class hello_scene {
@@ -409,16 +425,23 @@ class hello_scene {
       // compute size of each entry
       const auto handle_size = pipeline_props.shaderGroupHandleSize;
       const auto handle_alignment = pipeline_props.shaderGroupHandleAlignment;
-      auto shader_entry_size = align(handle_size, handle_alignment);
+
+      auto raygen_shader_entry_size = align(handle_size, handle_alignment);
+      auto miss_shader_entry_size = align(handle_size, handle_alignment);
+      // consider geometry's buffer
+      uint32_t hit_shader_entry_size = handle_size;
+      hit_shader_entry_size += sizeof(uint64_t); // index buffer addr
+      hit_shader_entry_size += sizeof(uint64_t); // vertex buffer addr
+      hit_shader_entry_size = align(hit_shader_entry_size, handle_alignment);
 
       const auto raygen_shader_count = 1;
       const auto miss_shader_count = 1;
       const auto hit_shader_count = 2; // plane, cube
 
       const auto base_align = pipeline_props.shaderGroupBaseAlignment;
-      auto region_raygen = align(shader_entry_size * raygen_shader_count, base_align);
-      auto region_miss   = align(shader_entry_size * miss_shader_count, base_align);
-      auto region_hit    = align(shader_entry_size * hit_shader_count, base_align);
+      auto region_raygen = align(raygen_shader_entry_size * raygen_shader_count, base_align);
+      auto region_miss   = align(miss_shader_entry_size * miss_shader_count, base_align);
+      auto region_hit    = align(hit_shader_entry_size * hit_shader_count, base_align);
 
       shader_binding_table_ = std::make_unique<graphics::buffer>(
         *device_,
@@ -451,7 +474,7 @@ class hello_scene {
       memcpy(dst, raygen, handle_size);
       dst += region_raygen;
       region_raygen_.deviceAddress = device_address;
-      region_raygen_.stride = shader_entry_size;
+      region_raygen_.stride = raygen_shader_entry_size;
       region_raygen_.size = region_raygen_.stride;
 
       // write miss shader entry
@@ -460,15 +483,28 @@ class hello_scene {
       dst += region_miss;
       region_miss_.deviceAddress = device_address + region_raygen;
       region_miss_.size = region_miss;
-      region_miss_.stride = shader_entry_size;
+      region_miss_.stride = miss_shader_entry_size;
 
-      // write hit shader entry
+      // write hit shader entry  (corresponds to shaderRecordEXT in rchit shader
       auto hit = shader_handle_storage.data() + handle_size_aligned * static_cast<int>(shader_stages::CLOSEST_HIT);
-      memcpy(dst, hit, handle_size);
-      dst += region_hit;
+      auto start = dst;
+      // write plane
+      {
+        memcpy(start, hit, handle_size);
+        write_hit_shader_binding_table_data(device_->get_device(), start + handle_size, *plane_);
+      }
+      start = start + hit_shader_entry_size;
+      // cube
+      {
+        memcpy(start, hit, handle_size);
+        write_hit_shader_binding_table_data(device_->get_device(), start + handle_size, *cube_);
+      }
+
       region_hit_.deviceAddress = device_address + region_raygen + region_miss;
       region_hit_.size = region_hit;
-      region_hit_.stride = shader_entry_size;
+      region_hit_.stride = hit_shader_entry_size;
+
+      shader_binding_table_->unmap();
     }
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR get_ray_tracing_pipeline_properties()
@@ -1081,8 +1117,8 @@ class hello_scene {
       // cube 1
       {
         Eigen::Matrix4f tf = Eigen::Matrix4f::Identity();
-        tf(0, 3) = -2.f;
-        tf(1, 3) = 1.f;
+        tf(0, 3) = 7.f;
+        tf(1, 3) = -2.f;
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
@@ -1093,8 +1129,8 @@ class hello_scene {
       // cube 2
       {
         Eigen::Matrix4f tf = Eigen::Matrix4f::Identity();
-        tf(0, 3) = 2.f;
-        tf(1, 3) = 1.f;
+        tf(0, 3) = 6.f;
+        tf(1, 3) = 5.f;
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;

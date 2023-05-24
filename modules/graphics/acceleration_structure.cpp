@@ -35,14 +35,14 @@ void acceleration_structure::build_as(
   auto device = device_.get_device();
 
   // compute as size
-  VkAccelerationStructureBuildGeometryInfoKHR geometry_info {
-    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR
+  VkAccelerationStructureBuildGeometryInfoKHR geometry_info{
+    .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+    .type = type,
+    .flags = build_flags,
+    .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+    .geometryCount = static_cast<uint32_t>(input.geometry.size()),
+    .pGeometries = input.geometry.data()
   };
-  geometry_info.type = type;
-  geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-  geometry_info.flags = build_flags;
-  geometry_info.geometryCount = static_cast<uint32_t>(input.geometry.size());
-  geometry_info.pGeometries = input.geometry.data();
 
   VkAccelerationStructureBuildSizesInfoKHR size_info {
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
