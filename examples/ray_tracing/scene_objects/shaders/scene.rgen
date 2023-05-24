@@ -18,14 +18,17 @@ void main() {
     const vec2 screen_position = pixel_center / vec2(gl_LaunchSizeEXT.xy);
     vec2 d = screen_position * 2.0 - 1.0;
 
-    mat4 view_inv = inverse(ubo.view);
-    mat4 projection_inv = inverse(ubo.projection);
+    //mat4 view_inv = inverse(ubo.view);
+    //mat4 projection_inv = inverse(ubo.projection);
 
-    vec4 origin = view_inv * vec4(0, 0, 0, 1);
-    vec4 target = projection_inv * vec4(d.x, -d.y, 1, 1);
+    //vec4 origin = view_inv * vec4(0, 0, 0, 1);
+    //vec4 target = projection_inv * vec4(d.x, -d.y, 1, 1);
 
-    vec4 direction = view_inv * vec4(target.xyz, 0);
-    direction.xyz = normalize(direction.xyz);
+    //vec4 direction = view_inv * vec4(target.xyz, 0);
+    //direction.xyz = normalize(direction.xyz);
+
+        vec3 origin = vec3(d.x, -d.y, 10);
+        vec3 direction = vec3(0, 0, -1);
 
     float tmin = 0.00;
     float tmax = 10000.0;

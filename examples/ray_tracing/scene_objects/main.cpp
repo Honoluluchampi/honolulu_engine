@@ -15,11 +15,6 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
-using vec3 = Eigen::Vector3f;
-using vec4 = Eigen::Vector4f;
-template<typename T> using u_ptr = std::unique_ptr<T>;
-template<typename T> using s_ptr = std::shared_ptr<T>;
-
 enum class shader_stages {
   RAY_GENERATION,
   MISS,
@@ -36,8 +31,8 @@ const uint32_t cube_hit_shader  = 1;
 
 struct vertex
 {
-  vec3 position;
-  vec3 normal;
+  alignas(16) vec3 position;
+  alignas(16) vec3 normal;
   vec4 color;
 };
 
@@ -808,29 +803,27 @@ class hello_scene {
 
       // create plane vertex buffer
       auto usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | usage_for_rt;
-      plane_->vertex_buffer = std::make_unique<graphics::buffer>(
+      plane_->vertex_buffer = graphics::buffer::create_with_staging(
         *device_,
         vertex_buffer_size,
         1,
         usage,
-        host_memory_props
+        host_memory_props,
+        vertices.data()
       );
-      plane_->vertex_buffer->map();
-      plane_->vertex_buffer->write_to_buffer((void *) vertices.data());
       plane_->vertex_count = static_cast<uint32_t>(vertices.size());
       plane_->vertex_stride = vertex_stride;
 
       // create plane index buffer
       usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | usage_for_rt;
-      plane_->index_buffer = std::make_unique<graphics::buffer>(
+      plane_->index_buffer = graphics::buffer::create_with_staging(
         *device_,
         index_buffer_size,
         1,
         usage,
-        host_memory_props
+        host_memory_props,
+        indices.data()
       );
-      plane_->index_buffer->map();
-      plane_->index_buffer->write_to_buffer((void *) indices.data());
       plane_->index_count = static_cast<uint32_t>(indices.size());
 
       // create cube mesh_model
