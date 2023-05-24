@@ -199,34 +199,19 @@ class hello_triangle {
       uint32_t vertex_size = sizeof(triangle_vertices_[0]);
       VkDeviceSize buffer_size = vertex_size * vertex_count;
 
-      // create staging buffer
-      graphics::buffer staging_buffer{
-        *device_,
-        vertex_size,
-        vertex_count,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-      };
-      staging_buffer.map();
-      staging_buffer.write_to_buffer((void *) triangle_vertices_.data());
-
-      // setup vertex buffer create info
       VkBufferUsageFlags usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-      // create vertex buffer
-      vertex_buffer_ = std::make_unique<graphics::buffer>(
+      vertex_buffer_ = graphics::buffer::create_with_staging(
         *device_,
-        vertex_size,
-        vertex_count,
+        buffer_size,
+        1,
         usage,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+        triangle_vertices_.data()
       );
-      // write data to the buffer
-      device_->copy_buffer(staging_buffer.get_buffer(), vertex_buffer_->get_buffer(), buffer_size);
     }
 
     void create_triangle_blas()
