@@ -21,6 +21,11 @@ class model_app
       setup();
     }
 
+    ~model_app()
+    {
+      graphics::texture_image::reset_desc_layout();
+    }
+
     void setup()
     {
       load_model();
@@ -29,7 +34,7 @@ class model_app
     }
 
     void load_model()
-    { model_ = graphics::static_mesh::create_from_file(*device_, utils::get_full_path("bunny.obj")); }
+    { model_ = graphics::static_mesh::create_from_file(*device_, utils::get_full_path("bunny.obj"), true); }
 
     void create_blas()
     {
