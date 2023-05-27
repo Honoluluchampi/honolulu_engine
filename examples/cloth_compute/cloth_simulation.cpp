@@ -11,16 +11,16 @@
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(graphics_shaders,
+SELECT_SHADING_SYSTEM(
   game::grid_shading_system,
   game::static_mesh_shading_system,
   physics::cloth_compute_shading_system);
 
-SELECT_ACTOR(actors, game::default_camera);
+SELECT_ACTOR(game::default_camera);
 
-SELECT_COMPUTE_SHADER(compute_shaders, physics::cloth_compute_shader);
+SELECT_COMPUTE_SHADER(physics::cloth_compute_shader);
 
-DEFINE_ENGINE_WITH_COMPUTE(cloth_simulation, graphics_shaders, actors, compute_shaders)
+DEFINE_ENGINE(cloth_simulation)
 {
   public:
     cloth_simulation()

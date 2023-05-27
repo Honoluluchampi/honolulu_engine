@@ -24,7 +24,7 @@ void cloth_compute_shader::setup()
 {
   mass_spring_cloth::set_desc_layout();
   auto layout= mass_spring_cloth::get_vk_desc_layout();
-  create_pipeline<cloth_push>(
+  pipeline_ = create_pipeline<cloth_push>(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/cloth_compute.comp.spv",
     // double buffering to separate current and previous frames
     { layout, layout, layout }

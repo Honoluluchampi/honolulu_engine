@@ -135,7 +135,7 @@ void image_resource::transition_image_layout(VkImageLayout new_layout, VkCommand
   VkCommandBuffer command_buffer;
   // if manual command buffer is not assigned
   if (manual_command == nullptr) {
-    command_buffer = device_.begin_one_shot_commands();
+    command_buffer = device_.begin_one_shot_commands(command_type::GRAPHICS);
   }
   else {
     command_buffer = manual_command;
@@ -191,7 +191,7 @@ void image_resource::transition_image_layout(VkImageLayout new_layout, VkCommand
   );
 
   if (manual_command == nullptr) {
-    device_.end_one_shot_commands(command_buffer);
+    device_.end_one_shot_commands(command_buffer, command_type::GRAPHICS);
   }
   layout_ = new_layout;
 }
