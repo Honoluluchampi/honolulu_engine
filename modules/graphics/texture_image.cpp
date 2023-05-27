@@ -15,6 +15,11 @@ texture_image::texture_image(device &device, const std::string& filepath) : devi
 {
   image_ = image_resource::create_from_file(device, filepath);
   create_sampler();
+
+  // desc set layout is basically set up by engine, because it's necessary for shader ctor
+  if (desc_layout_ == nullptr)
+    setup_desc_layout(device_);
+
   create_desc_set();
 }
 
