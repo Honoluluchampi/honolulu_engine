@@ -30,6 +30,9 @@ DEFINE_GRAPHICS_MODEL(static_mesh, utils::shading_type::MESH) {
     const std::vector<vertex> &get_vertex_list() const;
     std::vector<vec3d> get_vertex_position_list() const;
 
+    VkBuffer get_vertex_vk_buffer() const;
+    VkBuffer get_index_vk_buffer() const;
+
     unsigned get_face_count() const { return index_count_ / 3; }
 
   private:

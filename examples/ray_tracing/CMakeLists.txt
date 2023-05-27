@@ -1,3 +1,3 @@
 add_subdirectory(simple_triangle)
 add_subdirectory(scene_objects)
-add_subdirectory(temp)
+add_subdirectory(model)

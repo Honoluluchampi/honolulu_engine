@@ -143,4 +143,10 @@ std::vector<vec3d> static_mesh::get_vertex_position_list() const
   return vertex_position_list;
 }
 
+VkBuffer static_mesh::get_vertex_vk_buffer() const
+{ return vertex_buffer_->get_buffer(); }
+
+VkBuffer static_mesh::get_index_vk_buffer() const
+{ return index_buffer_->get_buffer(); }
+
 } // namespace hnll::graphics
