@@ -126,7 +126,9 @@ image_resource::image_resource(device &device) : device_(device) {}
 image_resource::~image_resource()
 {
   vkDestroyImageView(device_.get_device(), image_view_, nullptr);
-  vkDestroyImage(device_.get_device(), image_, nullptr);
+  // image for swap chain is deleted by vkDestroySwapChain
+  if (!is_for_swap_chain_)
+    vkDestroyImage(device_.get_device(), image_, nullptr);
   vkFreeMemory(device_.get_device(), image_memory_, nullptr);
 }
 

@@ -76,7 +76,6 @@ class hello_triangle {
       auto device = device_->get_device();
       destroy_acceleration_structure(*blas_);
       destroy_acceleration_structure(*tlas_);
-      destroy_image_resource(*ray_traced_image_);
       vkDestroyPipelineLayout(device, pipeline_layout_, nullptr);
       vkDestroyPipeline(device, pipeline_, nullptr);
       vkDestroySemaphore(device, render_completed_, nullptr);
@@ -85,7 +84,8 @@ class hello_triangle {
         vkDestroyFence(device, cb->fence, nullptr);
       }
       for (auto& rt : render_targets_) {
-        vkDestroyImageView(device, rt->get_image_view(), nullptr);
+        rt->set_is_for_swap_chain(true);
+        rt.reset();
       }
       vkDestroySwapchainKHR(device, swap_chain_, nullptr);
       vkDestroySurfaceKHR(device_->get_instance(), surface_, nullptr);
