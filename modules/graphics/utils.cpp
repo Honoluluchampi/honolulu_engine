@@ -89,4 +89,13 @@ void obj_loader::load_model(const std::string& filename)
   }
 }
 
+VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer)
+{
+  VkBufferDeviceAddressInfo buffer_device_info {
+    VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+    nullptr
+  };
+  buffer_device_info.buffer = buffer;
+  return vkGetBufferDeviceAddress(device, &buffer_device_info);
+}
 } // namespace hnll::graphics

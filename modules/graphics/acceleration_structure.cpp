@@ -2,19 +2,9 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/acceleration_structure.hpp>
+#include <graphics/utils.hpp>
 
 namespace hnll {
-
-VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer)
-{
-  VkBufferDeviceAddressInfo buffer_device_info {
-    VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-    nullptr
-  };
-  buffer_device_info.buffer = buffer;
-  return vkGetBufferDeviceAddress(device, &buffer_device_info);
-}
-
 namespace graphics {
 
 u_ptr<acceleration_structure> acceleration_structure::create(hnll::graphics::device &device)
@@ -94,7 +84,7 @@ void acceleration_structure::build_as(
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR
   };
   device_address_info.accelerationStructure = as_handle_;
-  as_device_address_ = hnll::get_device_address(device, as_buffer_->get_buffer());
+  as_device_address_ = get_device_address(device, as_buffer_->get_buffer());
   // create scratch buffer (for build)
   if (size_info.buildScratchSize > 0) {
     scratch_buffer_ = std::make_unique<buffer>(
@@ -117,7 +107,7 @@ void acceleration_structure::build_as(
 //  }
   // build as
   geometry_info.dstAccelerationStructure = as_handle_;
-  geometry_info.scratchData.deviceAddress = hnll::get_device_address(device, scratch_buffer_->get_buffer());
+  geometry_info.scratchData.deviceAddress = get_device_address(device, scratch_buffer_->get_buffer());
   build(geometry_info, input.build_range_info);
 }
 

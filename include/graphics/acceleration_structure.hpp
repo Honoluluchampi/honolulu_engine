@@ -7,9 +7,6 @@
 #include <vulkan/vulkan.h>
 
 namespace hnll {
-
-VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer);
-
 namespace graphics {
 
 // forward declaration
@@ -39,7 +36,7 @@ class acceleration_structure
 
     // getter
     [[nodiscard]] VkAccelerationStructureKHR get_as_handle()      const { return as_handle_; }
-    [[nodiscard]] VkDeviceAddress            get_device_address() const { return as_device_address_; }
+    [[nodiscard]] VkDeviceAddress            get_as_device_address() const { return as_device_address_; }
     // for descriptor writing
     [[nodiscard]] VkWriteDescriptorSetAccelerationStructureKHR get_as_info() const
     {

@@ -1103,7 +1103,7 @@ class hello_scene {
         VkTransformMatrixKHR transform = convert_transform(Eigen::Matrix4f::Identity());
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = plane_->blas->get_device_address();
+        instance.accelerationStructureReference = plane_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = plane_->hit_shader_index;
         instances.push_back(instance);
       }
@@ -1115,7 +1115,7 @@ class hello_scene {
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = cube_->blas->get_device_address();
+        instance.accelerationStructureReference = cube_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = cube_->hit_shader_index;
         instances.push_back(instance);
       }
@@ -1127,7 +1127,7 @@ class hello_scene {
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = cube_->blas->get_device_address();
+        instance.accelerationStructureReference = cube_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = cube_->hit_shader_index;
         instances.push_back(instance);
       }
