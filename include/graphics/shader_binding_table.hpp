@@ -20,9 +20,8 @@ enum class rt_shader_id : uint32_t {
 };
 
 // each entry is able to have multiple same type shaders
-class shader_entry
+struct shader_entry
 {
-  public:
     static u_ptr<shader_entry> create(
       device& device,
       const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& properties,
@@ -33,7 +32,6 @@ class shader_entry
       const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& properties,
       uint32_t handle_count);
 
-  private:
     device& device_;
     u_ptr<graphics::buffer> buffer_;
     VkStridedDeviceAddressRegionKHR strided_device_address_region_;
@@ -54,16 +52,21 @@ class shader_binding_table
       const std::vector<VkShaderStageFlagBits>& shader_stages);
 
   private:
+    void setup_pipeline_properties();
     void setup_shader_groups(
       const std::vector<std::string>& shader_names,
       const std::vector<VkShaderStageFlagBits>& shader_stages);
-    void setup_shader_entries(
-      const std::vector<std::string>& shader_names,
-      const std::vector<VkShaderStageFlagBits>& shader_stages);
+    void setup_shader_entries();
 
     device& device_;
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups_;
+    // actual shader binding table
     std::vector<u_ptr<shader_entry>> shader_entries_;
+    // contains the count of each shader group
+    std::array<uint32_t, 5> shader_counts_;
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR properties_;
+
+    VkPipeline pipeline_;
 };
 
 } // namespace hnll::graphics

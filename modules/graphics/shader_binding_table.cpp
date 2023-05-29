@@ -81,6 +81,7 @@ shader_entry::shader_entry(
     properties,
     handle_count
   );
+  buffer_->map();
 }
 
 // shader binding table -----------------------------------------------------------------------------
@@ -97,7 +98,19 @@ shader_binding_table::shader_binding_table(
   : device_(device)
 {
   assert(shader_names.size() == shader_stages.size() && "the size of shader_names and shader_stages should be matched.");
+
+  setup_pipeline_properties();
   setup_shader_groups(shader_names, shader_stages);
+  setup_shader_entries();
+}
+
+void shader_binding_table::setup_pipeline_properties()
+{
+  properties_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+  VkPhysicalDeviceProperties2 deviceProperties2{};
+  deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+  deviceProperties2.pNext = &properties_;
+  vkGetPhysicalDeviceProperties2(device_.get_physical_device(), &deviceProperties2);
 }
 
 void shader_binding_table::setup_shader_groups(
@@ -127,7 +140,14 @@ void shader_binding_table::setup_shader_groups(
       case VK_SHADER_STAGE_INTERSECTION_BIT_KHR :
         shader_types_polled[static_cast<uint32_t>(rt_shader_id::INT)].push_back(shader_names[i]);
         break;
+      default :
+        std::cerr << "not ray tracing shader : " + shader_names[i] << std::endl;
+        break;
     }
+  }
+
+  for (int i = 0; i < 5; i++) {
+    shader_counts_[i] = shader_types_polled[i].size();
   }
 
   // actual shader modules
@@ -149,8 +169,8 @@ void shader_binding_table::setup_shader_groups(
           auto stage = load_shader(device_.get_device(), name, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
           stages.push_back(stage);
           shader_group.generalShader = static_cast<uint32_t>(stages.size()) - 1;
-          shader_groups_.push_back(shader_group);
         }
+        shader_groups_.push_back(shader_group);
       }
       // miss
       if (type == 0) {
@@ -162,8 +182,8 @@ void shader_binding_table::setup_shader_groups(
           auto stage = load_shader(device_.get_device(), name, VK_SHADER_STAGE_MISS_BIT_KHR);
           stages.push_back(stage);
           shader_group.generalShader = static_cast<uint32_t>(stages.size()) - 1;
-          shader_groups_.push_back(shader_group);
         }
+        shader_groups_.push_back(shader_group);
       }
         // chit
       else if (type == 2) {
@@ -175,12 +195,42 @@ void shader_binding_table::setup_shader_groups(
           auto stage = load_shader(device_.get_device(), name, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
           stages.push_back(stage);
           shader_group.closestHitShader = static_cast<uint32_t>(stages.size()) - 1;
-          shader_groups_.push_back(shader_group);
         }
+        shader_groups_.push_back(shader_group);
       }
       else {
         throw std::runtime_error("Unsupported ray tracing shader");
       }
+    }
+  }
+}
+
+void shader_binding_table::setup_shader_entries()
+{
+  uint32_t handle_size = properties_.shaderGroupHandleSize;
+  uint32_t handle_size_aligned = align(handle_size, properties_.shaderGroupHandleAlignment);
+  uint32_t group_count = static_cast<uint32_t>(shader_groups_.size());
+  uint32_t sbt_size = group_count * handle_size_aligned;
+
+  std::vector<uint8_t> shader_handle_storage(sbt_size);
+  vkGetRayTracingShaderGroupHandlesKHR(
+    device_.get_device(),
+    pipeline_,
+    0,
+    group_count,
+    sbt_size,
+    shader_handle_storage.data()
+  );
+
+  uint32_t current_handle_count = 0;
+  shader_entries_.resize(shader_groups_.size());
+  for (int i = 0; i < 5; i++) {
+    if (shader_counts_[i] > 0) {
+      shader_entries_[i] = shader_entry::create(device_, properties_, shader_counts_[i]);
+      shader_entries_[i]->buffer_->write_to_buffer(
+        shader_handle_storage.data() + handle_size_aligned * current_handle_count,
+        handle_size * shader_counts_[i]);
+      current_handle_count += shader_counts_[i];
     }
   }
 }
