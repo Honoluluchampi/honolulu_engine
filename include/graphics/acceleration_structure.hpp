@@ -24,6 +24,8 @@ class acceleration_structure
       std::vector<VkAccelerationStructureBuildRangeInfoKHR> build_range_info;
     };
 
+    static u_ptr<acceleration_structure> create(device& device);
+
     explicit acceleration_structure(device& device);
     ~acceleration_structure();
 
@@ -38,6 +40,15 @@ class acceleration_structure
     // getter
     [[nodiscard]] VkAccelerationStructureKHR get_as_handle()      const { return as_handle_; }
     [[nodiscard]] VkDeviceAddress            get_device_address() const { return as_device_address_; }
+    // for descriptor writing
+    [[nodiscard]] VkWriteDescriptorSetAccelerationStructureKHR get_as_info() const
+    {
+      return {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures = &as_handle_,
+      };
+    }
 
   private:
     void build(

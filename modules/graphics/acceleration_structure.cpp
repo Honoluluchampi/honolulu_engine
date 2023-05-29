@@ -17,10 +17,11 @@ VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer)
 
 namespace graphics {
 
-acceleration_structure::acceleration_structure(hnll::graphics::device &device) : device_(device)
-{
+u_ptr<acceleration_structure> acceleration_structure::create(hnll::graphics::device &device)
+{ return std::make_unique<acceleration_structure>(device); }
 
-}
+acceleration_structure::acceleration_structure(hnll::graphics::device &device) : device_(device)
+{}
 
 acceleration_structure::~acceleration_structure()
 {
@@ -128,7 +129,7 @@ void acceleration_structure::build(
   for (auto& info : build_range_info) {
     build_range_info_ptr.push_back(&info);
   }
-  auto command = device_.begin_one_shot_commands();
+  auto command = device_.begin_one_shot_commands(command_type::COMPUTE);
   vkCmdBuildAccelerationStructuresKHR(
     command,
     1,
@@ -154,14 +155,12 @@ void acceleration_structure::build(
     nullptr
   );
   // wait for building...
-  device_.end_one_shot_commands(command);
+  device_.end_one_shot_commands(command, command_type::COMPUTE);
 }
 
 void acceleration_structure::destroy_scratch_buffer()
 {
-  if (auto buffer = scratch_buffer_->get_buffer(); buffer) {
-    vkDestroyBuffer(device_.get_device(), buffer, nullptr);
-  }
+  scratch_buffer_.reset();
 }
 
 }} // namespace hnll::graphics
