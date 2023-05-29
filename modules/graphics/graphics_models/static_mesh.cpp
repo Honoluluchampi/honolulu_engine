@@ -74,6 +74,8 @@ void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices, boo
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   if (for_ray_tracing) {
     usage|= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   }
 
   // vertex buffer creation
@@ -113,7 +115,9 @@ void static_mesh::create_index_buffers(const std::vector<uint32_t> &indices, boo
 
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   if (for_ray_tracing) {
-    usage|= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   }
 
   index_buffer_ = std::make_unique<buffer> (
@@ -164,5 +168,11 @@ VkBuffer static_mesh::get_vertex_vk_buffer() const
 
 VkBuffer static_mesh::get_index_vk_buffer() const
 { return index_buffer_->get_buffer(); }
+
+VkDescriptorBufferInfo static_mesh::get_vertex_buffer_info() const
+{ return vertex_buffer_->desc_info(); }
+
+VkDescriptorBufferInfo static_mesh::get_index_buffer_info() const
+{ return index_buffer_->desc_info(); }
 
 } // namespace hnll::graphics

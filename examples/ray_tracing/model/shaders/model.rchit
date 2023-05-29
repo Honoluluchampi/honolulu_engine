@@ -7,8 +7,9 @@ hitAttributeEXT vec2 attribs;
 struct vertex
 {
   vec3 position;
+  vec3 color;
   vec3 normal;
-  vec4 color;
+  vec2 uv;
 };
 
 layout(binding = 0) uniform accelerationStructureEXT tlas;

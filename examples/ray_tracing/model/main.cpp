@@ -4,6 +4,8 @@
 #include <graphics/desc_set.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
+#include <graphics/graphics_models/static_mesh.hpp>
+#include <graphics/utils.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
@@ -19,6 +21,8 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
 
+#define MODEL_NAME utils::get_full_path("light_bunny.obj")
+
 enum class shader_stages {
   RAY_GENERATION,
   MISS,
@@ -32,13 +36,6 @@ namespace scene_hit_shader_group {
 const uint32_t plane_hit_shader = 0;
 const uint32_t cube_hit_shader  = 1;
 }
-
-struct vertex
-{
-  alignas(16) vec3 position;
-  alignas(16) vec3 normal;
-  vec4 color;
-};
 
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
@@ -72,6 +69,9 @@ class hello_triangle {
       }
       vkDestroySwapchainKHR(device, swap_chain_, nullptr);
       vkDestroySurfaceKHR(device_->get_instance(), surface_, nullptr);
+      // temporal
+      // this should be done by game::graphics_engine_core
+      graphics::texture_image::reset_desc_layout();
     }
 
     void run()
@@ -166,7 +166,7 @@ class hello_triangle {
     {
       // temporary swap chain
       create_swap_chain();
-      create_vertex_and_index_buffer();
+      load_model();
       create_triangle_blas();
       create_triangle_tlas();
       create_ray_traced_image();
@@ -176,48 +176,11 @@ class hello_triangle {
       create_descriptor_set();
     }
 
-    void create_vertex_and_index_buffer()
+    void load_model()
     {
-      std::vector<vertex> triangle_vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 0.f, 1.f}},
-        {{ 0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f, 1.f}},
-        {{ 0.0f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {0.f, 0.f, 1.f, 1.f}},
-        {{ 0.5f, 0.75f, 4.0f}, vec3{-0.5f, -0.5f, 0.1f}.normalized(), {1.f, 0.f, 1.f, 1.f}},
-      };
-
-      vertex_count_ = triangle_vertices.size();
-
-      uint32_t vertex_size = sizeof(vertex);
-      VkDeviceSize buffer_size = vertex_size * vertex_count_;
-
-      VkBufferUsageFlags usage =
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-      VkMemoryPropertyFlags mem_props =
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-      vertex_buffer_ = graphics::buffer::create_with_staging(
-        *device_,
-        buffer_size,
-        1,
-        usage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        mem_props,
-        triangle_vertices.data()
-      );
-
-      std::vector<uint32_t> indices = { 0, 1, 2, 1, 2, 3 };
-      index_count_ = indices.size();
-      index_buffer_ = graphics::buffer::create_with_staging(
-        *device_,
-        sizeof(uint32_t) * indices.size(),
-        1,
-        usage | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        mem_props,
-        indices.data()
-      );
+      mesh_model_ = graphics::static_mesh::create_from_file(*device_, MODEL_NAME, true);
+      vertex_count_ = mesh_model_->get_vertex_count();
+      index_count_  = mesh_model_->get_face_count() * 3;
     }
 
     void create_triangle_blas()
@@ -227,10 +190,10 @@ class hello_triangle {
 
       // get vertex buffer device address
       VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {
-        .deviceAddress = get_device_address(device_->get_device(), vertex_buffer_->get_buffer())
+        .deviceAddress = get_device_address(device_->get_device(), mesh_model_->get_vertex_vk_buffer())
       };
       VkDeviceOrHostAddressConstKHR index_buffer_device_address {
-        .deviceAddress = get_device_address(device_->get_device(), index_buffer_->get_buffer())
+        .deviceAddress = get_device_address(device_->get_device(), mesh_model_->get_index_vk_buffer())
       };
       // geometry
       VkAccelerationStructureGeometryKHR as_geometry {
@@ -242,7 +205,7 @@ class hello_triangle {
       as_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
       as_geometry.geometry.triangles.vertexData = vertex_buffer_device_address;
       as_geometry.geometry.triangles.maxVertex = vertex_count_;
-      as_geometry.geometry.triangles.vertexStride = sizeof(vertex);
+      as_geometry.geometry.triangles.vertexStride = sizeof(graphics::vertex);
       as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
       as_geometry.geometry.triangles.indexData = index_buffer_device_address;
 
@@ -270,9 +233,9 @@ class hello_triangle {
     void create_triangle_tlas()
     {
       VkTransformMatrixKHR transform_matrix = {
-        1.f, 0.f, 0.f, 0.f,
-        0.f, 1.f, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f
+        0.3f, 0.f, 0.f, 0.f,
+        0.f, 0.3f, 0.f, 0.f,
+        0.f, 0.f, 0.3f, 0.f
       };
 
       VkAccelerationStructureInstanceKHR as_instance {};
@@ -589,8 +552,8 @@ class hello_triangle {
 
       VkWriteDescriptorSetAccelerationStructureKHR as_info = tlas_->get_as_info();
 
-      auto vertex_buffer_info = vertex_buffer_->desc_info();
-      auto index_buffer_info  = index_buffer_->desc_info();
+      auto vertex_buffer_info = mesh_model_->get_vertex_buffer_info();
+      auto index_buffer_info  = mesh_model_->get_index_buffer_info();
 
       graphics::desc_writer(*desc_layout_, *desc_pool_)
         .write_acceleration_structure(0, &as_info)
@@ -783,8 +746,7 @@ class hello_triangle {
     // variables
     u_ptr<graphics::window>   window_;
     u_ptr<graphics::device>   device_;
-    u_ptr<graphics::buffer>   vertex_buffer_;
-    u_ptr<graphics::buffer>   index_buffer_;
+    u_ptr<graphics::static_mesh> mesh_model_;
     u_ptr<graphics::buffer>   instances_buffer_;
     u_ptr<graphics::image_resource>              ray_traced_image_;
     std::vector<u_ptr<graphics::image_resource>> back_buffers_;

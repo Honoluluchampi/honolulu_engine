@@ -39,6 +39,8 @@ DEFINE_GRAPHICS_MODEL(static_mesh, utils::shading_type::MESH) {
 
     VkBuffer get_vertex_vk_buffer() const;
     VkBuffer get_index_vk_buffer() const;
+    VkDescriptorBufferInfo get_vertex_buffer_info() const;
+    VkDescriptorBufferInfo get_index_buffer_info() const;
 
     unsigned get_vertex_count() const { return vertex_count_; }
     unsigned get_face_count()   const { return index_count_ / 3; }
