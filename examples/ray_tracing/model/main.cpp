@@ -178,9 +178,17 @@ class hello_triangle {
 
     void create_vertex_and_index_buffer()
     {
-      uint32_t vertex_count = triangle_vertices_.size();
-      uint32_t vertex_size = sizeof(triangle_vertices_[0]);
-      VkDeviceSize buffer_size = vertex_size * vertex_count;
+      std::vector<vertex> triangle_vertices = {
+        {{-0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
+        {{ 0.0f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
+        {{ 0.5f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
+      };
+
+      vertex_count_ = triangle_vertices.size();
+
+      uint32_t vertex_size = sizeof(vertex);
+      VkDeviceSize buffer_size = vertex_size * vertex_count_;
 
       VkBufferUsageFlags usage =
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -196,7 +204,7 @@ class hello_triangle {
         1,
         usage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         mem_props,
-        triangle_vertices_.data()
+        triangle_vertices.data()
       );
 
       std::vector<uint32_t> indices = { 0, 1, 2 };
@@ -232,8 +240,8 @@ class hello_triangle {
       as_geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
       as_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
       as_geometry.geometry.triangles.vertexData = vertex_buffer_device_address;
-      as_geometry.geometry.triangles.maxVertex = triangle_vertices_.size();
-      as_geometry.geometry.triangles.vertexStride = sizeof(vec3);
+      as_geometry.geometry.triangles.maxVertex = vertex_count_;
+      as_geometry.geometry.triangles.vertexStride = sizeof(vertex);
       as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
       as_geometry.geometry.triangles.indexData = index_buffer_device_address;
 
@@ -775,12 +783,8 @@ class hello_triangle {
     u_ptr<graphics::image_resource>              ray_traced_image_;
     std::vector<u_ptr<graphics::image_resource>> back_buffers_;
 
+    size_t vertex_count_ = 0;
     size_t index_count_ = 0;
-    std::vector<vec3> triangle_vertices_ = {
-      {-0.5f, -0.5f, 0.0f},
-      {+0.5f, -0.5f, 0.0f},
-      {0.0f,  0.75f, 0.0f}
-    };
 
     // acceleration structure
     u_ptr<graphics::acceleration_structure> blas_;
