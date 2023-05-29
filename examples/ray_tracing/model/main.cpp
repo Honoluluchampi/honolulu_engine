@@ -35,8 +35,8 @@ const uint32_t cube_hit_shader  = 1;
 
 struct vertex
 {
-  vec3 position;
-  vec3 normal;
+  alignas(16) vec3 position;
+  alignas(16) vec3 normal;
   vec4 color;
 };
 
@@ -191,6 +191,7 @@ class hello_triangle {
       VkDeviceSize buffer_size = vertex_size * vertex_count_;
 
       VkBufferUsageFlags usage =
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
@@ -207,7 +208,7 @@ class hello_triangle {
         triangle_vertices.data()
       );
 
-      std::vector<uint32_t> indices = { 0, 1, 2 };
+      std::vector<uint32_t> indices = { 0, 1, 2, 1, 2, 3 };
       index_count_ = indices.size();
       index_buffer_ = graphics::buffer::create_with_staging(
         *device_,
@@ -282,7 +283,6 @@ class hello_triangle {
       as_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
       as_instance.accelerationStructureReference = blas_->get_device_address();
 
-      auto device = device_->get_device();
       VkBufferUsageFlags usage =
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
@@ -366,8 +366,10 @@ class hello_triangle {
     void create_layout()
     {
       desc_layout_ = graphics::desc_layout::builder(*device_)
-        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // tlas
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
         .build();
 
       VkPipelineLayoutCreateInfo pl_create_info {
@@ -577,8 +579,7 @@ class hello_triangle {
         .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000)
         .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
         .build();
 
@@ -588,9 +589,14 @@ class hello_triangle {
 
       VkWriteDescriptorSetAccelerationStructureKHR as_info = tlas_->get_as_info();
 
+      auto vertex_buffer_info = vertex_buffer_->desc_info();
+      auto index_buffer_info  = index_buffer_->desc_info();
+
       graphics::desc_writer(*desc_layout_, *desc_pool_)
         .write_acceleration_structure(0, &as_info)
         .write_image(1, &image_info)
+        .write_buffer(2, &vertex_buffer_info)
+        .write_buffer(3, &index_buffer_info)
         .build(desc_set_);
     }
 
