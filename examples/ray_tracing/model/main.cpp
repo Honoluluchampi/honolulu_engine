@@ -17,7 +17,7 @@ using hnll::get_device_address;
 namespace hnll {
 
 const std::string SHADERS_DIRECTORY =
-  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/simple_triangle/shaders/spv/";
+  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
 
 enum class shader_stages {
   RAY_GENERATION,
@@ -179,10 +179,10 @@ class hello_triangle {
     void create_vertex_and_index_buffer()
     {
       std::vector<vertex> triangle_vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
-        {{ 0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
-        {{ 0.0f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
-        {{ 0.5f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 1.f, 1.f, 1.f}},
+        {{-0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 0.f, 1.f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f, 1.f}},
+        {{ 0.0f, 0.75f, 0.0f}, {0.f, 0.f, 1.f}, {0.f, 0.f, 1.f, 1.f}},
+        {{ 0.5f, 0.75f, 4.0f}, vec3{-0.5f, -0.5f, 0.1f}.normalized(), {1.f, 0.f, 1.f, 1.f}},
       };
 
       vertex_count_ = triangle_vertices.size();
@@ -382,9 +382,9 @@ class hello_triangle {
 
     void create_pipeline()
     {
-      auto ray_generation_stage = load_shader("simple_triangle.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-      auto miss_stage = load_shader("simple_triangle.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
-      auto closest_hit_stage = load_shader("simple_triangle.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+      auto ray_generation_stage = load_shader("model.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+      auto miss_stage = load_shader("model.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
+      auto closest_hit_stage = load_shader("model.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
       std::vector<VkPipelineShaderStageCreateInfo> stages = {
         ray_generation_stage,
