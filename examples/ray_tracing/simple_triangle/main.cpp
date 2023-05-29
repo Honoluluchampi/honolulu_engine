@@ -4,6 +4,7 @@
 #include <graphics/desc_set.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
+#include <graphics/utils.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
@@ -11,8 +12,6 @@
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
-
-using hnll::get_device_address;
 
 namespace hnll {
 
@@ -221,7 +220,7 @@ class hello_triangle {
       // get vertex buffer device address
       VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {};
       vertex_buffer_device_address.deviceAddress =
-        get_device_address(device_->get_device(), vertex_buffer_->get_buffer());
+        graphics::get_device_address(device_->get_device(), vertex_buffer_->get_buffer());
 
       // geometry
       VkAccelerationStructureGeometryKHR as_geometry {
@@ -353,7 +352,7 @@ class hello_triangle {
         scratch_buffer->memory
       );
 
-      scratch_buffer->device_address = get_device_address(device_->get_device(), scratch_buffer->handle);
+      scratch_buffer->device_address = graphics::get_device_address(device_->get_device(), scratch_buffer->handle);
       return scratch_buffer;
     }
 
@@ -397,7 +396,7 @@ class hello_triangle {
 
       // compute required memory size
       VkDeviceOrHostAddressConstKHR instance_data_device_address {};
-      instance_data_device_address.deviceAddress = get_device_address(device_->get_device(), instances_buffer_->get_buffer());
+      instance_data_device_address.deviceAddress = graphics::get_device_address(device_->get_device(), instances_buffer_->get_buffer());
 
       VkAccelerationStructureGeometryKHR as_geometry {};
       as_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -663,7 +662,7 @@ class hello_triangle {
       );
 
       // write raygen shader entry
-      auto device_address = get_device_address(device_->get_device(), shader_binding_table_->get_buffer());
+      auto device_address = graphics::get_device_address(device_->get_device(), shader_binding_table_->get_buffer());
       shader_binding_table_->map(VK_WHOLE_SIZE, 0);
       auto dst = static_cast<uint8_t*>(shader_binding_table_->get_mapped_memory());
 

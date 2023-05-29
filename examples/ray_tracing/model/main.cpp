@@ -19,7 +19,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("light_bunny.obj")
+#define MODEL_NAME utils::get_full_path("bunny.obj")
 
 enum class shader_stages {
   RAY_GENERATION,
@@ -75,9 +75,12 @@ class hello_triangle {
     void run()
     {
       while (glfwWindowShouldClose(window_->get_glfw_window()) == GLFW_FALSE) {
-        glfwPollEvents();
-        update();
-        render();
+        {
+          utils::scope_timer timer{"fps", utils::timer_type::MILLI};
+          glfwPollEvents();
+          update();
+          render();
+        }
       }
       vkDeviceWaitIdle(device_->get_device());
       cleanup();

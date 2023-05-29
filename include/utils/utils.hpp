@@ -47,24 +47,53 @@ struct transform
 };
 
 // timer ------------------------------------------------------------
+enum class timer_type
+{
+    SEC,
+    MILLI,
+    MICRO
+};
+
 struct scope_timer {
   // start timer by ctor
-  explicit scope_timer(const std::string& _entry = "") {
+  explicit scope_timer(const std::string& _entry = "", timer_type type = timer_type::MILLI) {
     entry = _entry;
     start = std::chrono::system_clock::now();
+    type_ = type;
   }
 
   // stop and output elapsed time by dtor
   ~scope_timer() {
     auto end = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
     std::cout << "\x1b[35m" << "SCOPE TIMER : " << entry << std::endl;
-    std::cout << "\t elapsed time : " << elapsed << " micro s" << "\x1b[0m" << std::endl;
+
+    long elapsed;
+
+    switch (type_) {
+      case timer_type::SEC :
+        elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+        std::cout << "\t elapsed time : " << elapsed << " s" << "\x1b[0m" << std::endl;
+        break;
+
+      case timer_type::MILLI :
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "\t elapsed time : " << elapsed << " ms" << "\x1b[0m" << std::endl;
+        break;
+
+      case timer_type::MICRO :
+        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        std::cout << "\t elapsed time : " << elapsed << " micro s" << "\x1b[0m" << std::endl;
+        break;
+
+      default :
+        std::cout << "\t invalid timer type" << "\x1b[0m" << std::endl;
+        break;
+    }
   }
 
   std::string entry;
   std::chrono::system_clock::time_point start;
+  timer_type type_;
 };
 
 } // namespace hnll::utils
