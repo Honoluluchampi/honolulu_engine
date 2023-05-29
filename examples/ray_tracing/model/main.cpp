@@ -166,7 +166,7 @@ class hello_triangle {
     {
       // temporary swap chain
       create_swap_chain();
-      create_vertex_buffer();
+      create_vertex_and_index_buffer();
       create_triangle_blas();
       create_triangle_tlas();
       create_ray_traced_image();
@@ -176,37 +176,53 @@ class hello_triangle {
       create_descriptor_set();
     }
 
-    void create_vertex_buffer()
+    void create_vertex_and_index_buffer()
     {
       uint32_t vertex_count = triangle_vertices_.size();
       uint32_t vertex_size = sizeof(triangle_vertices_[0]);
       VkDeviceSize buffer_size = vertex_size * vertex_count;
 
       VkBufferUsageFlags usage =
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+
+      VkMemoryPropertyFlags mem_props =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
       vertex_buffer_ = graphics::buffer::create_with_staging(
         *device_,
         buffer_size,
         1,
-        usage,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+        usage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        mem_props,
         triangle_vertices_.data()
+      );
+
+      std::vector<uint32_t> indices = { 0, 1, 2 };
+      index_count_ = indices.size();
+      index_buffer_ = graphics::buffer::create_with_staging(
+        *device_,
+        sizeof(uint32_t) * indices.size(),
+        1,
+        usage | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        mem_props,
+        indices.data()
       );
     }
 
     void create_triangle_blas()
     {
       // blas build setup
-      uint32_t num_triangles = 1;
+      uint32_t num_triangles = index_count_ / 3;
 
       // get vertex buffer device address
-      VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {};
-      vertex_buffer_device_address.deviceAddress =
-        get_device_address(device_->get_device(), vertex_buffer_->get_buffer());
-
+      VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {
+        .deviceAddress = get_device_address(device_->get_device(), vertex_buffer_->get_buffer())
+      };
+      VkDeviceOrHostAddressConstKHR index_buffer_device_address {
+        .deviceAddress = get_device_address(device_->get_device(), index_buffer_->get_buffer())
+      };
       // geometry
       VkAccelerationStructureGeometryKHR as_geometry {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR
@@ -218,7 +234,8 @@ class hello_triangle {
       as_geometry.geometry.triangles.vertexData = vertex_buffer_device_address;
       as_geometry.geometry.triangles.maxVertex = triangle_vertices_.size();
       as_geometry.geometry.triangles.vertexStride = sizeof(vec3);
-      as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
+      as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+      as_geometry.geometry.triangles.indexData = index_buffer_device_address;
 
       // execute blas build command (in GPU)
       VkAccelerationStructureBuildRangeInfoKHR as_build_range_info {};
@@ -292,6 +309,7 @@ class hello_triangle {
       as_geometry.geometry.instances.arrayOfPointers = VK_FALSE;
       as_geometry.geometry.instances.data = instance_data_device_address;
 
+      // count of objects
       uint32_t primitive_count = 1;
       VkAccelerationStructureBuildRangeInfoKHR as_build_range_info {};
       as_build_range_info.primitiveCount = primitive_count;
@@ -752,10 +770,12 @@ class hello_triangle {
     u_ptr<graphics::window>   window_;
     u_ptr<graphics::device>   device_;
     u_ptr<graphics::buffer>   vertex_buffer_;
+    u_ptr<graphics::buffer>   index_buffer_;
     u_ptr<graphics::buffer>   instances_buffer_;
     u_ptr<graphics::image_resource>              ray_traced_image_;
     std::vector<u_ptr<graphics::image_resource>> back_buffers_;
 
+    size_t index_count_ = 0;
     std::vector<vec3> triangle_vertices_ = {
       {-0.5f, -0.5f, 0.0f},
       {+0.5f, -0.5f, 0.0f},
