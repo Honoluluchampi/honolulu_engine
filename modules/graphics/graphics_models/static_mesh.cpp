@@ -13,22 +13,28 @@
 
 namespace hnll::graphics {
 
-static_mesh::static_mesh(device& device, const obj_loader &loader) : device_{device}
+static_mesh::static_mesh(
+  device& device,
+  const obj_loader &loader,
+  bool for_ray_tracing) : device_{device}
 {
-  create_vertex_buffers(loader.vertices);
-  create_index_buffers(loader.indices);
+  create_vertex_buffers(loader.vertices, for_ray_tracing);
+  create_index_buffers(loader.indices, for_ray_tracing);
 
   vertex_list_ = std::move(loader.vertices);
 }
 
-u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::string &filename)
+u_ptr<static_mesh> static_mesh::create_from_file(
+  device &device,
+  const std::string &filename,
+  bool for_ray_tracing)
 {
   // load geometry
   obj_loader builder;
   builder.load_model(filename);
   std::cout << filename << " vertex count: " << builder.vertices.size() << "\n";
 
-  auto ret = std::make_unique<static_mesh>(device, builder);
+  auto ret = std::make_unique<static_mesh>(device, builder, for_ray_tracing);
 
   // load texture
   auto texture_path = filename.substr(0, filename.size() - 4) + ".png";
@@ -45,7 +51,7 @@ u_ptr<static_mesh> static_mesh::create_from_file(device &device, const std::stri
   return ret;
 }
 
-void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices)
+void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices, bool for_ray_tracing)
 {
   // vertexCount must be larger than 3 (triangle)
   // use a host visible buffer as temporary buffer, use a device local buffer as actual vertex buffer
@@ -65,12 +71,19 @@ void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices)
   staging_buffer.map();
   staging_buffer.write_to_buffer((void *)vertices.data());
 
+  VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  if (for_ray_tracing) {
+    usage|= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  }
+
   // vertex buffer creation
   vertex_buffer_ = std::make_unique<buffer>(
     device_,
     vertex_size, // for calculating alignment
     vertex_count_, // same as above
-    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, // usage
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage, // usage
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT// property
   );
   // copy the data from staging buffer to the vertex buffer
@@ -78,7 +91,7 @@ void static_mesh::create_vertex_buffers(const std::vector<vertex> &vertices)
   // staging buffer is automatically freed in the dtor
 }
 
-void static_mesh::create_index_buffers(const std::vector<uint32_t> &indices)
+void static_mesh::create_index_buffers(const std::vector<uint32_t> &indices, bool for_ray_tracing)
 {
   index_count_ = static_cast<uint32_t>(indices.size());
   // if there is no index, nothing to do
@@ -100,11 +113,18 @@ void static_mesh::create_index_buffers(const std::vector<uint32_t> &indices)
   staging_buffer.map();
   staging_buffer.write_to_buffer((void *)indices.data());
 
+  VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  if (for_ray_tracing) {
+    usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  }
+
   index_buffer_ = std::make_unique<buffer> (
     device_,
     indexSize,
     index_count_,
-    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT // optimal type of the memory type
   );
 
@@ -142,5 +162,17 @@ std::vector<vec3d> static_mesh::get_vertex_position_list() const
   }
   return vertex_position_list;
 }
+
+VkBuffer static_mesh::get_vertex_vk_buffer() const
+{ return vertex_buffer_->get_buffer(); }
+
+VkBuffer static_mesh::get_index_vk_buffer() const
+{ return index_buffer_->get_buffer(); }
+
+VkDescriptorBufferInfo static_mesh::get_vertex_buffer_info() const
+{ return vertex_buffer_->desc_info(); }
+
+VkDescriptorBufferInfo static_mesh::get_index_buffer_info() const
+{ return index_buffer_->desc_info(); }
 
 } // namespace hnll::graphics

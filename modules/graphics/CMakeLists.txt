@@ -13,7 +13,9 @@ set(SOURCES
     timeline_semaphore.cpp
     graphics_models/static_mesh.cpp
     graphics_models/static_meshlet.cpp
+    # ray tracing
     acceleration_structure.cpp
+    shader_binding_table.cpp
     $ENV{HNLL_ENGN}/submodules/extensions/extensions_vk.cpp
 )
 

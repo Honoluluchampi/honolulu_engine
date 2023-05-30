@@ -2,25 +2,16 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/acceleration_structure.hpp>
+#include <graphics/utils.hpp>
 
 namespace hnll {
-
-VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer)
-{
-  VkBufferDeviceAddressInfo buffer_device_info {
-    VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-    nullptr
-  };
-  buffer_device_info.buffer = buffer;
-  return vkGetBufferDeviceAddress(device, &buffer_device_info);
-}
-
 namespace graphics {
 
-acceleration_structure::acceleration_structure(hnll::graphics::device &device) : device_(device)
-{
+u_ptr<acceleration_structure> acceleration_structure::create(hnll::graphics::device &device)
+{ return std::make_unique<acceleration_structure>(device); }
 
-}
+acceleration_structure::acceleration_structure(hnll::graphics::device &device) : device_(device)
+{}
 
 acceleration_structure::~acceleration_structure()
 {
@@ -35,14 +26,14 @@ void acceleration_structure::build_as(
   auto device = device_.get_device();
 
   // compute as size
-  VkAccelerationStructureBuildGeometryInfoKHR geometry_info {
-    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR
+  VkAccelerationStructureBuildGeometryInfoKHR geometry_info{
+    .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+    .type = type,
+    .flags = build_flags,
+    .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+    .geometryCount = static_cast<uint32_t>(input.geometry.size()),
+    .pGeometries = input.geometry.data()
   };
-  geometry_info.type = type;
-  geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-  geometry_info.flags = build_flags;
-  geometry_info.geometryCount = static_cast<uint32_t>(input.geometry.size());
-  geometry_info.pGeometries = input.geometry.data();
 
   VkAccelerationStructureBuildSizesInfoKHR size_info {
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
@@ -93,7 +84,7 @@ void acceleration_structure::build_as(
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR
   };
   device_address_info.accelerationStructure = as_handle_;
-  as_device_address_ = hnll::get_device_address(device, as_buffer_->get_buffer());
+  as_device_address_ = get_device_address(device, as_buffer_->get_buffer());
   // create scratch buffer (for build)
   if (size_info.buildScratchSize > 0) {
     scratch_buffer_ = std::make_unique<buffer>(
@@ -116,7 +107,7 @@ void acceleration_structure::build_as(
 //  }
   // build as
   geometry_info.dstAccelerationStructure = as_handle_;
-  geometry_info.scratchData.deviceAddress = hnll::get_device_address(device, scratch_buffer_->get_buffer());
+  geometry_info.scratchData.deviceAddress = get_device_address(device, scratch_buffer_->get_buffer());
   build(geometry_info, input.build_range_info);
 }
 
@@ -128,7 +119,7 @@ void acceleration_structure::build(
   for (auto& info : build_range_info) {
     build_range_info_ptr.push_back(&info);
   }
-  auto command = device_.begin_one_shot_commands();
+  auto command = device_.begin_one_shot_commands(command_type::COMPUTE);
   vkCmdBuildAccelerationStructuresKHR(
     command,
     1,
@@ -154,14 +145,12 @@ void acceleration_structure::build(
     nullptr
   );
   // wait for building...
-  device_.end_one_shot_commands(command);
+  device_.end_one_shot_commands(command, command_type::COMPUTE);
 }
 
 void acceleration_structure::destroy_scratch_buffer()
 {
-  if (auto buffer = scratch_buffer_->get_buffer(); buffer) {
-    vkDestroyBuffer(device_.get_device(), buffer, nullptr);
-  }
+  scratch_buffer_.reset();
 }
 
 }} // namespace hnll::graphics

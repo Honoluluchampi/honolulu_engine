@@ -4,6 +4,7 @@
 #include <graphics/desc_set.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
+#include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/utils.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
@@ -16,7 +17,9 @@
 namespace hnll {
 
 const std::string SHADERS_DIRECTORY =
-  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/simple_triangle/shaders/spv/";
+  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
+
+#define MODEL_NAME utils::get_full_path("bunny.obj")
 
 enum class shader_stages {
   RAY_GENERATION,
@@ -31,28 +34,6 @@ namespace scene_hit_shader_group {
 const uint32_t plane_hit_shader = 0;
 const uint32_t cube_hit_shader  = 1;
 }
-
-struct acceleration_structure
-{
-  VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
-  VkDeviceMemory             memory = VK_NULL_HANDLE;
-  VkBuffer                   buffer = VK_NULL_HANDLE;
-  VkDeviceAddress            device_address = 0;
-};
-
-struct vertex
-{
-  vec3 position;
-  vec3 normal;
-  vec4 color;
-};
-
-struct ray_tracing_scratch_buffer
-{
-  VkBuffer        handle = VK_NULL_HANDLE;
-  VkDeviceMemory  memory = VK_NULL_HANDLE;
-  VkDeviceAddress device_address = 0;
-};
 
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
@@ -73,8 +54,6 @@ class hello_triangle {
     void cleanup()
     {
       auto device = device_->get_device();
-      destroy_acceleration_structure(*blas_);
-      destroy_acceleration_structure(*tlas_);
       vkDestroyPipelineLayout(device, pipeline_layout_, nullptr);
       vkDestroyPipeline(device, pipeline_, nullptr);
       vkDestroySemaphore(device, render_completed_, nullptr);
@@ -88,14 +67,20 @@ class hello_triangle {
       }
       vkDestroySwapchainKHR(device, swap_chain_, nullptr);
       vkDestroySurfaceKHR(device_->get_instance(), surface_, nullptr);
+      // temporal
+      // this should be done by game::graphics_engine_core
+      graphics::texture_image::reset_desc_layout();
     }
 
     void run()
     {
       while (glfwWindowShouldClose(window_->get_glfw_window()) == GLFW_FALSE) {
-        glfwPollEvents();
-        update();
-        render();
+        {
+          utils::scope_timer timer{"fps", utils::timer_type::MILLI};
+          glfwPollEvents();
+          update();
+          render();
+        }
       }
       vkDeviceWaitIdle(device_->get_device());
       cleanup();
@@ -182,7 +167,7 @@ class hello_triangle {
     {
       // temporary swap chain
       create_swap_chain();
-      create_vertex_buffer();
+      load_model();
       create_triangle_blas();
       create_triangle_tlas();
       create_ray_traced_image();
@@ -192,36 +177,25 @@ class hello_triangle {
       create_descriptor_set();
     }
 
-    void create_vertex_buffer()
+    void load_model()
     {
-      uint32_t vertex_count = triangle_vertices_.size();
-      uint32_t vertex_size = sizeof(triangle_vertices_[0]);
-      VkDeviceSize buffer_size = vertex_size * vertex_count;
-
-      VkBufferUsageFlags usage =
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-      vertex_buffer_ = graphics::buffer::create_with_staging(
-        *device_,
-        buffer_size,
-        1,
-        usage,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        triangle_vertices_.data()
-      );
+      mesh_model_ = graphics::static_mesh::create_from_file(*device_, MODEL_NAME, true);
+      vertex_count_ = mesh_model_->get_vertex_count();
+      index_count_  = mesh_model_->get_face_count() * 3;
     }
 
     void create_triangle_blas()
     {
       // blas build setup
+      uint32_t num_triangles = index_count_ / 3;
 
       // get vertex buffer device address
-      VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {};
-      vertex_buffer_device_address.deviceAddress =
-        graphics::get_device_address(device_->get_device(), vertex_buffer_->get_buffer());
-
+      VkDeviceOrHostAddressConstKHR vertex_buffer_device_address {
+        .deviceAddress = graphics::get_device_address(device_->get_device(), mesh_model_->get_vertex_vk_buffer())
+      };
+      VkDeviceOrHostAddressConstKHR index_buffer_device_address {
+        .deviceAddress = graphics::get_device_address(device_->get_device(), mesh_model_->get_index_vk_buffer())
+      };
       // geometry
       VkAccelerationStructureGeometryKHR as_geometry {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR
@@ -231,56 +205,10 @@ class hello_triangle {
       as_geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
       as_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
       as_geometry.geometry.triangles.vertexData = vertex_buffer_device_address;
-      as_geometry.geometry.triangles.maxVertex = triangle_vertices_.size();
-      as_geometry.geometry.triangles.vertexStride = sizeof(vec3);
-      as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
-
-      // build geometry info
-      VkAccelerationStructureBuildGeometryInfoKHR as_build_geometry_info {};
-      as_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-      as_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-      // prefer performance rather than as build
-      as_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-      as_build_geometry_info.geometryCount = 1; // only one triangle
-      as_build_geometry_info.pGeometries = &as_geometry;
-
-      // get as size
-      uint32_t num_triangles = 1;
-      VkAccelerationStructureBuildSizesInfoKHR as_build_sizes_info {
-        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
-      };
-      vkGetAccelerationStructureBuildSizesKHR(
-        device_->get_device(),
-        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-        &as_build_geometry_info,
-        &num_triangles,
-        &as_build_sizes_info
-      );
-
-      // build blas (get handle of VkAccelerationStructureKHR)
-      blas_ = create_acceleration_structure_buffer(as_build_sizes_info);
-
-      // create blas
-      VkAccelerationStructureCreateInfoKHR as_create_info {};
-      as_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-      as_create_info.buffer = blas_->buffer;
-      as_create_info.size = as_build_sizes_info.accelerationStructureSize;
-      as_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-      vkCreateAccelerationStructureKHR(device_->get_device(), &as_create_info, nullptr, &blas_->handle);
-
-      // get the device address of blas
-      VkAccelerationStructureDeviceAddressInfoKHR as_device_address_info {};
-      as_device_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-      as_device_address_info.accelerationStructure = blas_->handle;
-      blas_->device_address = vkGetAccelerationStructureDeviceAddressKHR(device_->get_device(), &as_device_address_info);
-
-      // create scratch buffer
-      auto scratch_buffer = create_scratch_buffer(as_build_sizes_info.buildScratchSize);
-
-      // build blas
-      as_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-      as_build_geometry_info.dstAccelerationStructure = blas_->handle;
-      as_build_geometry_info.scratchData.deviceAddress = scratch_buffer->device_address;
+      as_geometry.geometry.triangles.maxVertex = vertex_count_;
+      as_geometry.geometry.triangles.vertexStride = sizeof(graphics::vertex);
+      as_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+      as_geometry.geometry.triangles.indexData = index_buffer_device_address;
 
       // execute blas build command (in GPU)
       VkAccelerationStructureBuildRangeInfoKHR as_build_range_info {};
@@ -289,79 +217,26 @@ class hello_triangle {
       as_build_range_info.firstVertex = 0;
       as_build_range_info.transformOffset = 0;
 
-      std::vector<VkAccelerationStructureBuildRangeInfoKHR*> as_build_range_infos = { &as_build_range_info };
+      graphics::acceleration_structure::input blas_input = {
+        .geometry = { as_geometry },
+        .build_range_info = { as_build_range_info },
+      };
 
-      auto command = device_->begin_one_shot_commands(graphics::command_type::GRAPHICS);
-      vkCmdBuildAccelerationStructuresKHR(
-        command, 1, &as_build_geometry_info, as_build_range_infos.data()
+      blas_ = graphics::acceleration_structure::create(*device_);
+      blas_->build_as(
+        VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+        blas_input,
+        VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR
       );
-
-      VkBufferMemoryBarrier barrier { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
-      barrier.buffer = blas_->buffer;
-      barrier.size = VK_WHOLE_SIZE;
-      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      barrier.srcAccessMask =
-        VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR |
-        VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-      barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-
-      vkCmdPipelineBarrier(
-        command,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-        0, 0, nullptr, 1, &barrier, 0, nullptr
-      );
-
-      device_->end_one_shot_commands(command, graphics::command_type::GRAPHICS);
-
-      // destroy scratch buffer
-      vkDestroyBuffer(device_->get_device(), scratch_buffer->handle, nullptr);
-      vkFreeMemory(device_->get_device(), scratch_buffer->memory, nullptr);
-    }
-
-    u_ptr<acceleration_structure> create_acceleration_structure_buffer
-      (VkAccelerationStructureBuildSizesInfoKHR build_size_info)
-    {
-      auto as = std::make_unique<acceleration_structure>();
-      auto usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
-                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-
-      device_->create_buffer(
-        build_size_info.accelerationStructureSize,
-        usage,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        as->buffer,
-        as->memory
-      );
-
-      return as;
-    }
-
-    u_ptr<ray_tracing_scratch_buffer> create_scratch_buffer(VkDeviceSize size)
-    {
-      auto scratch_buffer = std::make_unique<ray_tracing_scratch_buffer>();
-      auto usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-
-      device_->create_buffer(
-        size,
-        usage,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        scratch_buffer->handle,
-        scratch_buffer->memory
-      );
-
-      scratch_buffer->device_address = graphics::get_device_address(device_->get_device(), scratch_buffer->handle);
-      return scratch_buffer;
+      blas_->destroy_scratch_buffer();
     }
 
     void create_triangle_tlas()
     {
       VkTransformMatrixKHR transform_matrix = {
-        1.f, 0.f, 0.f, 0.f,
-        0.f, 1.f, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f
+        0.3f, 0.f, 0.f, 0.f,
+        0.f, 0.3f, 0.f, 0.f,
+        0.f, 0.f, 0.3f, 0.f
       };
 
       VkAccelerationStructureInstanceKHR as_instance {};
@@ -370,9 +245,8 @@ class hello_triangle {
       as_instance.mask = 0xFF;
       as_instance.instanceShaderBindingTableRecordOffset = 0;
       as_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-      as_instance.accelerationStructureReference = blas_->device_address;
+      as_instance.accelerationStructureReference = blas_->get_as_device_address();
 
-      auto device = device_->get_device();
       VkBufferUsageFlags usage =
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
@@ -395,8 +269,9 @@ class hello_triangle {
       instances_buffer_->write_to_buffer((void *) &as_instance);
 
       // compute required memory size
-      VkDeviceOrHostAddressConstKHR instance_data_device_address {};
-      instance_data_device_address.deviceAddress = graphics::get_device_address(device_->get_device(), instances_buffer_->get_buffer());
+      VkDeviceOrHostAddressConstKHR instance_data_device_address {
+        .deviceAddress = graphics::get_device_address(device_->get_device(), instances_buffer_->get_buffer())
+      };
 
       VkAccelerationStructureGeometryKHR as_geometry {};
       as_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -406,73 +281,26 @@ class hello_triangle {
       as_geometry.geometry.instances.arrayOfPointers = VK_FALSE;
       as_geometry.geometry.instances.data = instance_data_device_address;
 
-      // get size
-      VkAccelerationStructureBuildGeometryInfoKHR as_build_geometry_info {};
-      as_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-      as_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-      as_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-      as_build_geometry_info.geometryCount = 1; // only one triangle
-      as_build_geometry_info.pGeometries = &as_geometry;
-
+      // count of objects
       uint32_t primitive_count = 1;
-      VkAccelerationStructureBuildSizesInfoKHR as_build_sizes_info {
-        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
-      };
-      vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-                                              &as_build_geometry_info, &primitive_count, &as_build_sizes_info);
-
-      // create tlas
-      tlas_ = create_acceleration_structure_buffer(as_build_sizes_info);
-
-      // create tlas buffer
-      VkAccelerationStructureCreateInfoKHR as_create_info {};
-      as_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-      as_create_info.buffer = tlas_->buffer;
-      as_create_info.size = as_build_sizes_info.accelerationStructureSize;
-      as_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-      vkCreateAccelerationStructureKHR(device, &as_create_info, nullptr, &tlas_->handle);
-
-      // create scratch buffer
-      auto scratch_buffer = create_scratch_buffer(as_build_sizes_info.buildScratchSize);
-
-      // set up for building tlas
-      as_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-      as_build_geometry_info.dstAccelerationStructure = tlas_->handle;
-      as_build_geometry_info.scratchData.deviceAddress = scratch_buffer->device_address;
-
-      // execute build command
       VkAccelerationStructureBuildRangeInfoKHR as_build_range_info {};
       as_build_range_info.primitiveCount = primitive_count;
       as_build_range_info.primitiveOffset = 0;
       as_build_range_info.firstVertex = 0;
       as_build_range_info.transformOffset = 0;
-      std::vector<VkAccelerationStructureBuildRangeInfoKHR*> as_build_range_infos = { &as_build_range_info };
 
-      auto command = device_->begin_one_shot_commands(graphics::command_type::GRAPHICS);
-      vkCmdBuildAccelerationStructuresKHR(command, 1, &as_build_geometry_info, as_build_range_infos.data());
+      // build
+      graphics::acceleration_structure::input tlas_input {};
+      tlas_input.geometry = { as_geometry };
+      tlas_input.build_range_info = { as_build_range_info };
 
-      VkBufferMemoryBarrier barrier { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
-      barrier.buffer = tlas_->buffer;
-      barrier.size = VK_WHOLE_SIZE;
-      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      barrier.srcAccessMask =
-        VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR |
-        VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-      barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-
-      vkCmdPipelineBarrier(
-        command,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-        0, 0, nullptr, 1, &barrier, 0, nullptr
+      tlas_ = graphics::acceleration_structure::create(*device_);
+      tlas_->build_as(
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        tlas_input,
+        VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR
       );
-
-      device_->end_one_shot_commands(command, graphics::command_type::GRAPHICS);
-
-      // destroy scratch buffer
-      vkDestroyBuffer(device_->get_device(), scratch_buffer->handle, nullptr);
-      vkFreeMemory(device_->get_device(), scratch_buffer->memory, nullptr);
+      tlas_->destroy_scratch_buffer();
     }
 
     void create_ray_traced_image()
@@ -502,8 +330,10 @@ class hello_triangle {
     void create_layout()
     {
       desc_layout_ = graphics::desc_layout::builder(*device_)
-        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // tlas
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
         .build();
 
       VkPipelineLayoutCreateInfo pl_create_info {
@@ -516,9 +346,9 @@ class hello_triangle {
 
     void create_pipeline()
     {
-      auto ray_generation_stage = load_shader("simple_triangle.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-      auto miss_stage = load_shader("simple_triangle.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
-      auto closest_hit_stage = load_shader("simple_triangle.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+      auto ray_generation_stage = load_shader("model.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+      auto miss_stage = load_shader("model.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
+      auto closest_hit_stage = load_shader("model.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
       std::vector<VkPipelineShaderStageCreateInfo> stages = {
         ray_generation_stage,
@@ -713,58 +543,25 @@ class hello_triangle {
         .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000)
         .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
         .build();
-
-      // write
-      VkWriteDescriptorSetAccelerationStructureKHR as_info {
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR
-      };
-      as_info.accelerationStructureCount = 1;
-      as_info.pAccelerationStructures = &tlas_->handle;
 
       VkDescriptorImageInfo image_info {};
       image_info.imageView = ray_traced_image_->get_image_view();
       image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
+      VkWriteDescriptorSetAccelerationStructureKHR as_info = tlas_->get_as_info();
+
+      auto vertex_buffer_info = mesh_model_->get_vertex_buffer_info();
+      auto index_buffer_info  = mesh_model_->get_index_buffer_info();
+
       graphics::desc_writer(*desc_layout_, *desc_pool_)
         .write_acceleration_structure(0, &as_info)
         .write_image(1, &image_info)
+        .write_buffer(2, &vertex_buffer_info)
+        .write_buffer(3, &index_buffer_info)
         .build(desc_set_);
-    }
-
-    VkDescriptorSet allocate_descriptor_set(VkDescriptorSetLayout layout, const void* pNext = nullptr)
-    {
-      VkDescriptorSetAllocateInfo allocate_info {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr
-      };
-//      allocate_info.descriptorPool =
-      allocate_info.pSetLayouts = &layout;
-      allocate_info.descriptorSetCount = 1;
-      allocate_info.pNext = pNext;
-      VkDescriptorSet descriptor_set;
-      if (vkAllocateDescriptorSets(device_->get_device(), &allocate_info, &descriptor_set) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor set");
-      }
-      return descriptor_set;
-    }
-
-    void destroy_acceleration_structure(acceleration_structure& as)
-    {
-      auto device = device_->get_device();
-      vkDestroyAccelerationStructureKHR(device, as.handle, nullptr);
-      vkFreeMemory(device, as.memory, nullptr);
-      vkDestroyBuffer(device, as.buffer, nullptr);
-    }
-
-    void destroy_image_resource(graphics::image_resource& ir)
-    {
-      auto device = device_->get_device();
-      vkDestroyImage(device, ir.get_image(), nullptr);
-      vkDestroyImageView(device, ir.get_image_view(), nullptr);
-      vkFreeMemory(device, ir.get_memory(), nullptr);
     }
 
     // temporary rendering system
@@ -950,20 +747,17 @@ class hello_triangle {
     // variables
     u_ptr<graphics::window>   window_;
     u_ptr<graphics::device>   device_;
-    u_ptr<graphics::buffer>   vertex_buffer_;
+    u_ptr<graphics::static_mesh> mesh_model_;
     u_ptr<graphics::buffer>   instances_buffer_;
     u_ptr<graphics::image_resource>              ray_traced_image_;
     std::vector<u_ptr<graphics::image_resource>> back_buffers_;
 
-    std::vector<vec3> triangle_vertices_ = {
-      {-0.5f, -0.5f, 0.0f},
-      {+0.5f, -0.5f, 0.0f},
-      {0.0f,  0.75f, 0.0f}
-    };
+    size_t vertex_count_ = 0;
+    size_t index_count_ = 0;
 
     // acceleration structure
-    u_ptr<acceleration_structure> blas_;
-    u_ptr<acceleration_structure> tlas_;
+    u_ptr<graphics::acceleration_structure> blas_;
+    u_ptr<graphics::acceleration_structure> tlas_;
 
     VkPipelineLayout pipeline_layout_;
     VkPipeline       pipeline_;

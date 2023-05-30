@@ -58,6 +58,9 @@ class image_resource
     // setter
     void set_image(VkImage image) { image_ = image; }
     void set_image_view(VkImageView view) { image_view_ = view; }
+    void set_device_memory(VkDeviceMemory memory) { image_memory_ = memory; }
+    void set_is_for_swap_chain(bool val) { is_for_swap_chain_ = val; }
+
   private:
     void create_image_view(bool for_ray_tracing = false);
     void create_sampler();
@@ -77,6 +80,8 @@ class image_resource
       0, // base array layer
       1, // layer count
     };
+
+    bool is_for_swap_chain_ = false;
 };
 
 } // namespace hnll::graphics

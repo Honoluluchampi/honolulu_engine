@@ -33,6 +33,9 @@ struct obj_loader
   void load_model(const std::string& filename);
 };
 
+// for ray tracing
+VkDeviceAddress get_device_address(VkDevice device, VkBuffer buffer);
+
 } // namespace hnll::graphics
 
 namespace std {

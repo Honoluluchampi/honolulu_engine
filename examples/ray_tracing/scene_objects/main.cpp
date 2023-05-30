@@ -2,25 +2,18 @@
 #include <graphics/device.hpp>
 #include <graphics/buffer.hpp>
 #include <graphics/desc_set.hpp>
-#include <graphics/pipeline.hpp>
-#include <graphics/renderer.hpp>
-#include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/utils.hpp>
 
 using hnll::graphics::image_resource;
 using hnll::get_device_address;
 
 namespace hnll {
 
-const std::string SHADERS_DIRECTORY = std::string(std::getenv("HNLL_ENGN")) +
-                                      "/applications/ray_tracing/scene_objects/shaders/spv/";
-
-using vec3 = Eigen::Vector3f;
-using vec4 = Eigen::Vector4f;
-template<typename T> using u_ptr = std::unique_ptr<T>;
-template<typename T> using s_ptr = std::shared_ptr<T>;
+const std::string SHADERS_DIRECTORY =
+  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
 enum class shader_stages {
   RAY_GENERATION,
@@ -38,8 +31,8 @@ const uint32_t cube_hit_shader  = 1;
 
 struct vertex
 {
-  vec3 position;
-  vec3 normal;
+  alignas(16) vec3 position;
+  alignas(16) vec3 normal;
   vec4 color;
 };
 
@@ -61,6 +54,14 @@ struct ray_tracing_scratch_buffer
   VkDeviceAddress device_address = 0;
 };
 
+struct scene_parameters {
+  mat4 view = mat4::Identity();
+  mat4 projection = mat4::Identity();
+  vec4 light_direction = { -0.2f, -1.f, -1.f, 0.f };
+  vec4 light_color = { 1.f, 1.f, 1.f, 1.f };
+  vec4 ambient_color = { 0.2f, 0.2f, 0.2f, 0.2f };
+};
+
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
 
@@ -74,17 +75,33 @@ VkTransformMatrixKHR convert_transform(const Eigen::Matrix4f& matrix)
   return ret;
 }
 
-class hello_triangle {
+void write_hit_shader_binding_table_data(VkDevice device, void* dst, const mesh_model& mesh)
+{
+  uint64_t device_addr = 0;
+  auto p = static_cast<uint8_t*>(dst);
+
+  // index
+  device_addr = hnll::get_device_address(device, mesh.index_buffer->get_buffer());
+  memcpy(p, &device_addr, sizeof(device_addr));
+  p += sizeof(device_addr);
+
+  // vertex
+  device_addr = hnll::get_device_address(device, mesh.vertex_buffer->get_buffer());
+  memcpy(p, &device_addr, sizeof(device_addr));
+  p += sizeof(device_addr);
+}
+
+class hello_scene {
   public:
-    hello_triangle()
+    hello_scene()
     {
-      window_ = std::make_unique<graphics::window>(1920, 1080, "hello ray tracing triangle");
+      window_ = std::make_unique<graphics::window>(960, 820, "hello scene");
       device_ = std::make_unique<graphics::device>(*window_, utils::rendering_type::RAY_TRACING);
 
       create_scene();
     }
 
-    ~hello_triangle()
+    ~hello_scene()
     {
       auto device = device_->get_device();
       destroy_image_resource(*ray_traced_image_);
@@ -167,8 +184,8 @@ class hello_triangle {
       region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
       region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-      back_buffer->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, command);
 
       vkCmdCopyImage(
         command,
@@ -180,8 +197,8 @@ class hello_triangle {
         &region
       );
 
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_GENERAL);
-      back_buffer->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, command);
+      back_buffer->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, command);
 
       vkEndCommandBuffer(command);
 
@@ -218,13 +235,13 @@ class hello_triangle {
       ray_traced_image_ = create_texture_2d(extent, format, usage, device_memory_props);
 
       auto command = device_->begin_one_shot_commands();
-      ray_traced_image_->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_GENERAL);
+      ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, command);
       device_->end_one_shot_commands(command);
     }
 
     u_ptr<image_resource> create_texture_2d(VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memory_props)
     {
-      auto res = std::make_unique<image_resource>();
+      auto res = graphics::image_resource::create_blank(*device_);
 
       // create image
       VkImageCreateInfo create_info {
@@ -274,11 +291,11 @@ class hello_triangle {
 
     void create_layout()
     {
-      descriptor_set_layout_ = graphics::descriptor_set_layout::builder(*device_)
-        .add_binding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-        .add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+      descriptor_set_layout_ = graphics::desc_layout::builder(*device_)
+        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR)
           // make it dynamic because the ubo is writen by cpu accessed by gpu
-        .add_binding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL)
+        .add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL)
         .build();
 
       VkPipelineLayoutCreateInfo pl_create_info {
@@ -291,9 +308,9 @@ class hello_triangle {
 
     void create_pipeline()
     {
-      auto ray_generation_stage = load_shader("ray_generation.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-      auto miss_stage = load_shader("miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
-      auto closest_hit_stage = load_shader("closest_hit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+      auto ray_generation_stage = load_shader("scene.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+      auto miss_stage = load_shader("scene.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR);
+      auto closest_hit_stage = load_shader("scene.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
       std::vector<VkPipelineShaderStageCreateInfo> stages = {
         ray_generation_stage,
@@ -372,7 +389,7 @@ class hello_triangle {
         nullptr
       };
 
-      auto shader_spv = graphics::pipeline::read_file(SHADERS_DIRECTORY + shader_name);
+      auto shader_spv = utils::read_file_for_shader(SHADERS_DIRECTORY + shader_name);
       VkShaderModuleCreateInfo module_create_info {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr
       };
@@ -403,16 +420,23 @@ class hello_triangle {
       // compute size of each entry
       const auto handle_size = pipeline_props.shaderGroupHandleSize;
       const auto handle_alignment = pipeline_props.shaderGroupHandleAlignment;
-      auto shader_entry_size = align(handle_size, handle_alignment);
+
+      auto raygen_shader_entry_size = align(handle_size, handle_alignment);
+      auto miss_shader_entry_size = align(handle_size, handle_alignment);
+      // consider geometry's buffer
+      uint32_t hit_shader_entry_size = handle_size;
+      hit_shader_entry_size += sizeof(uint64_t); // index buffer addr
+      hit_shader_entry_size += sizeof(uint64_t); // vertex buffer addr
+      hit_shader_entry_size = align(hit_shader_entry_size, handle_alignment);
 
       const auto raygen_shader_count = 1;
       const auto miss_shader_count = 1;
-      const auto hit_shader_count = 1;
+      const auto hit_shader_count = 2; // plane, cube
 
       const auto base_align = pipeline_props.shaderGroupBaseAlignment;
-      auto region_raygen = align(shader_entry_size * raygen_shader_count, base_align);
-      auto region_miss   = align(shader_entry_size * miss_shader_count, base_align);
-      auto region_hit    = align(shader_entry_size * hit_shader_count, base_align);
+      auto region_raygen = align(raygen_shader_entry_size * raygen_shader_count, base_align);
+      auto region_miss   = align(miss_shader_entry_size * miss_shader_count, base_align);
+      auto region_hit    = align(hit_shader_entry_size * hit_shader_count, base_align);
 
       shader_binding_table_ = std::make_unique<graphics::buffer>(
         *device_,
@@ -445,7 +469,7 @@ class hello_triangle {
       memcpy(dst, raygen, handle_size);
       dst += region_raygen;
       region_raygen_.deviceAddress = device_address;
-      region_raygen_.stride = shader_entry_size;
+      region_raygen_.stride = raygen_shader_entry_size;
       region_raygen_.size = region_raygen_.stride;
 
       // write miss shader entry
@@ -454,15 +478,28 @@ class hello_triangle {
       dst += region_miss;
       region_miss_.deviceAddress = device_address + region_raygen;
       region_miss_.size = region_miss;
-      region_miss_.stride = shader_entry_size;
+      region_miss_.stride = miss_shader_entry_size;
 
-      // write hit shader entry
+      // write hit shader entry  (corresponds to shaderRecordEXT in rchit shader
       auto hit = shader_handle_storage.data() + handle_size_aligned * static_cast<int>(shader_stages::CLOSEST_HIT);
-      memcpy(dst, hit, handle_size);
-      dst += region_hit;
+      auto start = dst;
+      // write plane
+      {
+        memcpy(start, hit, handle_size);
+        write_hit_shader_binding_table_data(device_->get_device(), start + handle_size, *plane_);
+      }
+      start = start + hit_shader_entry_size;
+      // cube
+      {
+        memcpy(start, hit, handle_size);
+        write_hit_shader_binding_table_data(device_->get_device(), start + handle_size, *cube_);
+      }
+
       region_hit_.deviceAddress = device_address + region_raygen + region_miss;
       region_hit_.size = region_hit;
-      region_hit_.stride = shader_entry_size;
+      region_hit_.stride = hit_shader_entry_size;
+
+      shader_binding_table_->unmap();
     }
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR get_ray_tracing_pipeline_properties()
@@ -482,7 +519,7 @@ class hello_triangle {
     void create_descriptor_set()
     {
       // create descriptor pool
-      descriptor_pool_ = graphics::descriptor_pool::builder(*device_)
+      descriptor_pool_ = graphics::desc_pool::builder(*device_)
         .set_max_sets(100)
         .add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
         .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
@@ -505,9 +542,23 @@ class hello_triangle {
       image_info.imageView = ray_traced_image_->get_image_view();
       image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-      graphics::descriptor_writer(*descriptor_set_layout_, *descriptor_pool_)
+      // setup ubo
+      auto initial_param = scene_parameters{};
+      ubo_buffer_ = graphics::buffer::create_with_staging(
+        *device_,
+        sizeof(scene_parameters),
+        1,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+        &initial_param
+      );
+
+      auto buffer_info = ubo_buffer_->desc_info();
+
+      graphics::desc_writer(*descriptor_set_layout_, *descriptor_pool_)
         .write_acceleration_structure(0, &as_info)
         .write_image(1, &image_info)
+        .write_buffer(2, &buffer_info)
         .build(descriptor_set_);
     }
 
@@ -658,7 +709,7 @@ class hello_triangle {
 
       render_targets_.resize(image_count);
       for (uint32_t i = 0; i < image_count; ++i) {
-        render_targets_[i] = std::make_unique<image_resource>();
+        render_targets_[i] = image_resource::create_blank(*device_);
         render_targets_[i]->set_image(images[i]);
 
         VkImageViewCreateInfo view_create_info {
@@ -685,7 +736,7 @@ class hello_triangle {
 
       auto command = device_->begin_one_shot_commands();
       for (uint32_t i = 0; i < image_count; i++) {
-        render_targets_[i]->set_image_layout_barrier_state(command, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        render_targets_[i]->transition_image_layout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, command);
       }
       device_->end_one_shot_commands(command);
 
@@ -709,7 +760,7 @@ class hello_triangle {
       VkCommandBufferAllocateInfo allocate_info {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         nullptr,
-        device_->get_command_pool(),
+        device_->get_graphics_command_pool(),
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         1
       };
@@ -752,29 +803,27 @@ class hello_triangle {
 
       // create plane vertex buffer
       auto usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | usage_for_rt;
-      plane_->vertex_buffer = std::make_unique<graphics::buffer>(
+      plane_->vertex_buffer = graphics::buffer::create_with_staging(
         *device_,
         vertex_buffer_size,
         1,
         usage,
-        host_memory_props
+        host_memory_props,
+        vertices.data()
       );
-      plane_->vertex_buffer->map();
-      plane_->vertex_buffer->write_to_buffer((void *) vertices.data());
       plane_->vertex_count = static_cast<uint32_t>(vertices.size());
       plane_->vertex_stride = vertex_stride;
 
       // create plane index buffer
       usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | usage_for_rt;
-      plane_->index_buffer = std::make_unique<graphics::buffer>(
+      plane_->index_buffer = graphics::buffer::create_with_staging(
         *device_,
         index_buffer_size,
         1,
         usage,
-        host_memory_props
+        host_memory_props,
+        indices.data()
       );
-      plane_->index_buffer->map();
-      plane_->index_buffer->write_to_buffer((void *) indices.data());
       plane_->index_count = static_cast<uint32_t>(indices.size());
 
       // create cube mesh_model
@@ -1054,31 +1103,31 @@ class hello_triangle {
         VkTransformMatrixKHR transform = convert_transform(Eigen::Matrix4f::Identity());
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = plane_->blas->get_device_address();
+        instance.accelerationStructureReference = plane_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = plane_->hit_shader_index;
         instances.push_back(instance);
       }
       // cube 1
       {
         Eigen::Matrix4f tf = Eigen::Matrix4f::Identity();
-        tf(0, 3) = -2.f;
-        tf(1, 3) = 1.f;
+        tf(0, 3) = 7.f;
+        tf(1, 3) = -2.f;
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = cube_->blas->get_device_address();
+        instance.accelerationStructureReference = cube_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = cube_->hit_shader_index;
         instances.push_back(instance);
       }
       // cube 2
       {
         Eigen::Matrix4f tf = Eigen::Matrix4f::Identity();
-        tf(0, 3) = 2.f;
-        tf(1, 3) = 1.f;
+        tf(0, 3) = 6.f;
+        tf(1, 3) = 5.f;
         VkTransformMatrixKHR transform = convert_transform(tf);
         VkAccelerationStructureInstanceKHR instance = template_description;
         instance.transform = transform;
-        instance.accelerationStructureReference = cube_->blas->get_device_address();
+        instance.accelerationStructureReference = cube_->blas->get_as_device_address();
         instance.instanceShaderBindingTableRecordOffset = cube_->hit_shader_index;
         instances.push_back(instance);
       }
@@ -1103,9 +1152,12 @@ class hello_triangle {
     VkPipelineLayout pipeline_layout_;
     VkPipeline       pipeline_;
 
-    u_ptr<graphics::descriptor_set_layout> descriptor_set_layout_;
-    u_ptr<graphics::descriptor_pool>       descriptor_pool_;
+    u_ptr<graphics::desc_layout> descriptor_set_layout_;
+    s_ptr<graphics::desc_pool>       descriptor_pool_;
     VkDescriptorSet                        descriptor_set_;
+
+    // ubo
+    u_ptr<graphics::buffer> ubo_buffer_;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_group_create_infos_;
     u_ptr<graphics::buffer> shader_binding_table_;
@@ -1137,7 +1189,7 @@ class hello_triangle {
 }
 
 int main() {
-  hnll::hello_triangle app {};
+  hnll::hello_scene app {};
 
   try { app.run(); }
   catch (const std::exception& e) {
@@ -1146,9 +1198,3 @@ int main() {
   }
   return EXIT_SUCCESS;
 }
-
-// empty
-#include <geometry/mesh_model.hpp>
-void hnll::geometry::mesh_model::align_vertex_id() {}
-#include <utils/utils.hpp>
-std::string hnll::utils::get_full_path(const std::string &_filename) {}

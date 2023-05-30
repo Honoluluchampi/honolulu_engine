@@ -748,12 +748,15 @@ VkCommandBuffer device::begin_one_shot_commands(command_type type)
   switch (type) {
     case command_type::TRANSFER :
       allocate_info.commandPool = transfer_command_pool_;
+      break;
 
     case command_type::GRAPHICS :
       allocate_info.commandPool = graphics_command_pool_;
+      break;
 
     case command_type::COMPUTE :
       allocate_info.commandPool = compute_command_pool_;
+      break;
   }
 
   allocate_info.commandBufferCount = 1;
@@ -785,14 +788,17 @@ void device::end_one_shot_commands(VkCommandBuffer command_buffer, command_type 
     case command_type::TRANSFER : {
       queue = transfer_queue_;
       pool = transfer_command_pool_;
+      break;
     }
     case command_type::GRAPHICS : {
       queue = graphics_queue_;
       pool = graphics_command_pool_;
+      break;
     }
     case command_type::COMPUTE : {
       queue = compute_queue_;
       pool = compute_command_pool_;
+      break;
     }
   }
 
