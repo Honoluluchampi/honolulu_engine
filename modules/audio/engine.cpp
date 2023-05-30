@@ -1,5 +1,9 @@
+// hnll
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
+
+// std
+#include <iostream>
 
 namespace hnll::audio {
 
@@ -107,6 +111,48 @@ result engine::remove_audio_from_source(audio_data& audio_data)
   pending_source_ids_.push(audio_data.get_source_id());
 
   return result::SUCCESS;
+}
+
+source_id engine::get_available_source_id()
+{
+  source_id ret;
+  if (!pending_source_ids_.empty()) {
+    ret = pending_source_ids_.front();
+    pending_source_ids_.pop();
+  }
+  else {
+    ret = -1;
+    std::cerr << "all the openAL sources are not available." << std::endl;
+  }
+
+  return ret;
+}
+
+result engine::queue_buffer_to_source(source_id source, buffer_id buffer)
+{
+  alSourceQueueBuffers(source, 1, &buffer);
+  return result::SUCCESS;
+}
+
+void engine::erase_finished_audio_on_queue(source_id source)
+{
+  int processed;
+  alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+
+  if (processed > 0) {
+    std::vector<buffer_id> finished_buffer_id(processed);
+    // remove from queue
+    alSourceUnqueueBuffers(source, processed, finished_buffer_id.data());
+    // erase buffer
+    alDeleteBuffers(processed, finished_buffer_id.data());
+  }
+}
+
+int engine::get_audio_count_on_queue(source_id source)
+{
+  int count;
+  alGetSourcei(source, AL_BUFFERS_QUEUED, &count);
+  return count;
 }
 
 } // namespace hnll::audio

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 add_definitions(-std=c++2a)
 
 # build honolulu_audio_engine
-add_library(hnll_audio STATIC engine.cpp)
+add_library(hnll_audio STATIC engine.cpp utils.cpp)
 include($ENV{HNLL_ENGN}/cmake_utils/include.cmake)
 include_common_dependencies(hnll_audio)
 # for OS X
