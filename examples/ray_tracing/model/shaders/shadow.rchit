@@ -42,7 +42,7 @@ void main() {
   traceRayEXT(
     tlas,
     gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
-    0xFF,
+    0xff,
     0,
     0,
     1,
@@ -50,7 +50,8 @@ void main() {
     tmin,
     light_direction,
     tmax,
-    2);
+    1
+　);
 
   if (shadowed) {
     hit_value *= 0.3;
