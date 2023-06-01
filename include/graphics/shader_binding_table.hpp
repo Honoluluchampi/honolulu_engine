@@ -43,11 +43,13 @@ class shader_binding_table
     // names and shader_stages should correspond to each other
     u_ptr<shader_binding_table> create(
       device& device,
+      const std::vector<VkDescriptorSetLayout>& vk_desc_layouts,
       const std::vector<std::string>& shader_names,
       const std::vector<VkShaderStageFlagBits>& shader_stages);
 
     shader_binding_table(
       device& device,
+      const std::vector<VkDescriptorSetLayout>& vk_desc_layouts,
       const std::vector<std::string>& shader_names,
       const std::vector<VkShaderStageFlagBits>& shader_stages);
 
@@ -58,14 +60,18 @@ class shader_binding_table
       const std::vector<VkShaderStageFlagBits>& shader_stages);
     void setup_shader_entries();
 
+    void create_pipeline(const std::vector<VkDescriptorSetLayout>& vk_desc_layouts);
+
     device& device_;
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups_;
+    std::vector<VkPipelineShaderStageCreateInfo> shader_stages_ {};
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups_ {};
     // actual shader binding table
     std::vector<u_ptr<shader_entry>> shader_entries_;
     // contains the count of each shader group
     std::array<uint32_t, 5> shader_counts_;
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR properties_;
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR properties_ {};
 
+    VkPipelineLayout pipeline_layout_;
     VkPipeline pipeline_;
 };
 
