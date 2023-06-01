@@ -22,28 +22,14 @@ const std::string SHADERS_DIRECTORY =
 
 #define MODEL_NAME utils::get_full_path("bunny.obj")
 
-enum class shader_stages {
-  RAY_GENERATION,
-  MISS,
-  CLOSEST_HIT,
-  ANY_HIT,
-  INTERSECTION,
-  MAX_STAGE,
-};
-
-namespace scene_hit_shader_group {
-const uint32_t plane_hit_shader = 0;
-const uint32_t cube_hit_shader  = 1;
-}
-
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
 
-class hello_triangle {
+class hello_model {
   public:
-    hello_triangle()
+    hello_model()
     {
-      window_ = std::make_unique<graphics::window>(960, 820, "hello ray tracing triangle");
+      window_ = std::make_unique<graphics::window>(960, 820, "hello ray tracing model");
       device_ = std::make_unique<graphics::device>(
         *window_,
         utils::rendering_type::RAY_TRACING
@@ -621,7 +607,7 @@ class hello_triangle {
 }
 
 int main() {
-  hnll::hello_triangle app {};
+  hnll::hello_model app {};
 
   try { app.run(); }
   catch (const std::exception& e) {

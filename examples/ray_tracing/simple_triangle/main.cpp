@@ -57,9 +57,9 @@ struct ray_tracing_scratch_buffer
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
 
-class hello_triangle {
+class hello_model {
   public:
-    hello_triangle()
+    hello_model()
     {
       window_ = std::make_unique<graphics::window>(960, 820, "hello ray tracing triangle");
       device_ = std::make_unique<graphics::device>(
@@ -1002,7 +1002,7 @@ class hello_triangle {
 }
 
 int main() {
-  hnll::hello_triangle app {};
+  hnll::hello_model app {};
 
   try { app.run(); }
   catch (const std::exception& e) {
