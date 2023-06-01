@@ -17,7 +17,7 @@ layout(binding = 0) uniform accelerationStructureEXT tlas;
 layout(binding = 2) buffer Vertices { vertex v[]; } vertices;
 layout(binding = 3) buffer Indices { uint i[]; } indices;
 
-vec3 light_direction = normalize(vec3(0.0, 0.0, 1.0));
+vec3 light_direction = normalize(vec3(-1.0, -1.0, 1.0));
 
 void main() {
   vertex v0 = vertices.v[indices.i[3 * gl_PrimitiveID]];
@@ -37,8 +37,9 @@ void main() {
   float tmin = 0.001;
   float tmax = 10000.0;
   // current hit point
-  vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * glHiTEXT;
+  vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
   shadowed = true;
+
   traceRayEXT(
     tlas,
     gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
@@ -51,7 +52,7 @@ void main() {
     light_direction,
     tmax,
     1
-　);
+  );
 
   if (shadowed) {
     hit_value *= 0.3;
