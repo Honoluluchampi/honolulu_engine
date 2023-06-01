@@ -41,7 +41,7 @@ class shader_binding_table
 {
   public:
     // names and shader_stages should correspond to each other
-    u_ptr<shader_binding_table> create(
+    static u_ptr<shader_binding_table> create(
       device& device,
       const std::vector<VkDescriptorSetLayout>& vk_desc_layouts,
       const std::vector<std::string>& shader_names,
@@ -53,14 +53,25 @@ class shader_binding_table
       const std::vector<std::string>& shader_names,
       const std::vector<VkShaderStageFlagBits>& shader_stages);
 
+    ~shader_binding_table();
+
+    // getter
+    inline VkPipeline get_pipeline() const { return pipeline_; }
+    inline VkPipelineLayout get_pipeline_layout() const { return pipeline_layout_; }
+
+    inline VkStridedDeviceAddressRegionKHR get_gen_region() const { return gen_region_; }
+    inline VkStridedDeviceAddressRegionKHR get_miss_region() const { return miss_region_; }
+    inline VkStridedDeviceAddressRegionKHR get_hit_region() const { return hit_region_; }
+    inline VkStridedDeviceAddressRegionKHR get_callable_region() const { return callable_region_; }
+
   private:
     void setup_pipeline_properties();
     void setup_shader_groups(
       const std::vector<std::string>& shader_names,
       const std::vector<VkShaderStageFlagBits>& shader_stages);
-    void setup_shader_entries();
-
     void create_pipeline(const std::vector<VkDescriptorSetLayout>& vk_desc_layouts);
+    void setup_shader_entries();
+    void copy_shader_address_region();
 
     device& device_;
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages_ {};
@@ -73,6 +84,12 @@ class shader_binding_table
 
     VkPipelineLayout pipeline_layout_;
     VkPipeline pipeline_;
+
+    // actual shader device address region
+    VkStridedDeviceAddressRegionKHR gen_region_ {};
+    VkStridedDeviceAddressRegionKHR miss_region_ {};
+    VkStridedDeviceAddressRegionKHR hit_region_ {};
+    VkStridedDeviceAddressRegionKHR callable_region_ {};
 };
 
 } // namespace hnll::graphics

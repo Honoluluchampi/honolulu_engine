@@ -82,7 +82,6 @@ shader_entry::shader_entry(
     properties,
     handle_count
   );
-  buffer_->map();
 }
 
 // shader binding table -----------------------------------------------------------------------------
@@ -106,6 +105,13 @@ shader_binding_table::shader_binding_table(
   setup_shader_groups(shader_names, shader_stages);
   create_pipeline(vk_desc_layouts);
   setup_shader_entries();
+  copy_shader_address_region();
+}
+
+shader_binding_table::~shader_binding_table()
+{
+  vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr);
+  vkDestroyPipeline(device_.get_device(), pipeline_, nullptr);
 }
 
 void shader_binding_table::setup_pipeline_properties()
@@ -199,39 +205,10 @@ void shader_binding_table::setup_shader_groups(
           shader_groups_.push_back(shader_group);
         }
       }
+      // TODO : ahit, int
       else {
         throw std::runtime_error("Unsupported ray tracing shader");
       }
-    }
-  }
-}
-
-void shader_binding_table::setup_shader_entries()
-{
-  uint32_t handle_size = properties_.shaderGroupHandleSize;
-  uint32_t handle_size_aligned = align(handle_size, properties_.shaderGroupHandleAlignment);
-  uint32_t group_count = static_cast<uint32_t>(shader_groups_.size());
-  uint32_t sbt_size = group_count * handle_size_aligned;
-
-  std::vector<uint8_t> shader_handle_storage(sbt_size);
-  vkGetRayTracingShaderGroupHandlesKHR(
-    device_.get_device(),
-    pipeline_,
-    0,
-    group_count,
-    sbt_size,
-    shader_handle_storage.data()
-  );
-
-  uint32_t current_handle_count = 0;
-  shader_entries_.resize(shader_groups_.size());
-  for (int i = 0; i < 5; i++) {
-    if (shader_counts_[i] > 0) {
-      shader_entries_[i] = shader_entry::create(device_, properties_, shader_counts_[i]);
-      shader_entries_[i]->buffer_->write_to_buffer(
-        shader_handle_storage.data() + handle_size_aligned * current_handle_count,
-        handle_size * shader_counts_[i]);
-      current_handle_count += shader_counts_[i];
     }
   }
 }
@@ -264,6 +241,50 @@ void shader_binding_table::create_pipeline(const std::vector<VkDescriptorSetLayo
     nullptr,
     &pipeline_
   );
+
+  // delete shader modules
+  for (auto& stage : shader_stages_) {
+    vkDestroyShaderModule(device_.get_device(), stage.module, nullptr);
+  }
+}
+
+void shader_binding_table::setup_shader_entries()
+{
+  uint32_t handle_size = properties_.shaderGroupHandleSize;
+  uint32_t handle_size_aligned = align(handle_size, properties_.shaderGroupHandleAlignment);
+  uint32_t group_count = static_cast<uint32_t>(shader_groups_.size());
+  uint32_t sbt_size = group_count * handle_size_aligned;
+
+  std::vector<uint8_t> shader_handle_storage(sbt_size);
+  vkGetRayTracingShaderGroupHandlesKHR(
+    device_.get_device(),
+    pipeline_,
+    0,
+    group_count,
+    sbt_size,
+    shader_handle_storage.data()
+  );
+
+  uint32_t current_handle_count = 0;
+  shader_entries_.resize(shader_groups_.size());
+  // TODO : ahit, int
+  for (int i = 0; i < 5; i++) {
+    if (shader_counts_[i] > 0) {
+      shader_entries_[i] = shader_entry::create(device_, properties_, shader_counts_[i]);
+      shader_entries_[i]->buffer_->write_to_buffer(
+        shader_handle_storage.data() + handle_size_aligned * current_handle_count,
+        handle_size * shader_counts_[i]);
+      current_handle_count += shader_counts_[i];
+    }
+  }
+}
+
+void shader_binding_table::copy_shader_address_region()
+{
+  // TODO : ahit, int
+  gen_region_ = shader_entries_[0]->strided_device_address_region_;
+  miss_region_ = shader_entries_[1]->strided_device_address_region_;
+  hit_region_ = shader_entries_[2]->strided_device_address_region_;
 }
 
 } // namespace hnll::graphics
