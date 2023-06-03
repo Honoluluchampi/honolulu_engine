@@ -228,7 +228,7 @@ void shader_binding_table::create_pipeline(const std::vector<VkDescriptorSetLayo
     .pStages = shader_stages_.data(),
     .groupCount = static_cast<uint32_t>(shader_groups_.size()),
     .pGroups = shader_groups_.data(),
-    .maxPipelineRayRecursionDepth = 1,
+    .maxPipelineRayRecursionDepth = 2,
     .layout = pipeline_layout_,
   };
 

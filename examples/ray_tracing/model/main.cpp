@@ -317,7 +317,7 @@ class hello_model {
     void create_layout()
     {
       desc_layout_ = graphics::desc_layout::builder(*device_)
-        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // tlas
+        .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // tlas
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
@@ -329,10 +329,12 @@ class hello_model {
         {
           SHADERS_DIRECTORY + "model.rgen.spv",
           SHADERS_DIRECTORY + "model.rmiss.spv",
-          SHADERS_DIRECTORY + "model.rchit.spv",
+          SHADERS_DIRECTORY + "shadow.rmiss.spv",
+          SHADERS_DIRECTORY + "shadow.rchit.spv",
         },
         {
           VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+          VK_SHADER_STAGE_MISS_BIT_KHR,
           VK_SHADER_STAGE_MISS_BIT_KHR,
           VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }

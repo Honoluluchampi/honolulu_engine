@@ -16,7 +16,7 @@ layout(binding = 0) uniform accelerationStructureEXT tlas;
 layout(binding = 2) buffer Vertices { vertex v[]; } vertices;
 layout(binding = 3) buffer Indices { uint i[]; } indices;
 
-vec3 light_direction = normalize(vec3(0.0, 0.0, 1.0));
+vec3 light_direction = normalize(vec3(-1.0, -1.0, 1.0));
 
 void main() {
   vertex v0 = vertices.v[indices.i[3 * gl_PrimitiveID]];
