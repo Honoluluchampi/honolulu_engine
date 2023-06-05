@@ -1,18 +1,30 @@
 // hnll
 #include <gui/renderer.hpp>
 #include <graphics/image_resource.hpp>
+#include <utils/rendering_utils.hpp>
 
 namespace hnll::gui {
 
 float renderer::left_window_ratio_ = 0.2f;
 float renderer::bottom_window_ratio_ = 0.25f;
 
-u_ptr<renderer> renderer::create(graphics::window& window, graphics::device& device, bool recreate_from_scratch)
-{ return std::make_unique<renderer>(window, device, recreate_from_scratch); }
+u_ptr<renderer> renderer::create(
+  graphics::window& window,
+  graphics::device& device,
+  utils::rendering_type type,
+  bool recreate_from_scratch)
+{ return std::make_unique<renderer>(window, device, type, recreate_from_scratch); }
 
-renderer::renderer(graphics::window& window, graphics::device& device, bool recreate_from_scratch) :
+renderer::renderer(
+  graphics::window& window,
+  graphics::device& device,
+  utils::rendering_type type,
+  bool recreate_from_scratch) :
   hnll::graphics::renderer(window, device, recreate_from_scratch)
-{ recreate_swap_chain(); }
+{
+  rendering_type_ = type;
+  recreate_swap_chain();
+}
 
 void renderer::recreate_swap_chain()
 {
@@ -218,16 +230,34 @@ void renderer::create_viewport_images()
 
   auto extent = swap_chain_->get_swap_chain_extent();
 
-  for (uint32_t i = 0; i < image_count; i++) {
-    vp_images_[i] = graphics::image_resource::create(
-      device_,
-      {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
-       static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
-      VK_FORMAT_B8G8R8A8_SRGB,
-      VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    );
+  if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
+    for (uint32_t i = 0; i < image_count; i++) {
+      vp_images_[i] = graphics::image_resource::create(
+        device_,
+        {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+         static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
+        VK_FORMAT_B8G8R8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+      );
+    }
+  }
+  // for ray tracing
+  else {
+    for (uint32_t i = 0; i < image_count; ++i) {
+      // this image will be used as desc_image by ray tracing shader
+      vp_images_[i] = graphics::image_resource::create(
+        device_,
+        {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+         static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
+        VK_FORMAT_B8G8R8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        true // for_ray_tracing
+      );
+    }
   }
 }
 

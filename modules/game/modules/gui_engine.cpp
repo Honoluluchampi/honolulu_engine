@@ -3,6 +3,7 @@
 #include <gui/renderer.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
+#include <utils/rendering_utils.hpp>
 
 // embedded fonts
 // download by yourself
@@ -13,12 +14,15 @@ namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
 
+u_ptr<gui_engine> create(graphics::window& window, graphics::device& device, utils::rendering_type type)
+{ return std::make_unique<gui_engine>(window, device, type); }
+
 // take s_ptr<swap_chain> from get_renderer
-gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
+gui_engine::gui_engine(graphics::window& window, graphics::device& device, utils::rendering_type type)
   : device_(device)
 {
   setup_specific_vulkan_objects();
-  renderer_up_ = gui::renderer::create(window, device, false);
+  renderer_up_ = gui::renderer::create(window, device, type, false);
 
   setup_imgui(device, window.get_glfw_window());
   upload_font();

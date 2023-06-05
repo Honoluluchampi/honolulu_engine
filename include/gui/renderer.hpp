@@ -17,12 +17,20 @@ namespace gui {
   class renderer : public hnll::graphics::renderer
     {
       public:
-        renderer(graphics::window& window, graphics::device& device, bool recreate_from_scratch);
+        renderer(
+          graphics::window& window,
+          graphics::device& device,
+          utils::rendering_type type,
+          bool recreate_from_scratch);
 
         renderer(const renderer&) = delete;
         renderer& operator= (const renderer&) = delete;
 
-        static u_ptr<renderer> create(graphics::window& window, graphics::device& device, bool recreate_from_scratch);
+        static u_ptr<renderer> create(
+          graphics::window& window,
+          graphics::device& device,
+          utils::rendering_type type,
+          bool recreate_from_scratch);
 
         void recreate_swap_chain() override;
 
@@ -49,8 +57,12 @@ namespace gui {
         std::vector<u_ptr<graphics::image_resource>> vp_images_;
         std::vector<VkCommandBuffer> vp_command_buffers_;
 
+        utils::rendering_type rendering_type_;
+
         static float left_window_ratio_;
         static float bottom_window_ratio_;
+
+        static bool for_ray_tracing_;
     };
 }
 } // namespace hnll::gui

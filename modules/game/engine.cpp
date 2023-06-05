@@ -19,7 +19,7 @@ utils::viewer_info engine_core::viewer_info_;
 engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
  : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
 #ifndef IMGUI_DISABLED
-   gui_engine_(utils::singleton<gui_engine>::get_instance(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r()))
+   gui_engine_(utils::singleton<gui_engine>::get_instance(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r(), rendering_type))
 #endif
 {
 #ifndef IMGUI_DISABLED

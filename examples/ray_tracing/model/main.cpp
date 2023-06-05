@@ -341,20 +341,6 @@ class hello_model {
       );
     }
 
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR get_ray_tracing_pipeline_properties()
-    {
-      // get data for size and order of shader entries
-      VkPhysicalDeviceRayTracingPipelinePropertiesKHR pipeline_properties {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
-      };
-      VkPhysicalDeviceProperties2 device_properties2 {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2
-      };
-      device_properties2.pNext = &pipeline_properties;
-      vkGetPhysicalDeviceProperties2(device_->get_physical_device(), &device_properties2);
-      return pipeline_properties;
-    }
-
     void create_descriptor_set()
     {
       // create descriptor pool
