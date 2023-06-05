@@ -59,10 +59,10 @@ class shader_binding_table
     inline VkPipeline get_pipeline() const { return pipeline_; }
     inline VkPipelineLayout get_pipeline_layout() const { return pipeline_layout_; }
 
-    inline VkStridedDeviceAddressRegionKHR get_gen_region() const { return gen_region_; }
-    inline VkStridedDeviceAddressRegionKHR get_miss_region() const { return miss_region_; }
-    inline VkStridedDeviceAddressRegionKHR get_hit_region() const { return hit_region_; }
-    inline VkStridedDeviceAddressRegionKHR get_callable_region() const { return callable_region_; }
+    inline VkStridedDeviceAddressRegionKHR* get_gen_region_p() { return &gen_region_; }
+    inline VkStridedDeviceAddressRegionKHR* get_miss_region_p() { return &miss_region_; }
+    inline VkStridedDeviceAddressRegionKHR* get_hit_region_p() { return &hit_region_; }
+    inline VkStridedDeviceAddressRegionKHR* get_callable_region_p() { return &callable_region_; }
 
   private:
     void setup_pipeline_properties();

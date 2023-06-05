@@ -61,8 +61,6 @@ namespace gui {
 
         static float left_window_ratio_;
         static float bottom_window_ratio_;
-
-        static bool for_ray_tracing_;
     };
 }
 } // namespace hnll::gui

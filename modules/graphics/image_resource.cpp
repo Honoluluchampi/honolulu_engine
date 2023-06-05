@@ -89,13 +89,7 @@ image_resource::image_resource(
   // you must use VK_IMAGE_TILING_LINEAR
   image_info.tiling = tiling; // efficient access from the shader
 
-  // for ray traced image
-  if (for_ray_tracing) {
-    image_info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-  }
-  else {
-    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  }
+  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   // the texture data will be copied by staging buffer
   image_info.usage = usage;

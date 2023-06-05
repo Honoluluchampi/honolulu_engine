@@ -110,17 +110,12 @@ class hello_model {
         nullptr
       );
 
-      VkStridedDeviceAddressRegionKHR gen_shader_entry = sbt_->get_gen_region();
-      VkStridedDeviceAddressRegionKHR miss_shader_entry = sbt_->get_miss_region();
-      VkStridedDeviceAddressRegionKHR hit_shader_entry = sbt_->get_hit_region();
-      VkStridedDeviceAddressRegionKHR callable_shader_entry {};
-
       vkCmdTraceRaysKHR(
         command,
-        &gen_shader_entry,
-        &miss_shader_entry,
-        &hit_shader_entry,
-        &callable_shader_entry,
+        sbt_->get_gen_region_p(),
+        sbt_->get_miss_region_p(),
+        sbt_->get_hit_region_p(),
+        sbt_->get_callable_region_p(),
         extent.width, extent.height, 1
       );
 
@@ -308,8 +303,7 @@ class hello_model {
         format,
         VK_IMAGE_TILING_OPTIMAL,
         usage,
-        device_memory_props,
-        true); // for ray tracing
+        device_memory_props); // for ray tracing
 
       ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL);
     }

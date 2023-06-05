@@ -130,6 +130,7 @@ class graphics_engine
     void cleanup();
 
     graphics_engine_core& core_;
+    utils::rendering_type rendering_type_;
     static shading_system_map shading_systems_;
 };
 
@@ -144,6 +145,7 @@ GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_nam
 {
   // construct all selected shading systems
   add_shading_system<S...>();
+  rendering_type_ = rendering_type;
 }
 
 GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_info)
@@ -163,7 +165,6 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 
     VkCommandBuffer command_buffer;
     // setup command buffer which associated with proper render pass
-#ifndef IMGUI_DISABLED
     // draw whole window
     core_.record_default_render_command();
 
@@ -172,15 +173,17 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     auto window_extent = core_.get_window_r().get_extent();
     auto left   = gui_engine::get_left_window_ratio();
     auto bottom = gui_engine::get_bottom_window_ratio();
-    core_.begin_render_pass(
-      command_buffer,
-      1,
-      {static_cast<uint32_t>(window_extent.width * (1.f - left)),
-       static_cast<uint32_t>(window_extent.height * (1.f - bottom))});
-#elif
-    command_buffer = begin_command_buffer(0);
-    core_.begin_render_pass(command_buffer, 0);
-#endif
+
+    if (rendering_type_ != utils::rendering_type::RAY_TRACING)  {
+      core_.begin_render_pass(
+        command_buffer,
+        1,
+        {static_cast<uint32_t>(window_extent.width * (1.f - left)),
+         static_cast<uint32_t>(window_extent.height * (1.f - bottom))});
+    }
+
+    // TODO : no gui version
+
     utils::graphics_frame_info frame_info{
       frame_index,
       command_buffer,
@@ -192,7 +195,9 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
       std::visit([&frame_info](auto& system) { system->render(frame_info); }, system_kv.second);
     }
 
-    core_.end_render_pass_and_frame(command_buffer);
+    if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
+      core_.end_render_pass_and_frame(command_buffer);
+    }
   }
 }
 
