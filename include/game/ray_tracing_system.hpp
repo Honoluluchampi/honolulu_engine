@@ -7,21 +7,31 @@
 
 namespace hnll {
 
+#define DEFINE_RAY_TRACER(name, shading_type) class name : public game::ray_tracing_system<name, shading_type>
+
 namespace game {
 
-template<typename Derived>
+template<typename Derived, utils::shading_type type>
 class ray_tracing_system
 {
   public:
-    static u_ptr<ray_tracing_system> create(
-      graphics::device &device);
+    static u_ptr<Derived> create(graphics::device &device) { return std::make_unique<Derived>(device); }
+
+    virtual ~ray_tracing_system();
 
     // impl in each class
     void render(const utils::graphics_frame_info &frame_info);
 
+    inline utils::shading_type get_shading_type() const { return shading_type_; }
+
+    static void set_tlas_desc_set(VkDescriptorSet tlas_desc_set) { tlas_desc_set_ = tlas_desc_set; }
+
   private:
     ray_tracing_system(graphics::device& device) : device_(device)
-    { static_cast<Derived*>(this)->setup(); }
+    {
+      shading_type_ = type;
+      static_cast<Derived*>(this)->setup();
+    }
 
     // impl in each class
     void setup();
@@ -62,12 +72,17 @@ class ray_tracing_system
     graphics::device& device_;
     u_ptr<graphics::shader_binding_table> sbt_;
     VkCommandBuffer current_command_ = nullptr;
+    utils::shading_type shading_type_;
+
+    static VkDescriptorSet tlas_desc_set_;
 
     friend Derived;
 };
 
-#define RT_API template <typename Derived>
-#define RT_TYPE ray_tracing_system<Derived>
+#define RT_API template <typename Derived, utils::shading_type type>
+#define RT_TYPE ray_tracing_system<Derived, type>
+
+RT_API VkDescriptorSet RT_TYPE::tlas_desc_set_ = nullptr;
 
 };
 } // namespace hnll::game
