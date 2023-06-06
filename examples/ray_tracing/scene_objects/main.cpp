@@ -19,7 +19,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("bunny.obj")
+#define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
 // to be ray_tracing_model
 DEFINE_PURE_ACTOR(object)
@@ -200,9 +200,9 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     void setup_tlas()
     {
       VkTransformMatrixKHR transform_matrix = {
-        0.3f, 0.f, 0.f, 0.f,
-        0.f, 0.3f, 0.f, 0.f,
-        0.f, 0.f, 0.3f, 0.f
+        1.f, 0.f, 0.f, 0.f,
+        0.f, 1.f, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f
       };
 
       VkAccelerationStructureInstanceKHR as_instance {};
@@ -277,6 +277,11 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     std::vector<VkDescriptorSet> vp_desc_sets_;
     VkDescriptorSet scene_desc_set_;
     s_ptr<graphics::desc_pool> scene_desc_pool_;
+};
+
+DEFINE_RAY_TRACER(acoustic_ray_tracer, utils::shading_type::RAY2)
+{
+
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
