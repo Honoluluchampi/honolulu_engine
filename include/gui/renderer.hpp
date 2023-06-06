@@ -8,6 +8,7 @@ namespace hnll {
 
 namespace graphics {
   class image_resource;
+  class desc_pool;
 }
 
 namespace gui {
@@ -56,6 +57,10 @@ namespace gui {
         // image, image view and image memory are combined
         std::vector<u_ptr<graphics::image_resource>> vp_images_;
         std::vector<VkCommandBuffer> vp_command_buffers_;
+
+        // for ray tracing desc image
+        s_ptr<graphics::desc_pool> desc_pool_;
+        std::vector<VkDescriptorSet> vp_image_descs_;
 
         utils::rendering_type rendering_type_;
 

@@ -1,6 +1,7 @@
 // hnll
 #include <gui/renderer.hpp>
 #include <graphics/image_resource.hpp>
+#include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
 
 namespace hnll::gui {
@@ -245,6 +246,7 @@ void renderer::create_viewport_images()
   }
   // for ray tracing
   else {
+    // create image resource
     for (uint32_t i = 0; i < image_count; ++i) {
       // this image will be used as desc_image by ray tracing shader
       vp_images_[i] = graphics::image_resource::create(
@@ -257,6 +259,28 @@ void renderer::create_viewport_images()
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         true // for_ray_tracing
       );
+    }
+
+    // create desc sets from images
+    auto desc_layout = graphics::desc_layout::builder(device_)
+      .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
+      .build();
+
+    desc_pool_ = graphics::desc_pool::builder(device_)
+      .set_max_sets(10)
+      .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10)
+      .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+      .build();
+
+    for (uint32_t i = 0; i < image_count; ++i) {
+      VkDescriptorImageInfo image_info {
+        .imageView = vp_images_[i]->get_image_view(),
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+      };
+
+      graphics::desc_writer(*desc_layout, *desc_pool_)
+        .write_image(0, &image_info)
+        .build(vp_image_descs_[i]);
     }
   }
 }

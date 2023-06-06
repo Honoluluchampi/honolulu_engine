@@ -205,6 +205,7 @@ GRPH_ENGN_API template <ShadingSystem Head, ShadingSystem... Rest>
 void GRPH_ENGN_TYPE::add_shading_system()
 {
   auto system = Head::create(core_.get_device_r());
+  system->setup();
   shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
 
   if constexpr (sizeof...(Rest) >= 1)

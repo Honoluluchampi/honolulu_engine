@@ -24,8 +24,7 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    explicit shading_system(graphics::device& device) : device_(device)
-    { static_cast<Derived*>(this)->setup(); }
+    explicit shading_system(graphics::device& device) : device_(device) {  }
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
     static u_ptr<Derived> create(graphics::device& device)
@@ -36,6 +35,8 @@ class shading_system {
     shading_system(shading_system &&) = default;
     shading_system &operator=(shading_system &&) = default;
 
+    // impl in each shader
+    void setup();
     void render(const utils::graphics_frame_info &frame_info);
 
     void add_render_target(rc_id id, RC& target) { targets_.emplace(id, target); }
@@ -48,7 +49,6 @@ class shading_system {
     shading_system &set_shading_type(utils::shading_type type) { shading_type_ = type; return *this; }
 
   protected:
-    void setup();
     // takes push_constant struct as type parameter (use it for size calculation)
     template<typename PushConstant>
     VkPipelineLayout create_pipeline_layout(

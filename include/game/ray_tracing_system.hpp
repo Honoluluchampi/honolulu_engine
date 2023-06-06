@@ -20,6 +20,7 @@ class ray_tracing_system
     virtual ~ray_tracing_system();
 
     // impl in each class
+    void setup();
     void render(const utils::graphics_frame_info &frame_info);
 
     inline utils::shading_type get_shading_type() const { return shading_type_; }
@@ -32,9 +33,6 @@ class ray_tracing_system
       shading_type_ = type;
       static_cast<Derived*>(this)->setup();
     }
-
-    // impl in each class
-    void setup();
 
     void create_sbt(
       const std::vector<VkDescriptorSetLayout> &vk_desc_layouts,
