@@ -59,7 +59,7 @@ void graphics_engine_core::setup_ubo()
   graphics::desc_set_info global_set_info;
   // enable ubo to be referenced by all stages of a graphics pipeline
   global_set_info.add_binding(
-    VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_MESH_BIT_NV,
+    VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_MESH_BIT_NV | VK_SHADER_STAGE_RAYGEN_BIT_KHR,
     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   global_set_info.is_frame_buffered_ = true;
 

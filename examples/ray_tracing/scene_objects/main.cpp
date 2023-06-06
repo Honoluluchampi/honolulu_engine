@@ -2,6 +2,7 @@
 #include <game/engine.hpp>
 #include <game/actor.hpp>
 #include <game/ray_tracing_system.hpp>
+#include <game/actors/default_camera.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/utils.hpp>
@@ -115,7 +116,11 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       );
 
       bind_pipeline();
-      bind_desc_sets({scene_desc_set_, vp_desc_sets_[frame_info.frame_index]});
+      bind_desc_sets({
+        scene_desc_set_,
+        vp_desc_sets_[frame_info.frame_index],
+        frame_info.global_descriptor_set
+      });
       dispatch_command(
         static_cast<uint32_t>(960 * (1.f - 0.2f)),
         static_cast<uint32_t>(820 * (1.f - 0.25f)),
@@ -172,7 +177,11 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // shader binding table ------------------------------------------------------
       sbt_ = graphics::shader_binding_table::create(
         device_,
-        { scene_desc_layout->get_descriptor_set_layout(), vp_desc_layout },
+        {
+          scene_desc_layout->get_descriptor_set_layout(),
+          vp_desc_layout,
+          game::graphics_engine_core::get_global_desc_layout(),
+        },
         {
           SHADERS_DIRECTORY + "model.rgen.spv",
           SHADERS_DIRECTORY + "model.rmiss.spv",
@@ -272,11 +281,12 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
 SELECT_COMPUTE_SHADER();
-SELECT_ACTOR(object);
+SELECT_ACTOR(object, game::default_camera);
 
 DEFINE_ENGINE(hello_model) {
   public:
-    ENGINE_CTOR(hello_model) {}
+    ENGINE_CTOR(hello_model)
+    { add_update_target_directly<game::default_camera>(); }
 };
 
 } // namespace hnll
