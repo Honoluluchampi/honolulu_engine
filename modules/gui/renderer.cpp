@@ -297,4 +297,8 @@ std::vector<VkImageView> renderer::get_view_port_image_views() const
   }
   return ret;
 }
+
+void renderer::transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command)
+{ vp_images_[frame_index]->transition_image_layout(new_layout, command); }
+
 } // namespace hnll::gui

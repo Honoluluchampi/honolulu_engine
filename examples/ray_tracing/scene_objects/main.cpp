@@ -99,12 +99,20 @@ DEFINE_PURE_ACTOR(object)
 DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 {
   public:
-    model_ray_tracer(graphics::device& device) : game::ray_tracing_system<model_ray_tracer, utils::shading_type::RAY1>(device) {}
+    model_ray_tracer(graphics::device& device)
+      : game::ray_tracing_system<model_ray_tracer, utils::shading_type::RAY1>(device),
+        gui_engine_(utils::singleton<game::gui_engine>::get_instance()){}
     ~model_ray_tracer() {}
 
     void render(const utils::graphics_frame_info& frame_info)
     {
       set_current_command(frame_info.command_buffer);
+
+      gui_engine_.transition_vp_image_layout(
+        frame_info.frame_index,
+        VK_IMAGE_LAYOUT_GENERAL,
+        frame_info.command_buffer
+      );
 
       bind_pipeline();
       bind_desc_sets({scene_desc_set_, vp_desc_sets_[frame_info.frame_index]});
@@ -112,6 +120,12 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         static_cast<uint32_t>(960 * (1.f - 0.2f)),
         static_cast<uint32_t>(820 * (1.f - 0.25f)),
         1
+      );
+
+      gui_engine_.transition_vp_image_layout(
+        frame_info.frame_index,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        frame_info.command_buffer
       );
     }
 
@@ -124,8 +138,6 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       setup_tlas();
 
       // desc sets -----------------------------------------------------------------------
-      auto& gui_engine = utils::singleton<game::gui_engine>::get_instance();
-
       // setup layout
       // tlas and vertex, index buffer layout
       // get desc image layout by gui::renderer
@@ -134,8 +146,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
         .build();
-      auto vp_desc_layout = gui_engine.get_vp_image_desc_layout();
-      vp_desc_sets_ = gui_engine.get_vp_image_desc_sets();
+      auto vp_desc_layout = gui_engine_.get_vp_image_desc_layout();
+      vp_desc_sets_ = gui_engine_.get_vp_image_desc_sets();
 
       // setup desc sets
       scene_desc_pool_ = graphics::desc_pool::builder(device_)
@@ -249,6 +261,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     }
 
   private:
+    game::gui_engine& gui_engine_;
     u_ptr<object> mesh_model_;
     u_ptr<graphics::acceleration_structure> tlas_;
     u_ptr<graphics::buffer> instances_buffer_;

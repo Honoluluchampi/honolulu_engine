@@ -49,6 +49,7 @@ namespace gui {
         inline VkDescriptorSetLayout get_vp_image_desc_layout() { return vk_desc_layout_; }
         inline std::vector<VkDescriptorSet> get_vp_image_desc_sets() { return vp_image_descs_; }
 
+        void transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command);
     private:
         // specific for hie
         VkRenderPass create_viewport_render_pass();

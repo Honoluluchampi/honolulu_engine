@@ -268,4 +268,7 @@ VkDescriptorSetLayout gui_engine::get_vp_image_desc_layout()
 std::vector<VkDescriptorSet> gui_engine::get_vp_image_desc_sets()
 { return renderer_up_->get_vp_image_desc_sets(); }
 
+void gui_engine::transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command)
+{ renderer_up_->transition_vp_image_layout(frame_index, new_layout, command); }
+
 } // namespace hnll::gui

@@ -63,6 +63,8 @@ class gui_engine {
 
     VkDescriptorSetLayout get_vp_image_desc_layout();
     std::vector<VkDescriptorSet> get_vp_image_desc_sets();
+    void transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command);
+
   private:
     // set up ImGui context
     void setup_imgui(hnll::graphics::device &device, GLFWwindow *window);
