@@ -3,6 +3,7 @@
 #include <gui/renderer.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
+#include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
 
 // embedded fonts

@@ -117,6 +117,9 @@ void graphics_engine_core::end_render_pass_and_frame(VkCommandBuffer command_buf
   renderer_->end_frame(command_buffer);
 }
 
+void graphics_engine_core::end_frame(VkCommandBuffer command_buffer)
+{ renderer_->end_frame(command_buffer); }
+
 void graphics_engine_core::setup_global_shading_system_config()
 {
   default_render_pass_ = renderer_->get_swap_chain_render_pass(HVE_RENDER_PASS_ID);

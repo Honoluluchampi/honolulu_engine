@@ -17,7 +17,7 @@ class ray_tracing_system
   public:
     static u_ptr<Derived> create(graphics::device &device) { return std::make_unique<Derived>(device); }
 
-    virtual ~ray_tracing_system();
+    virtual ~ray_tracing_system() = default;
 
     // impl in each class
     void setup();
@@ -29,10 +29,7 @@ class ray_tracing_system
 
   private:
     ray_tracing_system(graphics::device& device) : device_(device)
-    {
-      shading_type_ = type;
-      static_cast<Derived*>(this)->setup();
-    }
+    { shading_type_ = type; }
 
     void create_sbt(
       const std::vector<VkDescriptorSetLayout> &vk_desc_layouts,

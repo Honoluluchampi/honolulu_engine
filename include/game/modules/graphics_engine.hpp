@@ -62,6 +62,7 @@ class graphics_engine_core
     VkDescriptorSet update_ubo(const utils::global_ubo& ubo, int frame_index);
     void begin_render_pass(VkCommandBuffer command_buffer, int renderer_id, VkExtent2D extent);
     void end_render_pass_and_frame(VkCommandBuffer command_buffer);
+    void end_frame(VkCommandBuffer command_buffer);
 
     // getter
     template <graphics::GraphicsModel M>
@@ -198,6 +199,8 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
       core_.end_render_pass_and_frame(command_buffer);
     }
+    else
+      core_.end_frame(command_buffer);
   }
 }
 

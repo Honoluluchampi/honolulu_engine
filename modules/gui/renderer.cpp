@@ -253,7 +253,7 @@ void renderer::create_viewport_images()
         device_,
         {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
          static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
-        VK_FORMAT_B8G8R8A8_SRGB,
+        VK_FORMAT_B8G8R8A8_UNORM,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -262,11 +262,11 @@ void renderer::create_viewport_images()
     }
 
     // create desc sets from images
-    auto desc_layout = graphics::desc_layout::builder(device_)
+    desc_layout_ = graphics::desc_layout::builder(device_)
       .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
       .build();
 
-    vk_desc_layout_ = desc_layout->get_descriptor_set_layout();
+    vk_desc_layout_ = desc_layout_->get_descriptor_set_layout();
 
     desc_pool_ = graphics::desc_pool::builder(device_)
       .set_max_sets(10)
@@ -274,13 +274,15 @@ void renderer::create_viewport_images()
       .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
       .build();
 
+    vp_image_descs_.resize(image_count);
+
     for (uint32_t i = 0; i < image_count; ++i) {
       VkDescriptorImageInfo image_info {
         .imageView = vp_images_[i]->get_image_view(),
         .imageLayout = VK_IMAGE_LAYOUT_GENERAL
       };
 
-      graphics::desc_writer(*desc_layout, *desc_pool_)
+      graphics::desc_writer(*desc_layout_, *desc_pool_)
         .write_image(0, &image_info)
         .build(vp_image_descs_[i]);
     }

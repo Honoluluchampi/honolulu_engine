@@ -9,6 +9,7 @@ namespace hnll {
 namespace graphics {
   class image_resource;
   class desc_pool;
+  class desc_layout;
 }
 
 namespace gui {
@@ -63,6 +64,7 @@ namespace gui {
         std::vector<VkCommandBuffer> vp_command_buffers_;
 
         // for ray tracing desc image
+        u_ptr<graphics::desc_layout> desc_layout_;
         VkDescriptorSetLayout vk_desc_layout_;
         s_ptr<graphics::desc_pool> desc_pool_;
         std::vector<VkDescriptorSet> vp_image_descs_;
