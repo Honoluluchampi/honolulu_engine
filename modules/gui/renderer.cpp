@@ -32,8 +32,11 @@ void renderer::recreate_swap_chain()
   // for viewport screen
   create_viewport_images();
 
-  swap_chain_->set_render_pass(create_viewport_render_pass(), VIEWPORT_RENDER_PASS_ID);
-  swap_chain_->set_frame_buffers(create_viewport_frame_buffers(), VIEWPORT_RENDER_PASS_ID);
+  // ray tracing doesn't need render pass nor frame buffers
+  if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
+    swap_chain_->set_render_pass(create_viewport_render_pass(), VIEWPORT_RENDER_PASS_ID);
+    swap_chain_->set_frame_buffers(create_viewport_frame_buffers(), VIEWPORT_RENDER_PASS_ID);
+  }
   swap_chain_->set_render_pass(create_imgui_render_pass(), GUI_RENDER_PASS_ID);
   swap_chain_->set_frame_buffers(create_imgui_frame_buffers(), GUI_RENDER_PASS_ID);
 
