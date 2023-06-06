@@ -109,16 +109,21 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     void setup()
     {
-      auto desc_layout = graphics::desc_layout::builder(device_)
+      // tlas and vertex, index buffer layout
+      // get desc image layout by gui::renderer
+      auto scene_desc_layout = graphics::desc_layout::builder(device_)
         .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // tlas
-        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
         .build();
 
+      auto& gui_engine = utils::singleton<game::gui_engine>::get_instance();
+
+      auto vp_desc_layout = gui_engine.get_vp_image_desc_layout();
+
       sbt_ = graphics::shader_binding_table::create(
         device_,
-        { desc_layout->get_descriptor_set_layout() },
+        { scene_desc_layout->get_descriptor_set_layout(), vp_desc_layout },
         {
           SHADERS_DIRECTORY + "model.rgen.spv",
           SHADERS_DIRECTORY + "model.rmiss.spv",
@@ -132,10 +137,14 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
           VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }
       );
+
+      // create blas
+      mesh_model_ = object::create(device_, MODEL_NAME);
     }
 
   private:
-    u_ptr<object>
+    u_ptr<object> mesh_model_;
+    std::vector<VkDescriptorSet> vp_desc_sets_;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);

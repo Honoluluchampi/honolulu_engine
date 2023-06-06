@@ -262,4 +262,9 @@ graphics::renderer* gui_engine::renderer_p() const { return renderer_up_.get(); 
 float gui_engine::get_left_window_ratio() { return gui::renderer::get_left_window_ratio(); }
 float gui_engine::get_bottom_window_ratio() { return gui::renderer::get_bottom_window_ratio(); }
 
+VkDescriptorSetLayout gui_engine::get_vp_image_desc_layout()
+{ return renderer_up_->get_vp_image_desc_layout(); }
+std::vector<VkDescriptorSet> gui_engine::get_vp_image_desc_sets()
+{ return renderer_up_->get_vp_image_desc_sets(); }
+
 } // namespace hnll::gui

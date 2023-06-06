@@ -266,6 +266,8 @@ void renderer::create_viewport_images()
       .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
       .build();
 
+    vk_desc_layout_ = desc_layout->get_descriptor_set_layout();
+
     desc_pool_ = graphics::desc_pool::builder(device_)
       .set_max_sets(10)
       .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10)

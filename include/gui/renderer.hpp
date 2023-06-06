@@ -44,6 +44,10 @@ namespace gui {
         inline static float* get_left_window_ratio_p() { return &left_window_ratio_; }
         inline static float* get_bottom_window_ratio_p() { return &bottom_window_ratio_; }
 
+        // for ray tracing
+        inline VkDescriptorSetLayout get_vp_image_desc_layout() { return vk_desc_layout_; }
+        inline std::vector<VkDescriptorSet> get_vp_image_desc_sets() { return vp_image_descs_; }
+
     private:
         // specific for hie
         VkRenderPass create_viewport_render_pass();
@@ -59,6 +63,7 @@ namespace gui {
         std::vector<VkCommandBuffer> vp_command_buffers_;
 
         // for ray tracing desc image
+        VkDescriptorSetLayout vk_desc_layout_;
         s_ptr<graphics::desc_pool> desc_pool_;
         std::vector<VkDescriptorSet> vp_image_descs_;
 

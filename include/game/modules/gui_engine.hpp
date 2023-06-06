@@ -61,6 +61,8 @@ class gui_engine {
     static float get_bottom_window_ratio();
     static ImVec2 get_viewport_size() { return viewport_size_; };
 
+    VkDescriptorSetLayout get_vp_image_desc_layout();
+    std::vector<VkDescriptorSet> get_vp_image_desc_sets();
   private:
     // set up ImGui context
     void setup_imgui(hnll::graphics::device &device, GLFWwindow *window);
