@@ -22,6 +22,9 @@ const std::string SHADERS_DIRECTORY =
 
 #define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
+#define IR_X 100
+#define IR_Y 100
+
 // to be ray_tracing_model
 DEFINE_PURE_ACTOR(object)
 {
@@ -133,6 +136,48 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         frame_info.command_buffer
       );
+
+      // execute acoustic ray tracing, and copy result to back buffer
+      std::vector<VkDescriptorSet> sound_desc_sets {
+        scene_desc_set_,
+        ir_image_descs_[frame_info.frame_index],
+        frame_info.global_descriptor_set
+      };
+      vkCmdBindPipeline(current_command_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, sound_sbt_->get_pipeline());
+      vkCmdBindDescriptorSets(
+        current_command_,
+        VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+        sound_sbt_->get_pipeline_layout(),
+        0,
+        sound_desc_sets.size(),
+        sound_desc_sets.data(),
+        0,
+        nullptr
+      );
+
+      vkCmdTraceRaysKHR(
+        current_command_,
+        sound_sbt_->get_gen_region_p(),
+        sound_sbt_->get_miss_region_p(),
+        sound_sbt_->get_hit_region_p(),
+        sound_sbt_->get_callable_region_p(),
+        IR_X, IR_Y, 1
+      );
+
+      // TODO : set barrier
+      // copy the result
+      auto index = frame_info.frame_index;
+      ir_images_[index]->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, current_command_);
+      device_.copy_image_to_buffer(
+        ir_images_[index]->get_image(),
+        ir_back_buffers_[index]->get_buffer(),
+        IR_X,
+        IR_Y,
+        1,
+        current_command_
+      );
+      ir_images_[index]->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL, current_command_);
+
     }
 
     void setup()
@@ -177,6 +222,52 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         .write_buffer(2, &index_buffer_info)
         .build(scene_desc_set_);
 
+      // ir image
+      ir_images_.resize(utils::FRAMES_IN_FLIGHT);
+      ir_back_buffers_.resize(utils::FRAMES_IN_FLIGHT);
+      ir_mapped_pointers_.resize(utils::FRAMES_IN_FLIGHT);
+      ir_image_descs_.resize(utils::FRAMES_IN_FLIGHT);
+
+      for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+        // actual image
+        ir_images_[i] = graphics::image_resource::create(
+          device_,
+          { IR_X, IR_Y, 1},
+          VK_FORMAT_R32G32B32A32_SFLOAT,
+          VK_IMAGE_TILING_OPTIMAL,
+          VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+
+        ir_images_[i]->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL);
+
+        // copy acoustic ray tracing result to this buffer
+        ir_back_buffers_[i] = graphics::buffer::create(
+          device_,
+          IR_X * IR_Y * sizeof(vec4),
+          1,
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+          nullptr
+        );
+        ir_mapped_pointers_[i] = reinterpret_cast<float*>(ir_back_buffers_[i]->get_mapped_memory());
+      }
+
+      // ir image desc
+      auto ir_desc_layout = graphics::desc_layout::builder(device_)
+        .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // vertex buffer
+        .build();
+
+      for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+        VkDescriptorImageInfo image_info {
+          .imageView = ir_images_[i]->get_image_view(),
+          .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+        };
+        graphics::desc_writer(*ir_desc_layout, *scene_desc_pool_)
+          .write_image(0, &image_info)
+          .build(ir_image_descs_[i]);
+      }
+
       // shader binding table ------------------------------------------------------
       sbt_ = graphics::shader_binding_table::create(
         device_,
@@ -199,7 +290,24 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         }
       );
 
-      setup_sound_resources();
+      sound_sbt_ = graphics::shader_binding_table::create(
+        device_,
+        {
+          scene_desc_layout->get_descriptor_set_layout(),
+          vp_desc_layout,
+          game::graphics_engine_core::get_global_desc_layout(),
+        },
+        {
+          SHADERS_DIRECTORY + "sound.rgen.spv",
+          SHADERS_DIRECTORY + "model.rmiss.spv",
+          SHADERS_DIRECTORY + "sound.rchit.spv",
+        },
+        {
+          VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+          VK_SHADER_STAGE_MISS_BIT_KHR,
+          VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+        }
+      );
     }
 
     void setup_tlas()
@@ -274,26 +382,6 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       tlas_->destroy_scratch_buffer();
     }
 
-    void setup_sound_resources()
-    {
-      // actual image
-      ir_images_.resize(utils::FRAMES_IN_FLIGHT);
-      uint32_t ir_x = 100, ir_y = 100;
-      for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
-        ir_images_[i] = graphics::image_resource::create(
-          device_,
-          { ir_x, ir_y, 1},
-          VK_FORMAT_R32G32B32A32_SFLOAT,
-          VK_IMAGE_TILING_OPTIMAL,
-          VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
-      }
-
-      // shader binding table
-
-    }
-
   private:
     game::gui_engine& gui_engine_;
     u_ptr<object> mesh_model_;
@@ -305,7 +393,10 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     // sound
     std::vector<u_ptr<graphics::image_resource>> ir_images_;
-    u_ptr<graphics::shader_binding_table> sound_sbt_;
+    std::vector<VkDescriptorSet>                 ir_image_descs_;
+    std::vector<u_ptr<graphics::buffer>>         ir_back_buffers_;
+    std::vector<float*>                          ir_mapped_pointers_;
+    u_ptr<graphics::shader_binding_table>        sound_sbt_;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
