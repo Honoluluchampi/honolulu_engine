@@ -5,6 +5,7 @@
 #include <game/actors/default_camera.hpp>
 #include <graphics/acceleration_structure.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
+#include <graphics/image_resource.hpp>
 #include <graphics/utils.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
@@ -155,11 +156,13 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       vp_desc_sets_ = gui_engine_.get_vp_image_desc_sets();
 
       // setup desc sets
+      // also assign ir image desc set
       scene_desc_pool_ = graphics::desc_pool::builder(device_)
         .set_max_sets(10)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
         .add_pool_size(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10)
         .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
         .build();
 
@@ -195,6 +198,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
           VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }
       );
+
+      setup_sound_resources();
     }
 
     void setup_tlas()
@@ -269,6 +274,26 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       tlas_->destroy_scratch_buffer();
     }
 
+    void setup_sound_resources()
+    {
+      // actual image
+      ir_images_.resize(utils::FRAMES_IN_FLIGHT);
+      uint32_t ir_x = 100, ir_y = 100;
+      for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+        ir_images_[i] = graphics::image_resource::create(
+          device_,
+          { ir_x, ir_y, 1},
+          VK_FORMAT_R32G32B32A32_SFLOAT,
+          VK_IMAGE_TILING_OPTIMAL,
+          VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+      }
+
+      // shader binding table
+
+    }
+
   private:
     game::gui_engine& gui_engine_;
     u_ptr<object> mesh_model_;
@@ -277,11 +302,10 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     std::vector<VkDescriptorSet> vp_desc_sets_;
     VkDescriptorSet scene_desc_set_;
     s_ptr<graphics::desc_pool> scene_desc_pool_;
-};
 
-DEFINE_RAY_TRACER(acoustic_ray_tracer, utils::shading_type::RAY2)
-{
-
+    // sound
+    std::vector<u_ptr<graphics::image_resource>> ir_images_;
+    u_ptr<graphics::shader_binding_table> sound_sbt_;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
