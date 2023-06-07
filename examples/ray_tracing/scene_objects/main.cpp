@@ -113,6 +113,13 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     {
       set_current_command(frame_info.command_buffer);
 
+      auto* p = ir_mapped_pointers_[frame_info.frame_index];
+      std::vector<float> ir_data(p, p + IR_X * IR_Y);
+      for (auto& data : ir_data) {
+        if (data == 2)
+          std::cout << "ir detected" << std::endl;
+      }
+
       gui_engine_.transition_vp_image_layout(
         frame_info.frame_index,
         VK_IMAGE_LAYOUT_GENERAL,
@@ -299,7 +306,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         },
         {
           SHADERS_DIRECTORY + "sound.rgen.spv",
-          SHADERS_DIRECTORY + "model.rmiss.spv",
+          SHADERS_DIRECTORY + "sound.rmiss.spv",
           SHADERS_DIRECTORY + "sound.rchit.spv",
         },
         {

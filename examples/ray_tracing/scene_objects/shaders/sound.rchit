@@ -47,7 +47,7 @@ void main() {
 
   // continue to reflect ray
   if (!hit_flag && hit_value.z < MAX_HIT) {
-    hit_value.z += 1;
+    hit_value.x += 1;
     float tmin = 0.001;
     float tmax = 10000.0;
     // current hit point
