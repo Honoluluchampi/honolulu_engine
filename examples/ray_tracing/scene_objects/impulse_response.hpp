@@ -3,7 +3,18 @@
 // hnll
 #include <utils/common_alias.hpp>
 
+// lib
+#include <AL/al.h>
+
 namespace hnll {
+
+template <size_t SourceCount>
+class impulse_response
+{
+
+  private:
+    ;
+};
 
 // temp : only support source 2
 std::vector<float> unpack_ir(
@@ -25,6 +36,39 @@ std::vector<float> unpack_ir(
       float delay = raw_data[i + 2] / sound_speed;
       if (delay < ir_duration)
         ret[delay * ir_sampling_rate] += magnitude;
+    }
+  }
+  return ret;
+}
+
+std::vector<ALshort> convolve(
+  const std::vector<float>& ir_series,
+  float ir_sampling_rate,
+  float ir_duration,
+  const std::vector<ALshort>& source_series,
+  float source_sampling_rate,
+  float source_duration,
+  int source_start_point)
+{
+  auto sample_count = static_cast<int>(source_duration * source_sampling_rate);
+  std::vector<ALshort> ret(sample_count, 0);
+
+  auto ir_sample_count = static_cast<int>(ir_duration * source_sampling_rate);
+
+  // distribute ir from each source sample
+  for (int s = -ir_sample_count - 1; s < sample_count; s++) {
+    // source id
+    auto s_id = s + source_start_point;
+    if (s_id < 0)
+      continue;
+    auto s_value = source_series[s_id];
+
+    // filter id
+    for (int f_id = 0; f_id < ir_sample_count; f_id++) {
+      auto target_id = s + f_id;
+      if (target_id < 0 || target_id >= sample_count)
+        continue;
+      ret[target_id] += ir_series[f_id] * s_value;
     }
   }
 
