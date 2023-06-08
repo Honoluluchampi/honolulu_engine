@@ -7,8 +7,13 @@
 #include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/utils.hpp>
+#include <audio/engine.hpp>
+#include <audio/audio_data.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
+
+// external
+#include <AudioFile/AudioFile.h>
 
 // std
 #include <iostream>
@@ -107,19 +112,17 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     model_ray_tracer(graphics::device& device)
       : game::ray_tracing_system<model_ray_tracer, utils::shading_type::RAY1>(device),
         gui_engine_(utils::singleton<game::gui_engine>::get_instance()){}
-    ~model_ray_tracer() {}
+    ~model_ray_tracer()
+    { audio::engine::kill_hae_context(); }
 
     void render(const utils::graphics_frame_info& frame_info)
     {
+      update_audio();
+
       set_current_command(frame_info.command_buffer);
 
       auto* p = ir_mapped_pointers_[frame_info.frame_index];
       std::vector<float> ir_data(p, p + IR_X * IR_Y);
-      static int d = 0;
-      for (auto& data : ir_data) {
-        if (data == 2)
-          std::cout << "ir detected " << d++ << std::endl;
-      }
 
       gui_engine_.transition_vp_image_layout(
         frame_info.frame_index,
@@ -316,6 +319,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
           VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }
       );
+
+      setup_audio();
     }
 
     void setup_tlas()
@@ -390,6 +395,52 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       tlas_->destroy_scratch_buffer();
     }
 
+    void setup_audio()
+    {
+      audio_file_.load("/home/honolulu/programs/honolulu_engine/sounds/nandesyou.wav");
+      audio_file_.printSummary();
+
+      // open al
+      hnll::audio::engine::start_hae_context();
+      source_ = hnll::audio::engine::get_available_source_id();
+    }
+
+    void update_audio()
+    {
+      float dt = 0.03; // 16 ms
+      int queue_capability = 4;
+
+      static int cursor = 0;
+      // continue if queue is full
+      hnll::audio::engine::erase_finished_audio_on_queue(source_);
+
+      if (hnll::audio::engine::get_audio_count_on_queue(source_) > queue_capability)
+        return;
+
+      int segment_count = static_cast<int>(dt * 44100);
+
+      // load raw data
+      std::vector<ALshort> segment(segment_count * 2, 0.f);
+      for (int i = 0; i < segment_count; i++) {
+        segment[2 * i] = audio_file_.samples[0][i + cursor];
+        segment[2 * i + 1] = audio_file_.samples[1][i + cursor];
+      }
+      cursor += segment_count;
+
+      hnll::audio::audio_data data;
+      data.set_sampling_rate(44100)
+        .set_format(AL_FORMAT_STEREO16)
+        .set_data(std::move(segment));
+
+      hnll::audio::engine::bind_audio_to_buffer(data);
+      hnll::audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
+
+      if (!started_) {
+        hnll::audio::engine::play_audio_from_source(source_);
+        started_ = true;
+      }
+    }
+
   private:
     game::gui_engine& gui_engine_;
     u_ptr<object> mesh_model_;
@@ -405,6 +456,9 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     std::vector<u_ptr<graphics::buffer>>         ir_back_buffers_;
     std::vector<float*>                          ir_mapped_pointers_;
     u_ptr<graphics::shader_binding_table>        sound_sbt_;
+    audio::source_id source_;
+    AudioFile<short> audio_file_;
+    bool started_ = false;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
