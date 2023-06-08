@@ -408,7 +408,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     void update_audio(int frame_index)
     {
-      float dt = 0.016; // 16 ms
+      float dt = 0.03; // 16 ms
       int queue_capability = 4;
 
       static int cursor = 0;
@@ -423,8 +423,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // load raw data
       std::vector<ALshort> segment(segment_count * 2, 0.f);
       for (int i = 0; i < segment_count; i++) {
-        segment[2 * i] = audio_file_.samples[0][i + cursor];
-        segment[2 * i + 1] = audio_file_.samples[1][i + cursor];
+        segment[2 * i] = audio_file_.samples[0][int(i + cursor) * int(44100 / FREQ)];
+        segment[2 * i + 1] = audio_file_.samples[1][int(i + cursor) * int(44100 / FREQ)];
       }
 
 //        auto* p = ir_mapped_pointers_[frame_index];
