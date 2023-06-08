@@ -31,32 +31,32 @@ void main() {
   const vec3 barys = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
   vec3 normal = normalize(v0.normal * barys.x + v1.normal * barys.y + v2.normal * barys.z);
 
+  hit_value.z += gl_HitTEXT;
+
   // if ray hits sound source
   bool hit_flag = false;
   vec3 hit_point = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
   if (distance(hit_point, sphere1_center) <= sphere_radius + 0.01) {
     hit_value.y = 1;
-    hit_value.z += gl_HitTEXT;
     hit_flag = true;
   }
   if (distance(hit_point, sphere2_center) <= sphere_radius + 0.01) {
     hit_value.y = 2;
-    hit_value.z += gl_HitTEXT;
     hit_flag = true;
   }
 
   // continue to reflect ray
-  if (!hit_flag && hit_value.z < MAX_HIT) {
+  if (!hit_flag && hit_value.x < MAX_HIT) {
     hit_value.x += 1;
     float tmin = 0.001;
     float tmax = 10000.0;
     // current hit point
-    vec3 ray_d = gl_WorldRayDirectionEXT;
+    vec3 ray_d = normalize(gl_WorldRayDirectionEXT);
     vec3 direction = normalize(ray_d - 2 * dot(ray_d, normal));
 
     traceRayEXT(
       tlas,
-      gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
+      gl_RayFlagsOpaqueEXT,
       0xff,
       0,
       0,

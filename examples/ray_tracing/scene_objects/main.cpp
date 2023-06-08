@@ -115,9 +115,10 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
       auto* p = ir_mapped_pointers_[frame_info.frame_index];
       std::vector<float> ir_data(p, p + IR_X * IR_Y);
+      static int d = 0;
       for (auto& data : ir_data) {
         if (data == 2)
-          std::cout << "ir detected" << std::endl;
+          std::cout << "ir detected " << d++ << std::endl;
       }
 
       gui_engine_.transition_vp_image_layout(
