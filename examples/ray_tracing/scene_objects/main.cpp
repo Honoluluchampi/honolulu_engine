@@ -12,6 +12,8 @@
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
+#include "impulse_response.hpp"
+
 // external
 #include <AudioFile/AudioFile.h>
 
@@ -27,8 +29,10 @@ const std::string SHADERS_DIRECTORY =
 
 #define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
-#define IR_X 100
-#define IR_Y 100
+#define IR_X 20
+#define IR_Y 20
+
+#define FREQ 44100
 
 // to be ray_tracing_model
 DEFINE_PURE_ACTOR(object)
@@ -117,12 +121,9 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     void render(const utils::graphics_frame_info& frame_info)
     {
-      update_audio();
+      update_audio(frame_info.frame_index);
 
       set_current_command(frame_info.command_buffer);
-
-      auto* p = ir_mapped_pointers_[frame_info.frame_index];
-      std::vector<float> ir_data(p, p + IR_X * IR_Y);
 
       gui_engine_.transition_vp_image_layout(
         frame_info.frame_index,
@@ -405,9 +406,9 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       source_ = hnll::audio::engine::get_available_source_id();
     }
 
-    void update_audio()
+    void update_audio(int frame_index)
     {
-      float dt = 0.03; // 16 ms
+      float dt = 0.016; // 16 ms
       int queue_capability = 4;
 
       static int cursor = 0;
@@ -417,7 +418,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       if (hnll::audio::engine::get_audio_count_on_queue(source_) > queue_capability)
         return;
 
-      int segment_count = static_cast<int>(dt * 44100);
+      int segment_count = static_cast<int>(dt * FREQ);
 
       // load raw data
       std::vector<ALshort> segment(segment_count * 2, 0.f);
@@ -425,10 +426,36 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         segment[2 * i] = audio_file_.samples[0][i + cursor];
         segment[2 * i + 1] = audio_file_.samples[1][i + cursor];
       }
+
+//        auto* p = ir_mapped_pointers_[frame_index];
+//        std::vector<float> ray_info(p, p + IR_X * IR_Y * 4);
+//
+//        auto ir_series = unpack_ir(
+//          ray_info,
+//          100,
+//          0.1,
+//          1,
+//          340
+//        );
+
+//      std::vector<ALshort> conv_segment;
+//      {
+//        utils::scope_timer timer("convolution");
+//        conv_segment = convolve(
+//          ir_series,
+//          100,
+//          0.1,
+//          audio_file_.samples[0],
+//          FREQ,
+//          dt,
+//          cursor
+//        );
+//      }
+
       cursor += segment_count;
 
       hnll::audio::audio_data data;
-      data.set_sampling_rate(44100)
+      data.set_sampling_rate(FREQ)
         .set_format(AL_FORMAT_STEREO16)
         .set_data(std::move(segment));
 
