@@ -17,7 +17,7 @@ layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1) buffer Vertices { vertex v[]; } vertices;
 layout(set = 0, binding = 2) buffer Indices { uint i[]; } indices;
 
-vec3 light_direction = normalize(vec3(-1.0, -1.0, 1.0));
+vec3 light_direction = normalize(vec3(1.0, -1.0, -1.0));
 
 vec3 sphere1_center = vec3(-6, -4, 0);
 vec3 sphere2_center = vec3(2.5, -1.5, 4);

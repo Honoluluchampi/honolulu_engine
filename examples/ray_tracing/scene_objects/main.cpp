@@ -27,7 +27,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
+#define MODEL_NAME utils::get_full_path("bunny_with_plane.obj")
 
 #define IR_X 20
 #define IR_Y 20
@@ -121,7 +121,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     void render(const utils::graphics_frame_info& frame_info)
     {
-      update_audio(frame_info.frame_index);
+//      update_audio(frame_info.frame_index);
 
       set_current_command(frame_info.command_buffer);
 
