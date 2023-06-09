@@ -13,9 +13,10 @@ struct vertex
   vec2 uv;
 };
 
-layout(binding = 0) uniform accelerationStructureEXT tlas;
-layout(binding = 2) buffer Vertices { vertex v[]; } vertices;
-layout(binding = 3) buffer Indices { uint i[]; } indices;
+layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 0, binding = 2) buffer Vertices { vertex v[]; } vertices;
+layout(set = 0, binding = 3) buffer Indices { uint i[]; } indices;
+layout(set = 1, binding = 0) uniform sampler2D tex_sampler;
 
 vec3 light_direction = normalize(vec3(-1.0, -1.0, 1.0));
 
@@ -27,11 +28,13 @@ void main() {
   // normal interpolation
   const vec3 barys = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
   vec3 normal = normalize(v0.normal * barys.x + v1.normal * barys.y + v2.normal * barys.z);
-  vec3 color  = normalize(v0.color.rgb * barys.x + v1.color.rgb * barys.y + v2.color.rgb * barys.z);
+  vec2 uv = (v0.uv * barys.x + v1.uv * barys.y + v2.uv * barys.z) / 3.f;
+
+  vec4 tex_color = texture(tex_sampler, uv);
 
   float dot_nl = max(dot(light_direction, normal), 0.1);
 
-  hit_value = color * dot_nl;
+  hit_value = tex_color.xyz * dot_nl;
 
   // check shadow
   float tmin = 0.001;

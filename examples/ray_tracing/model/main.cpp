@@ -20,7 +20,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("bunny.obj")
+#define MODEL_NAME utils::get_full_path("viking_room.obj")
 
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
@@ -99,13 +99,15 @@ class hello_model {
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         sbt_->get_pipeline()
       );
+
+      std::vector<VkDescriptorSet> desc_sets = { desc_set_, mesh_model_->get_texture_desc_set() };
       vkCmdBindDescriptorSets(
         command,
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         sbt_->get_pipeline_layout(),
         0,
-        1,
-        &desc_set_,
+        desc_sets.size(),
+        desc_sets.data(),
         0,
         nullptr
       );
@@ -319,7 +321,7 @@ class hello_model {
 
       sbt_ = graphics::shader_binding_table::create(
         *device_,
-        { desc_layout_->get_descriptor_set_layout() },
+        { desc_layout_->get_descriptor_set_layout(), graphics::texture_image::get_vk_desc_layout() },
         {
           SHADERS_DIRECTORY + "model.rgen.spv",
           SHADERS_DIRECTORY + "model.rmiss.spv",
