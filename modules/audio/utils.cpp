@@ -1,4 +1,8 @@
+// hnll
 #include <audio/utils.hpp>
+
+// std
+#include <complex>
 
 namespace hnll::audio::utils {
 
@@ -31,6 +35,49 @@ std::vector<ALshort> create_sine_wave(
   }
 
   return data;
+}
+
+void fft_rec(
+  std::vector<std::complex<double>>& data,
+  std::vector<std::complex<double>>& buffer,
+  int first_index,
+  int n,
+  std::complex<double> w)
+{
+  if (n > 1) {
+    assert(n % 2 == 0);
+    int h = n / 2;
+    std::complex<double> wi { 1.f, 0.f };
+
+    for (int i = first_index; i < h; i++) {
+      buffer[i] = data[i] + data[i + h];
+      buffer[i + h] = wi * (data[i] - data[i + h]);
+      wi *= w;
+    }
+
+    fft_rec(buffer, data, 0, h, w * w);
+    fft_rec(buffer, data, h, h, w * w);
+
+    for (int i = first_index; i < h; i++) {
+      data[2 * i] = buffer[i];
+      data[2 * i + 1] = buffer[i + h];
+    }
+  }
+}
+
+std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& data)
+{
+  int n = data.size();
+  std::complex<double> w = std::exp(std::complex<double>{0.f, -2.f * M_PI} / static_cast<double>(n));
+  std::vector<std::complex<double>> buffer(n, 0);
+  std::vector<std::complex<double>> ans = data;
+
+  fft_rec(ans, buffer, 0, n, w);
+  for (int i = 0; i < n; i++) {
+    ans[i] / static_cast<double>(n);
+  }
+
+  return ans;
 }
 
 } // namespace hnll::audio::utils
