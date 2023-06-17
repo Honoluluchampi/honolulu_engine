@@ -20,6 +20,7 @@ std::vector<ALshort> create_sine_wave(
 );
 
 // input data size should be equal to 2^k
-std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& data);
+std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_series);
+std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_series);
 
 } // namespace hnll::audio::utils

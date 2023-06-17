@@ -65,16 +65,31 @@ void fft_rec(
   }
 }
 
-std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& data)
+std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_series)
 {
-  int n = data.size();
+  int n = time_series.size();
   std::complex<double> w = std::exp(std::complex<double>{0.f, -2.f * M_PI} / static_cast<double>(n));
   std::vector<std::complex<double>> buffer(n, 0);
-  std::vector<std::complex<double>> ans = data;
+  std::vector<std::complex<double>> ans = time_series;
 
   fft_rec(ans, buffer, 0, n, w);
   for (int i = 0; i < n; i++) {
     ans[i] / static_cast<double>(n);
+  }
+
+  return ans;
+}
+
+std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_series)
+{
+  int n = freq_series.size();
+  std::complex<double> w = std::exp(std::complex<double>{0.f, 2.f * M_PI} / static_cast<double>(n));
+  std::vector<std::complex<double>> buffer(n, 0);
+  std::vector<std::complex<double>> ans = freq_series;
+
+  fft_rec(ans, buffer, 0, n, w);
+  for (int i = 0; i < n; i++) {
+    ans[i] / static_cast<double>(n * n);
   }
 
   return ans;
