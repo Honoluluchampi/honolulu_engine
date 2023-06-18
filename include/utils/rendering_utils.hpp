@@ -33,7 +33,11 @@ enum class shading_type : uint32_t
   LINE         = 0,
   UNIQUE       = 1,
   WIRE_FRUSTUM = 300,
-  GRID         = 500
+  GRID         = 500,
+  // TODO : fix
+  RAY1         = 600,
+  RAY2         = 600,
+  RAY3         = 600,
 };
 
 struct point_light

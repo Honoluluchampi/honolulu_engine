@@ -1,26 +1,42 @@
 // hnll
 #include <gui/renderer.hpp>
 #include <graphics/image_resource.hpp>
+#include <graphics/desc_set.hpp>
+#include <utils/rendering_utils.hpp>
 
 namespace hnll::gui {
 
 float renderer::left_window_ratio_ = 0.2f;
 float renderer::bottom_window_ratio_ = 0.25f;
 
-u_ptr<renderer> renderer::create(graphics::window& window, graphics::device& device, bool recreate_from_scratch)
-{ return std::make_unique<renderer>(window, device, recreate_from_scratch); }
+u_ptr<renderer> renderer::create(
+  graphics::window& window,
+  graphics::device& device,
+  utils::rendering_type type,
+  bool recreate_from_scratch)
+{ return std::make_unique<renderer>(window, device, type, recreate_from_scratch); }
 
-renderer::renderer(graphics::window& window, graphics::device& device, bool recreate_from_scratch) :
+renderer::renderer(
+  graphics::window& window,
+  graphics::device& device,
+  utils::rendering_type type,
+  bool recreate_from_scratch) :
   hnll::graphics::renderer(window, device, recreate_from_scratch)
-{ recreate_swap_chain(); }
+{
+  rendering_type_ = type;
+  recreate_swap_chain();
+}
 
 void renderer::recreate_swap_chain()
 {
   // for viewport screen
   create_viewport_images();
 
-  swap_chain_->set_render_pass(create_viewport_render_pass(), VIEWPORT_RENDER_PASS_ID);
-  swap_chain_->set_frame_buffers(create_viewport_frame_buffers(), VIEWPORT_RENDER_PASS_ID);
+  // ray tracing doesn't need render pass nor frame buffers
+  if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
+    swap_chain_->set_render_pass(create_viewport_render_pass(), VIEWPORT_RENDER_PASS_ID);
+    swap_chain_->set_frame_buffers(create_viewport_frame_buffers(), VIEWPORT_RENDER_PASS_ID);
+  }
   swap_chain_->set_render_pass(create_imgui_render_pass(), GUI_RENDER_PASS_ID);
   swap_chain_->set_frame_buffers(create_imgui_frame_buffers(), GUI_RENDER_PASS_ID);
 
@@ -218,16 +234,61 @@ void renderer::create_viewport_images()
 
   auto extent = swap_chain_->get_swap_chain_extent();
 
-  for (uint32_t i = 0; i < image_count; i++) {
-    vp_images_[i] = graphics::image_resource::create(
-      device_,
-      {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
-       static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
-      VK_FORMAT_B8G8R8A8_SRGB,
-      VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    );
+  if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
+    for (uint32_t i = 0; i < image_count; i++) {
+      vp_images_[i] = graphics::image_resource::create(
+        device_,
+        {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+         static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
+        VK_FORMAT_B8G8R8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+      );
+    }
+  }
+  // for ray tracing
+  else {
+    // create image resource
+    for (uint32_t i = 0; i < image_count; ++i) {
+      // this image will be used as desc_image by ray tracing shader
+      vp_images_[i] = graphics::image_resource::create(
+        device_,
+        {static_cast<uint32_t>(extent.width * (1 - left_window_ratio_)),
+         static_cast<uint32_t>(extent.height * (1 - bottom_window_ratio_)), 1},
+        VK_FORMAT_B8G8R8A8_UNORM,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        true // for_ray_tracing
+      );
+    }
+
+    // create desc sets from images
+    desc_layout_ = graphics::desc_layout::builder(device_)
+      .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // ray traced image
+      .build();
+
+    vk_desc_layout_ = desc_layout_->get_descriptor_set_layout();
+
+    desc_pool_ = graphics::desc_pool::builder(device_)
+      .set_max_sets(10)
+      .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10)
+      .set_pool_flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+      .build();
+
+    vp_image_descs_.resize(image_count);
+
+    for (uint32_t i = 0; i < image_count; ++i) {
+      VkDescriptorImageInfo image_info {
+        .imageView = vp_images_[i]->get_image_view(),
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+      };
+
+      graphics::desc_writer(*desc_layout_, *desc_pool_)
+        .write_image(0, &image_info)
+        .build(vp_image_descs_[i]);
+    }
   }
 }
 
@@ -239,4 +300,8 @@ std::vector<VkImageView> renderer::get_view_port_image_views() const
   }
   return ret;
 }
+
+void renderer::transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command)
+{ vp_images_[frame_index]->transition_image_layout(new_layout, command); }
+
 } // namespace hnll::gui

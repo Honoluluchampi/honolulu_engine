@@ -14,11 +14,14 @@ struct vertex
 };
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 0, binding = 2) buffer Vertices { vertex v[]; } vertices;
-layout(set = 0, binding = 3) buffer Indices { uint i[]; } indices;
-layout(set = 1, binding = 0) uniform sampler2D tex_sampler;
+layout(set = 0, binding = 1) buffer Vertices { vertex v[]; } vertices;
+layout(set = 0, binding = 2) buffer Indices { uint i[]; } indices;
 
-vec3 light_direction = normalize(vec3(-1.0, -1.0, 1.0));
+vec3 light_direction = normalize(vec3(1.0, -1.0, -1.0));
+
+vec3 sphere1_center = vec3(-6, -4, 0);
+vec3 sphere2_center = vec3(2.5, -1.5, 4);
+float sphere_radius = 0.5f;
 
 void main() {
   vertex v0 = vertices.v[indices.i[3 * gl_PrimitiveID]];
@@ -28,13 +31,21 @@ void main() {
   // normal interpolation
   const vec3 barys = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
   vec3 normal = normalize(v0.normal * barys.x + v1.normal * barys.y + v2.normal * barys.z);
-  vec2 uv = (v0.uv * barys.x + v1.uv * barys.y + v2.uv * barys.z) / 3.f;
+  vec3 color  = normalize(v0.color.rgb * barys.x + v1.color.rgb * barys.y + v2.color.rgb * barys.z);
 
-  vec4 tex_color = texture(tex_sampler, uv);
+
+  // temporal
+  vec3 hit_point = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+  if (distance(hit_point, sphere1_center) <= sphere_radius + 0.01) {
+    color = vec3(0, 0, 1);
+  }
+  if (distance(hit_point, sphere2_center) <= sphere_radius + 0.01) {
+    color = vec3(1, 0, 0);
+  }
 
   float dot_nl = max(dot(light_direction, normal), 0.1);
 
-  hit_value = tex_color.xyz * dot_nl;
+  hit_value = color * dot_nl;
 
   // check shadow
   float tmin = 0.001;
@@ -58,6 +69,6 @@ void main() {
   );
 
   if (shadowed) {
-    hit_value *= 0.3;
+    hit_value *= 0.7;
   }
 }

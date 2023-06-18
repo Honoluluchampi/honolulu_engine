@@ -88,7 +88,9 @@ image_resource::image_resource(
   // if you want to be able to directly access texels in the memory of the image
   // you must use VK_IMAGE_TILING_LINEAR
   image_info.tiling = tiling; // efficient access from the shader
+
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
   // the texture data will be copied by staging buffer
   image_info.usage = usage;
   // the image will only be used by one queue family

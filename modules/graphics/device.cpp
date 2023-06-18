@@ -850,6 +850,42 @@ void device::copy_buffer_to_image(
   end_one_shot_commands(command_buffer);
 }
 
+void device::copy_image_to_buffer(
+  VkImage image,
+  VkBuffer buffer,
+  uint32_t width,
+  uint32_t height,
+  uint32_t layer_count,
+  VkCommandBuffer manual_command)
+{
+  if (manual_command == nullptr)
+    manual_command = begin_one_shot_commands();
+
+  VkBufferImageCopy region{};
+  region.bufferOffset = 0;
+  region.bufferRowLength = 0;
+  region.bufferImageHeight = 0;
+
+  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.imageSubresource.mipLevel = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount = layer_count;
+
+  region.imageOffset = {0, 0, 0};
+  region.imageExtent = {width, height, 1};
+
+  vkCmdCopyImageToBuffer(
+    manual_command,
+    image,
+    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    buffer,
+    1,
+    &region);
+
+  if (manual_command == nullptr)
+    end_one_shot_commands(manual_command);
+}
+
 std::vector<VkCommandBuffer> device::create_command_buffers(int count, command_type type)
 {
   std::vector<VkCommandBuffer> command_buffers;

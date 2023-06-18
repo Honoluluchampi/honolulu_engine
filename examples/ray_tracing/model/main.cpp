@@ -20,7 +20,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/model/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("bunny.obj")
+#define MODEL_NAME utils::get_full_path("bunny_with_plane.obj")
 
 template<class T> T align(T size, uint32_t align)
 { return (size + align - 1) & ~static_cast<T>(align - 1); }
@@ -99,28 +99,25 @@ class hello_model {
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         sbt_->get_pipeline()
       );
+
+      std::vector<VkDescriptorSet> desc_sets = { desc_set_, mesh_model_->get_texture_desc_set() };
       vkCmdBindDescriptorSets(
         command,
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         sbt_->get_pipeline_layout(),
         0,
-        1,
-        &desc_set_,
+        desc_sets.size(),
+        desc_sets.data(),
         0,
         nullptr
       );
 
-      VkStridedDeviceAddressRegionKHR gen_shader_entry = sbt_->get_gen_region();
-      VkStridedDeviceAddressRegionKHR miss_shader_entry = sbt_->get_miss_region();
-      VkStridedDeviceAddressRegionKHR hit_shader_entry = sbt_->get_hit_region();
-      VkStridedDeviceAddressRegionKHR callable_shader_entry {};
-
       vkCmdTraceRaysKHR(
         command,
-        &gen_shader_entry,
-        &miss_shader_entry,
-        &hit_shader_entry,
-        &callable_shader_entry,
+        sbt_->get_gen_region_p(),
+        sbt_->get_miss_region_p(),
+        sbt_->get_hit_region_p(),
+        sbt_->get_callable_region_p(),
         extent.width, extent.height, 1
       );
 
@@ -308,8 +305,7 @@ class hello_model {
         format,
         VK_IMAGE_TILING_OPTIMAL,
         usage,
-        device_memory_props,
-        true); // for ray tracing
+        device_memory_props); // for ray tracing
 
       ray_traced_image_->transition_image_layout(VK_IMAGE_LAYOUT_GENERAL);
     }
@@ -325,7 +321,7 @@ class hello_model {
 
       sbt_ = graphics::shader_binding_table::create(
         *device_,
-        { desc_layout_->get_descriptor_set_layout() },
+        { desc_layout_->get_descriptor_set_layout(), graphics::texture_image::get_vk_desc_layout() },
         {
           SHADERS_DIRECTORY + "model.rgen.spv",
           SHADERS_DIRECTORY + "model.rmiss.spv",
@@ -339,20 +335,6 @@ class hello_model {
           VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         }
       );
-    }
-
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR get_ray_tracing_pipeline_properties()
-    {
-      // get data for size and order of shader entries
-      VkPhysicalDeviceRayTracingPipelinePropertiesKHR pipeline_properties {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
-      };
-      VkPhysicalDeviceProperties2 device_properties2 {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2
-      };
-      device_properties2.pNext = &pipeline_properties;
-      vkGetPhysicalDeviceProperties2(device_->get_physical_device(), &device_properties2);
-      return pipeline_properties;
     }
 
     void create_descriptor_set()

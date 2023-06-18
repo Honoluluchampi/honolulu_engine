@@ -34,6 +34,12 @@ class singleton
       return *instance_;
     }
 
+    static T& get_instance()
+    {
+      assert(instance_ && "instance is not initialized");
+      return *instance_;
+    }
+
   private:
     template <typename... Args>
     static void create(Args... args)
@@ -48,7 +54,7 @@ class singleton
 };
 
 template <typename T> std::once_flag singleton<T>::init_flag_;
-template <typename T> u_ptr<T> singleton<T>::instance_;
+template <typename T> u_ptr<T> singleton<T>::instance_ = nullptr;
 template <typename T> std::function<void()> singleton<T>::deleter_ = []() { instance_.reset(); };
 
 } // namespace hnll::utils

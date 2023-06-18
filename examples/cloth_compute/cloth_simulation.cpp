@@ -27,7 +27,7 @@ DEFINE_ENGINE(cloth_simulation)
     {
       add_update_target_directly<game::default_camera>();
       // add cloth
-//      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
+      cloth_ = physics::mass_spring_cloth::create(32, 32, 5, 5);
       // add sphere
       sphere_ = game::static_mesh_actor::create("smooth_sphere.obj");
       sphere_->set_translation(vec3(0.f, -1.f, 0.f));

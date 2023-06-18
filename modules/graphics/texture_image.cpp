@@ -33,7 +33,7 @@ void texture_image::setup_desc_layout(device& device)
   desc_layout_ = graphics::desc_layout::builder(device)
     .add_binding(
       VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      VK_SHADER_STAGE_FRAGMENT_BIT)
+      VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     .build();
 }
 

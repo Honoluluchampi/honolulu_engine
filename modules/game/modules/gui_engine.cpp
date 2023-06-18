@@ -3,6 +3,8 @@
 #include <gui/renderer.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
+#include <graphics/desc_set.hpp>
+#include <utils/rendering_utils.hpp>
 
 // embedded fonts
 // download by yourself
@@ -13,12 +15,15 @@ namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
 
+u_ptr<gui_engine> create(graphics::window& window, graphics::device& device, utils::rendering_type type)
+{ return std::make_unique<gui_engine>(window, device, type); }
+
 // take s_ptr<swap_chain> from get_renderer
-gui_engine::gui_engine(hnll::graphics::window& window, hnll::graphics::device& device)
+gui_engine::gui_engine(graphics::window& window, graphics::device& device, utils::rendering_type type)
   : device_(device)
 {
   setup_specific_vulkan_objects();
-  renderer_up_ = gui::renderer::create(window, device, false);
+  renderer_up_ = gui::renderer::create(window, device, type, false);
 
   setup_imgui(device, window.get_glfw_window());
   upload_font();
@@ -257,5 +262,13 @@ graphics::renderer* gui_engine::renderer_p() const { return renderer_up_.get(); 
 
 float gui_engine::get_left_window_ratio() { return gui::renderer::get_left_window_ratio(); }
 float gui_engine::get_bottom_window_ratio() { return gui::renderer::get_bottom_window_ratio(); }
+
+VkDescriptorSetLayout gui_engine::get_vp_image_desc_layout()
+{ return renderer_up_->get_vp_image_desc_layout(); }
+std::vector<VkDescriptorSet> gui_engine::get_vp_image_desc_sets()
+{ return renderer_up_->get_vp_image_desc_sets(); }
+
+void gui_engine::transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command)
+{ renderer_up_->transition_vp_image_layout(frame_index, new_layout, command); }
 
 } // namespace hnll::gui

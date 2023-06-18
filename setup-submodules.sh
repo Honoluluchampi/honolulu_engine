@@ -60,3 +60,10 @@ if [ ! -e $HNLL_ENGN/submodules/extensions/extensions_vk.hpp ]; then
   mkdir -p $HNLL_ENGN/submodules/extensions/nvh
   touch $HNLL_ENGN/submodules/extensions/nvh/nvprint.hpp
 fi
+
+# download audio file
+if [ ! -e $HNLL_ENGN/submodules/AudioFile/AudioFile.h ]; then
+  mkdir -p $HNLL_ENGN/submodules/AudioFile
+  echo "downloading AudioFile"
+  curl -o $HNLL_ENGN/submodules/AudioFile/AudioFile.h https://raw.githubusercontent.com/adamstark/AudioFile/master/AudioFile.h
+fi

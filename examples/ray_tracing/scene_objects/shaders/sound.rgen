@@ -1,0 +1,61 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+layout(location = 0) rayPayloadEXT vec3 hit_value;
+// hit_value.x : reflection count
+// hit_value.y : sound source id
+// hit_value.z : distance from listener
+
+struct PointLight
+{
+  vec4 position;
+  vec4 color;
+};
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
+// write sound hit_value to here
+layout(set = 1, binding = 0, rgba32f) uniform image2D image;
+layout(set = 2, binding = 0) uniform GlobalUbo
+{
+  mat4 projection;
+  mat4 view;
+  mat4 inv_view;
+  vec4 ambient_light_color;
+  PointLight point_lights[20];
+  int num_lights;
+} ubo;
+
+#define M_PI 3.1415926535897932384626433832795
+
+void main() {
+    // sound ray direction in listener space
+    const float theta = float(gl_LaunchIDEXT.x) / float(gl_LaunchSizeEXT.x) * 2.f * M_PI;
+    const float phi   = float(gl_LaunchIDEXT.y) / float(gl_LaunchSizeEXT.y) * 2.f * M_PI;
+
+    // emits rays radically from the listener(camera) position
+    const vec3 rad_direction = vec3(cos(theta), sin(theta) * cos(phi), sin(theta) * sin(phi));
+
+    vec4 origin = ubo.inv_view * vec4(0, 0, 0, 1);
+    vec4 direction = ubo.inv_view * vec4(rad_direction, 0);
+
+    float tmin = 0.00;
+    float tmax = 10000.0;
+
+    hit_value = vec3(0, 0, 0);
+
+    traceRayEXT(
+        tlas,
+        gl_RayFlagsOpaqueEXT,
+        0xff,
+        0,
+        0,
+        0,
+        origin.xyz,
+        tmin,
+        direction.xyz,
+        tmax,
+        0
+    );
+
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hit_value, 1.0));
+}

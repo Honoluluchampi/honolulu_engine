@@ -1,0 +1,53 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+layout(location = 0) rayPayloadEXT vec3 hit_value;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 1, binding = 0, rgba8) uniform image2D image;
+
+struct PointLight
+{
+  vec4 position;
+  vec4 color;
+};
+
+layout(set = 2, binding = 0) uniform GlobalUbo
+{
+  mat4 projection;
+  mat4 view;
+  mat4 inv_view;
+  vec4 ambient_light_color;
+  PointLight point_lights[20];
+  int num_lights;
+} ubo;
+
+void main() {
+    const vec2 pixel_center = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
+
+    const vec2 in_uv = pixel_center / vec2(gl_LaunchSizeEXT.xy);
+    vec2 d = in_uv * 2.0 - 1.0;
+
+    vec4 origin = ubo.inv_view * vec4(0, 0, 0, 1);
+    vec4 target = inverse(ubo.projection) * vec4(d.x, d.y, 1, 1);
+    vec4 direction = ubo.inv_view * vec4(target.xyz / target.w, 0);
+
+    float tmin = 0.00;
+    float tmax = 10000.0;
+
+    traceRayEXT(
+        tlas,
+        gl_RayFlagsOpaqueEXT,
+        0xff,
+        0,
+        0,
+        0,
+        origin.xyz,
+        tmin,
+        direction.xyz,
+        tmax,
+        0
+    );
+
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hit_value, 1.0));
+}

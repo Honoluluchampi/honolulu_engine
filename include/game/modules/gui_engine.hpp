@@ -3,15 +3,11 @@
 // hnll
 #include <utils/common_alias.hpp>
 
-// basic header
-#include <imgui/imgui.h>
-
-// api-specific  header
-#include <imgui/backends/imgui_impl_glfw.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-
 // lib
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
 
 // std
 #include <stdio.h>          // printf, fprintf
@@ -34,14 +30,17 @@ namespace gui {
   class renderer;
 }
 
+namespace utils {
+  enum class rendering_type;
+}
+
 namespace game {
 class gui_engine {
   public:
-    gui_engine(hnll::graphics::window &window, hnll::graphics::device &device);
+    gui_engine(graphics::window &window, graphics::device &device, utils::rendering_type type);
     ~gui_engine();
 
-    static u_ptr<gui_engine> create(graphics::window& window, graphics::device& device)
-    { return std::make_unique<gui_engine>(window, device); }
+    static u_ptr<gui_engine> create(graphics::window& window, graphics::device& device, utils::rendering_type type);
 
     gui_engine(const gui_engine &) = delete;
     gui_engine &operator=(const gui_engine &) = delete;
@@ -61,6 +60,10 @@ class gui_engine {
     static float get_left_window_ratio();
     static float get_bottom_window_ratio();
     static ImVec2 get_viewport_size() { return viewport_size_; };
+
+    VkDescriptorSetLayout get_vp_image_desc_layout();
+    std::vector<VkDescriptorSet> get_vp_image_desc_sets();
+    void transition_vp_image_layout(int frame_index, VkImageLayout new_layout, VkCommandBuffer command);
 
   private:
     // set up ImGui context
