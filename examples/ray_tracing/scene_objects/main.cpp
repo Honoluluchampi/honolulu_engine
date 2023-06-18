@@ -27,7 +27,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("bunny_with_plane.obj")
+#define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
 #define IR_X 20
 #define IR_Y 20
