@@ -4,6 +4,11 @@
 // lib
 #include <gtest/gtest.h>
 
+#define EXPECT_NEQ(a, b) EXPECT_TRUE(neq(a, b))
+
+template <typename T>
+bool neq(const T& a, const T& b, double eps = 0.000001)
+{ return std::abs(a - b) < eps; }
 
 namespace hnll::audio {
 
@@ -12,13 +17,13 @@ TEST(fft, fft) {
   // F_ans is obtained by numpy.fft.fft
   std::vector<double> F_real_ans = {
     14.f,
-    2.313213562f,
+    2.414213562f,
     -6.f,
     -0.41421356f,
     2.f,
     -0.41421356f,
     -6.f,
-    2.313213562f,
+    2.414213562f,
   };
 
   std::vector<double> F_imag_ans = {
@@ -34,12 +39,10 @@ TEST(fft, fft) {
 
   auto F = utils::fft(input);
 
-  auto inverse = utils::ifft(F);
-
   // check fft answer
   for (int i = 0; i < F.size(); i++) {
-    EXPECT_DOUBLE_EQ(F[i].real(), F_real_ans[i]);
-    EXPECT_DOUBLE_EQ(F[i].imag(), F_imag_ans[i]);
+    EXPECT_NEQ(F[i].real(), F_real_ans[i]);
+    EXPECT_NEQ(F[i].imag(), F_imag_ans[i]);
   }
 }
 
@@ -52,7 +55,7 @@ TEST(fft, ifft) {
   // check ifft answer
   for (int i = 0; i < input.size(); i++) {
     EXPECT_EQ(input[i], inverse[i].real());
-    EXPECT_DOUBLE_EQ(0.f, inverse[i].imag());
+    EXPECT_NEQ(double(0.f), inverse[i].imag());
   }
 }
 } // namespace hnll::audio

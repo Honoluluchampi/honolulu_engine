@@ -39,43 +39,39 @@ std::vector<ALshort> create_sine_wave(
 
 void fft_rec(
   std::vector<std::complex<double>>& data,
-  std::vector<std::complex<double>>& buffer,
+  int stride,
   int first_index,
-  int n,
-  std::complex<double> w)
+  int bit,
+  int n)
 {
   if (n > 1) {
-    assert(n % 2 == 0);
-    int h = n / 2;
-    std::complex<double> wi { 1.f, 0.f };
+    assert(n % 2 == 0 && "fft : input size must be equal to 2^k.");
+    const int h = n / 2;
+    const double theta = 2.f * M_PI / n;
 
-    for (int i = first_index; i < h; i++) {
-      buffer[i] = data[i] + data[i + h];
-      buffer[i + h] = wi * (data[i] - data[i + h]);
-      wi *= w;
+    for (int i = 0; i < h; i++) {
+      const std::complex<double> wi = { std::cos(i * theta), -sin(i * theta) };
+      const std::complex<double> a = data[first_index + i + 0];
+      const std::complex<double> b = data[first_index + i + h];
+
+      data[first_index + i + 0] = a + b;
+      data[first_index + i + h] = (a - b) * wi;
     }
 
-    fft_rec(buffer, data, 0, h, w * w);
-    fft_rec(buffer, data, h, h, w * w);
-
-    for (int i = first_index; i < h; i++) {
-      data[2 * i] = buffer[i];
-      data[2 * i + 1] = buffer[i + h];
-    }
+    fft_rec(data, 2 * stride, first_index + 0, bit + 0,      h);
+    fft_rec(data, 2 * stride, first_index + h, bit + stride, h);
+  }
+  // bit reverse
+  else if (first_index > bit) {
+    std::swap(data[first_index], data[bit]);
   }
 }
 
 std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_series)
 {
   int n = time_series.size();
-  std::complex<double> w = std::exp(std::complex<double>{0.f, -2.f * M_PI / static_cast<double>(n) });
-  std::vector<std::complex<double>> buffer(n, 0);
 
-  fft_rec(time_series, buffer, 0, n, w);
-
-  for (int i = 0; i < n; i++) {
-    time_series[i] /= static_cast<double>(n);
-  }
+  fft_rec(time_series, 1, 0, 0, n);
 
   return time_series;
 }
@@ -83,10 +79,16 @@ std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_se
 std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_series)
 {
   int n = freq_series.size();
-  std::complex<double> w = std::exp(std::complex<double>{0.f, 2.f * M_PI} / static_cast<double>(n));
-  std::vector<std::complex<double>> buffer(n, 0);
 
-  fft_rec(freq_series, buffer, 0, n, w);
+  for (int i = 0; i < n; i++) {
+    freq_series[i] = conj(freq_series[i]);
+  }
+
+  fft_rec(freq_series, 1, 0, 0, n);
+
+  for (int i = 0; i < n; i++) {
+    freq_series[i] = conj(freq_series[i]) / static_cast<double>(n);
+  }
 
   return freq_series;
 }
