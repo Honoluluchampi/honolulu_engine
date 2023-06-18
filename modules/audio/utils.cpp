@@ -68,16 +68,16 @@ void fft_rec(
 std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_series)
 {
   int n = time_series.size();
-  std::complex<double> w = std::exp(std::complex<double>{0.f, -2.f * M_PI} / static_cast<double>(n));
+  std::complex<double> w = std::exp(std::complex<double>{0.f, -2.f * M_PI / static_cast<double>(n) });
   std::vector<std::complex<double>> buffer(n, 0);
-  std::vector<std::complex<double>> ans = time_series;
 
-  fft_rec(ans, buffer, 0, n, w);
+  fft_rec(time_series, buffer, 0, n, w);
+
   for (int i = 0; i < n; i++) {
-    ans[i] / static_cast<double>(n);
+    time_series[i] /= static_cast<double>(n);
   }
 
-  return ans;
+  return time_series;
 }
 
 std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_series)
@@ -85,14 +85,10 @@ std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_s
   int n = freq_series.size();
   std::complex<double> w = std::exp(std::complex<double>{0.f, 2.f * M_PI} / static_cast<double>(n));
   std::vector<std::complex<double>> buffer(n, 0);
-  std::vector<std::complex<double>> ans = freq_series;
 
-  fft_rec(ans, buffer, 0, n, w);
-  for (int i = 0; i < n; i++) {
-    ans[i] / static_cast<double>(n * n);
-  }
+  fft_rec(freq_series, buffer, 0, n, w);
 
-  return ans;
+  return freq_series;
 }
 
 } // namespace hnll::audio::utils
