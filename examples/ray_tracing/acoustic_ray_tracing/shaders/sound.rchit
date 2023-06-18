@@ -52,7 +52,7 @@ void main() {
     float tmax = 10000.0;
     // current hit point
     vec3 ray_d = normalize(gl_WorldRayDirectionEXT);
-    vec3 direction = normalize(ray_d - 2 * dot(ray_d, normal));
+    vec3 direction = normalize(ray_d - 2 * dot(ray_d, normal) * normal);
 
     traceRayEXT(
       tlas,

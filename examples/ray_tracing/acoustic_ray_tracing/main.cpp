@@ -26,12 +26,12 @@
 namespace hnll {
 
 const std::string SHADERS_DIRECTORY =
-  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/scene_objects/shaders/spv/";
+  std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/acoustic_ray_tracing/shaders/spv/";
 
 #define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
-#define IR_X 50
-#define IR_Y 50
+#define IR_X 250
+#define IR_Y 250
 
 #define AUDIO_SEGMENT_NUM 4096
 
@@ -424,7 +424,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // load raw data
       std::vector<ALshort> segment(AUDIO_SEGMENT_NUM, 0.f);
       for (int i = 0; i < AUDIO_SEGMENT_NUM; i++) {
-        segment[i] = audio_file_.samples[0][int(i + cursor)] / 2.f;
+        segment[i] = audio_file_.samples[0][int(i + cursor)] / 100.f;
       }
 
       auto* p = ir_mapped_pointers_[frame_index];
@@ -482,16 +482,16 @@ SELECT_SHADING_SYSTEM(model_ray_tracer);
 SELECT_COMPUTE_SHADER();
 SELECT_ACTOR(object, game::default_camera);
 
-DEFINE_ENGINE(hello_model) {
+DEFINE_ENGINE(audio_ray_tracing) {
   public:
-    ENGINE_CTOR(hello_model)
+    ENGINE_CTOR(audio_ray_tracing)
     { add_update_target_directly<game::default_camera>(); }
 };
 
 } // namespace hnll
 
 int main() {
-  hnll::hello_model app {"scene_objects", hnll::utils::rendering_type::RAY_TRACING};
+  hnll::audio_ray_tracing app {"acoustic_ray_tracing", hnll::utils::rendering_type::RAY_TRACING};
 
   try { app.run(); }
   catch (const std::exception& e) {

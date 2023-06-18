@@ -1,3 +1,3 @@
 add_subdirectory(simple_triangle)
-add_subdirectory(scene_objects)
+add_subdirectory(acoustic_ray_tracing)
 add_subdirectory(model)
