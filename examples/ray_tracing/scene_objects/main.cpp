@@ -9,6 +9,7 @@
 #include <graphics/utils.hpp>
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
+#include <audio/convolver.hpp>
 #include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
@@ -29,10 +30,10 @@ const std::string SHADERS_DIRECTORY =
 
 #define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
 
-#define IR_X 20
-#define IR_Y 20
+#define IR_X 50
+#define IR_Y 50
 
-#define FREQ 44100
+#define AUDIO_SEGMENT_NUM 4096
 
 // to be ray_tracing_model
 DEFINE_PURE_ACTOR(object)
@@ -121,7 +122,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
     void render(const utils::graphics_frame_info& frame_info)
     {
-//      update_audio(frame_info.frame_index);
+      update_audio(frame_info.frame_index);
 
       set_current_command(frame_info.command_buffer);
 
@@ -404,6 +405,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // open al
       hnll::audio::engine::start_hae_context();
       source_ = hnll::audio::engine::get_available_source_id();
+
+      convolver_ = audio::convolver::create(AUDIO_SEGMENT_NUM);
     }
 
     void update_audio(int frame_index)
@@ -418,46 +421,31 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       if (hnll::audio::engine::get_audio_count_on_queue(source_) > queue_capability)
         return;
 
-      int segment_count = static_cast<int>(dt * FREQ);
-
       // load raw data
-      std::vector<ALshort> segment(segment_count * 2, 0.f);
-      for (int i = 0; i < segment_count; i++) {
-        segment[2 * i] = audio_file_.samples[0][int(i + cursor) * int(44100 / FREQ)];
-        segment[2 * i + 1] = audio_file_.samples[1][int(i + cursor) * int(44100 / FREQ)];
+      std::vector<ALshort> segment(AUDIO_SEGMENT_NUM, 0.f);
+      for (int i = 0; i < AUDIO_SEGMENT_NUM; i++) {
+        segment[i] = audio_file_.samples[0][int(i + cursor)] / 2.f;
       }
 
-//        auto* p = ir_mapped_pointers_[frame_index];
-//        std::vector<float> ray_info(p, p + IR_X * IR_Y * 4);
-//
-//        auto ir_series = unpack_ir(
-//          ray_info,
-//          100,
-//          0.1,
-//          1,
-//          340
-//        );
+      auto* p = ir_mapped_pointers_[frame_index];
+      std::vector<float> ray_info(p, p + IR_X * IR_Y * 4);
 
-//      std::vector<ALshort> conv_segment;
-//      {
-//        utils::scope_timer timer("convolution");
-//        conv_segment = convolve(
-//          ir_series,
-//          100,
-//          0.1,
-//          audio_file_.samples[0],
-//          FREQ,
-//          dt,
-//          cursor
-//        );
-//      }
+      auto ir_series = unpack_ir(
+        ray_info,
+        44100,
+        AUDIO_SEGMENT_NUM,
+        1,
+        340
+      );
 
-      cursor += segment_count;
+      convolver_->add_segment(std::move(segment), std::move(ir_series));
+
+      cursor += AUDIO_SEGMENT_NUM;
 
       hnll::audio::audio_data data;
-      data.set_sampling_rate(FREQ)
-        .set_format(AL_FORMAT_STEREO16)
-        .set_data(std::move(segment));
+      data.set_sampling_rate(44100)
+        .set_format(AL_FORMAT_MONO16)
+        .set_data(std::move(convolver_->move_buffer()));
 
       hnll::audio::engine::bind_audio_to_buffer(data);
       hnll::audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
@@ -486,6 +474,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     audio::source_id source_;
     AudioFile<short> audio_file_;
     bool started_ = false;
+
+    u_ptr<audio::convolver> convolver_;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
