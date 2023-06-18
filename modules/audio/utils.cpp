@@ -1,4 +1,8 @@
+// hnll
 #include <audio/utils.hpp>
+
+// std
+#include <complex>
 
 namespace hnll::audio::utils {
 
@@ -31,6 +35,62 @@ std::vector<ALshort> create_sine_wave(
   }
 
   return data;
+}
+
+void fft_rec(
+  std::vector<std::complex<double>>& data,
+  int stride,
+  int first_index,
+  int bit,
+  int n)
+{
+  if (n > 1) {
+    assert(n % 2 == 0 && "fft : input size must be equal to 2^k.");
+    const int h = n / 2;
+    const double theta = 2.f * M_PI / n;
+
+    for (int i = 0; i < h; i++) {
+      const std::complex<double> wi = { std::cos(i * theta), -sin(i * theta) };
+      const std::complex<double> a = data[first_index + i + 0];
+      const std::complex<double> b = data[first_index + i + h];
+
+      data[first_index + i + 0] = a + b;
+      data[first_index + i + h] = (a - b) * wi;
+    }
+
+    fft_rec(data, 2 * stride, first_index + 0, bit + 0,      h);
+    fft_rec(data, 2 * stride, first_index + h, bit + stride, h);
+  }
+  // bit reverse
+  else if (first_index > bit) {
+    std::swap(data[first_index], data[bit]);
+  }
+}
+
+std::vector<std::complex<double>> fft(std::vector<std::complex<double>>& time_series)
+{
+  int n = time_series.size();
+
+  fft_rec(time_series, 1, 0, 0, n);
+
+  return time_series;
+}
+
+std::vector<std::complex<double>> ifft(std::vector<std::complex<double>>& freq_series)
+{
+  int n = freq_series.size();
+
+  for (int i = 0; i < n; i++) {
+    freq_series[i] = conj(freq_series[i]);
+  }
+
+  fft_rec(freq_series, 1, 0, 0, n);
+
+  for (int i = 0; i < n; i++) {
+    freq_series[i] = conj(freq_series[i]) / static_cast<double>(n);
+  }
+
+  return freq_series;
 }
 
 } // namespace hnll::audio::utils
