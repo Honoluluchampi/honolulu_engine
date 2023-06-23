@@ -95,7 +95,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     static void add_update_target_directly(Args&&... args);
 
     template <ShadingSystem SS, RenderableComponent RC>
-    void add_render_target(RC& rc)
+    inline void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
   protected:
