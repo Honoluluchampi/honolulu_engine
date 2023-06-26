@@ -93,7 +93,7 @@ struct wg_section
     int f_c = f_cursor;
     int b_c = (b_cursor + 1) % grid_count;
     for (int i = 0; i < grid_count; i++) {
-      field.emplace_back(forward[f_cursor] + backward[b_cursor]);
+      field.emplace_back(forward[f_c] + backward[b_c]);
       f_c = (f_c + 1) % grid_count;
       b_c = (b_c + 1) % grid_count;
     }
@@ -126,9 +126,10 @@ DEFINE_PURE_ACTOR(horn)
         fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
       }
       else {
+        fdtd1_.build(0.f);
         fdtd2_.build(0.6f);
         // impulse at 10 cm
-        fdtd2_.p[fdtd2_.grid_count * 3 / 6] = 100.f;
+        fdtd2_.p[fdtd2_.grid_count * 5 / 6] = 100.f;
       }
 
       // setup desc sets
@@ -185,6 +186,9 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(float global_dt)
     {
       // update fdtd_only's velocity ---------------------------------------------------
+      if (frame_count++ < 5)
+        fdtd2_.p[fdtd2_.grid_count * 5 / 6] = 100.f;
+
       for (int i = 1; i < fdtd2_.grid_count - 1; i++) {
         fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
       }
@@ -193,6 +197,9 @@ DEFINE_PURE_ACTOR(horn)
         fdtd2_.p[i] -= p_fac * (fdtd2_.v[i + 1] - fdtd2_.v[i]);
       }
 
+//      if(frame_count++ < 5)
+//        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
+//
 //      // update combined model velocity ------------------------------------------------
 //      // left part
 //      for (int i = 1; i < fdtd1_.grid_count; i++) {
@@ -222,7 +229,7 @@ DEFINE_PURE_ACTOR(horn)
 //      }
 //
 //      // wave guide
-//      wg_.update(fdtd2_.p[fdtd2_.grid_count - 1], fdtd2_.p[0]);
+//      wg_.update(fdtd1_.p[fdtd1_.grid_count - 1], fdtd2_.p[0]);
     }
 
     std::vector<float> get_field() const
@@ -255,6 +262,8 @@ DEFINE_PURE_ACTOR(horn)
 
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
+
+    int frame_count = 0;
 };
 
 // shared with shaders

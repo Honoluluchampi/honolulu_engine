@@ -37,11 +37,11 @@ void main() {
     }
     else if (push.edge_x.x <= x_coord && x_coord < push.edge_x.y) {
       idx = push.idx.x +
-        int(float(push.idx.y - push.idx.x) * (x_coord - push.edge_x.x) / push.seg_len.y);
+        int(float(push.idx.y) * (x_coord - push.edge_x.x) / push.seg_len.y);
     }
     else if (push.edge_x.y <= x_coord && x_coord < push.edge_x.z) {
-      idx = push.idx.y +
-        int(float(push.idx.z - push.idx.y) * (x_coord - push.edge_x.y) / push.seg_len.z);
+      idx = push.idx.x + push.idx.y +
+        int(float(push.idx.z) * (x_coord - push.edge_x.y) / push.seg_len.z);
     }
     else {
       discard;
