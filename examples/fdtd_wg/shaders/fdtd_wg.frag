@@ -12,6 +12,7 @@ layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
 const float magnification = 650.f;
+const float color_scale = 0.01f;
 
 void main() {
   bool in_length  = abs(gl_FragCoord.x - push.w_width / 2.f) < push.edge_x.z * magnification / 2.f;
@@ -26,27 +27,29 @@ void main() {
   // outline of field
   if (on_outline)
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
+
+  // draw field
+  else if (in_area) {
+    float x_coord = push.edge_x.z / 2.f + (gl_FragCoord.x - push.w_width / 2.f) / magnification;
+    int idx;
+    if (0 <= x_coord && x_coord < push.edge_x.x) {
+      idx = int(float(push.idx.x) * (x_coord / push.seg_len.x));
+    }
+    else if (push.edge_x.x <= x_coord && x_coord < push.edge_x.y) {
+      idx = push.idx.x +
+        int(float(push.idx.y - push.idx.x) * (x_coord - push.edge_x.x) / push.seg_len.y);
+    }
+    else if (push.edge_x.y <= x_coord && x_coord < push.edge_x.z) {
+      idx = push.idx.y +
+        int(float(push.idx.z - push.idx.y) * (x_coord - push.edge_x.y) / push.seg_len.z);
+    }
+    else {
+      discard;
+    }
+    out_color = vec4(color_scale * max(field[idx], 0.f), 0.f, color_scale * max(-field[idx], 0.f), 1.f);
+  }
+
+  // out area
   else
     out_color = vec4(0.f, 0.f, 0.f, 1.f);
-
-  // out of the field
-//  if (in_area) {
-////    float x_coord = push.edge_x.z / 2.f + (gl_FragCoord.x - push.w_width / 2.f) / magnification;
-////    int idx;
-////    if (0 <= x_coord && x_coord < push.edge_x.x) {
-////      idx = int(float(push.idx.x) * (x_coord / push.seg_len.x));
-////    }
-////    else if (push.edge_x.x <= x_coord && x_coord < push.edge_x.y) {
-////      idx = push.idx.x +
-////        int(float(push.idx.y - push.idx.x) * (x_coord - push.edge_x.x) / push.seg_len.y);
-////    }
-////    else if (push.edge_x.y <= x_coord && x_coord < push.edge_x.z) {
-////      idx = push.idx.y +
-////        int(float(push.idx.z - push.idx.y) * (x_coord - push.edge_x.y) / push.seg_len.z);
-////    }
-////    else {
-////      discard;
-////    }
-//    out_color = vec4(1.f, 0.f, 0.f, 0.f);
-//  }
 }

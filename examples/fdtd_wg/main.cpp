@@ -123,12 +123,12 @@ DEFINE_PURE_ACTOR(horn)
         wg_   .build(0.2f);
         fdtd2_.build(0.2f);
         // impulse at 10 cm
-        fdtd2_.p[fdtd2_.grid_count / 2] = 500.f;
+        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
       }
       else {
         fdtd2_.build(0.6f);
         // impulse at 10 cm
-        fdtd2_.p[fdtd2_.grid_count * 5 / 6] = 500.f;
+        fdtd2_.p[fdtd2_.grid_count * 3 / 6] = 100.f;
       }
 
       // setup desc sets
@@ -149,12 +149,12 @@ DEFINE_PURE_ACTOR(horn)
       auto initial_field = get_field();
 
       for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
-        auto initial_buffer = graphics::buffer::create_with_staging(
+        auto initial_buffer = graphics::buffer::create(
           device,
           sizeof(float) * initial_field.size(),
           1,
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
           initial_field.data()
         );
 
@@ -179,8 +179,8 @@ DEFINE_PURE_ACTOR(horn)
     ivec4 get_idx() const
     { return ivec4{ fdtd1_.grid_count, wg_.grid_count, fdtd2_.grid_count, 0 }; }
 
-    VkDescriptorSet get_vk_desc_set() const
-    { return desc_sets_->get_vk_desc_sets(0)[0]; }
+    VkDescriptorSet get_vk_desc_set(int frame_index) const
+    { return desc_sets_->get_vk_desc_sets(frame_index)[0]; }
 
     void update_this(float global_dt)
     {
@@ -189,40 +189,40 @@ DEFINE_PURE_ACTOR(horn)
         fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
       }
       // update fdtd_only's pressure ---------------------------------------------------
-      for (int i = 0; i < fdtd1_.grid_count - 1; i++) {
-        fdtd1_.p[i] -= p_fac * (fdtd1_.v[i + 1] - fdtd1_.v[i]);
-      }
-
-      // update combined model velocity ------------------------------------------------
-      // left part
-      for (int i = 1; i < fdtd1_.grid_count; i++) {
-        fdtd1_.v[i] -= v_fac * (fdtd1_.p[i] - fdtd1_.p[i - 1]);
-      }
-      // junction part
-      fdtd1_.ghost_v -= v_fac * (wg_.get_first() - fdtd1_.p[fdtd1_.grid_count - 1]);
-
-      // right part
-      for (int i = 1; i < fdtd2_.grid_count; i++) {
-        fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
-      }
-      // junction
-      fdtd2_.v[0] -= v_fac * (fdtd2_.p[0] - wg_.get_last());
-
-      // update combined model pressure -----------------------------------------------
-      // left
-      for (int i = 0; i < fdtd1_.grid_count - 1; i++) {
-        fdtd1_.p[i] -= p_fac * (fdtd1_.v[i + 1] - fdtd1_.v[i]);
-      }
-      // junction
-      fdtd1_.p[fdtd1_.grid_count - 1] -= p_fac * (fdtd1_.ghost_v - fdtd1_.v[fdtd1_.grid_count - 1]);
-
-      // right (include junction)
       for (int i = 0; i < fdtd2_.grid_count - 1; i++) {
         fdtd2_.p[i] -= p_fac * (fdtd2_.v[i + 1] - fdtd2_.v[i]);
       }
 
-      // wave guide
-      wg_.update(fdtd2_.p[fdtd2_.grid_count - 1], fdtd2_.p[0]);
+//      // update combined model velocity ------------------------------------------------
+//      // left part
+//      for (int i = 1; i < fdtd1_.grid_count; i++) {
+//        fdtd1_.v[i] -= v_fac * (fdtd1_.p[i] - fdtd1_.p[i - 1]);
+//      }
+//      // junction part
+//      fdtd1_.ghost_v -= v_fac * (wg_.get_first() - fdtd1_.p[fdtd1_.grid_count - 1]);
+//
+//      // right part
+//      for (int i = 1; i < fdtd2_.grid_count; i++) {
+//        fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
+//      }
+//      // junction
+//      fdtd2_.v[0] -= v_fac * (fdtd2_.p[0] - wg_.get_last());
+//
+//      // update combined model pressure -----------------------------------------------
+//      // left
+//      for (int i = 0; i < fdtd1_.grid_count - 1; i++) {
+//        fdtd1_.p[i] -= p_fac * (fdtd1_.v[i + 1] - fdtd1_.v[i]);
+//      }
+//      // junction
+//      fdtd1_.p[fdtd1_.grid_count - 1] -= p_fac * (fdtd1_.ghost_v - fdtd1_.v[fdtd1_.grid_count - 1]);
+//
+//      // right (include junction)
+//      for (int i = 0; i < fdtd2_.grid_count - 1; i++) {
+//        fdtd2_.p[i] -= p_fac * (fdtd2_.v[i + 1] - fdtd2_.v[i]);
+//      }
+//
+//      // wave guide
+//      wg_.update(fdtd2_.p[fdtd2_.grid_count - 1], fdtd2_.p[0]);
     }
 
     std::vector<float> get_field() const
@@ -239,6 +239,13 @@ DEFINE_PURE_ACTOR(horn)
         field.emplace_back(v);
       }
       return field;
+    }
+
+    void update_field(int frame_index)
+    {
+      auto data = get_field();
+      desc_sets_->write_to_buffer(0, 0, frame_index, data.data());
+      desc_sets_->flush_buffer(0, 0, frame_index);
     }
 
   private:
@@ -290,16 +297,20 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 
         auto viewport_size = game::gui_engine::get_viewport_size();
         fdtd_wg_push push;
-        push.h_width = 50;
+        push.h_width = 30;
         push.w_width = viewport_size.x;
         push.w_height = viewport_size.y;
         push.seg_len = target.get_seg_len();
         push.edge_x = target.get_edge_x();
         push.idx = target.get_idx();
 
+        // update field
+        target.update_this(1);
+        target.update_field(info.frame_index);
+
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-        bind_desc_sets({ target.get_vk_desc_set() });
+        bind_desc_sets({ target.get_vk_desc_set(info.frame_index) });
 
         target.draw(info.command_buffer);
       }
