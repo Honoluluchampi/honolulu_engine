@@ -170,14 +170,14 @@ DEFINE_PURE_ACTOR(horn)
     utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
 
     // getter
-    vec3 get_seg_len() const
-    { return vec3{ fdtd1_.length, wg_.length, fdtd2_.length }; }
+    vec4 get_seg_len() const
+    { return vec4{ fdtd1_.length, wg_.length, fdtd2_.length, 0.f }; }
 
-    vec3 get_edge_x() const
-    { return vec3{ fdtd1_.length, fdtd1_.length + wg_.length, fdtd1_.length + wg_.length + fdtd2_.length }; }
+    vec4 get_edge_x() const
+    { return vec4{ fdtd1_.length, fdtd1_.length + wg_.length, fdtd1_.length + wg_.length + fdtd2_.length, 0.f }; }
 
-    ivec3 get_idx() const
-    { return ivec3{ fdtd1_.grid_count, wg_.grid_count, fdtd2_.grid_count }; }
+    ivec4 get_idx() const
+    { return ivec4{ fdtd1_.grid_count, wg_.grid_count, fdtd2_.grid_count, 0 }; }
 
     VkDescriptorSet get_vk_desc_set() const
     { return desc_sets_->get_vk_desc_sets(0)[0]; }

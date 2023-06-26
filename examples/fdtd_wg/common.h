@@ -5,7 +5,7 @@ struct fdtd_wg_push {
   float w_height;
   float w_width;
   // right edge coordinates of each section
-  vec3 edge_x; // accumulative sum of each segment
-  vec3 seg_len; // length of each segment
-  ivec3 idx;
+  vec4 edge_x; // accumulative sum of each segment
+  vec4 seg_len; // length of each segment
+  ivec4 idx;
 };
