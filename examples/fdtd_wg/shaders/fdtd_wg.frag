@@ -11,41 +11,42 @@ layout(push_constant) uniform Push { fdtd_wg_push push; };
 layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
-const float magnification = 500.f;
+const float magnification = 650.f;
 
 void main() {
-  bool on_length = abs(gl_FragCoord.x - push.w_width / 2.f) < push.edge_x.z / 2.f;
-  bool on_width  = abs(gl_FragCoord.y - push.w_height / 2.f) < push.h_width / 2.f + line_width
-  && abs(gl_FragCoord.y - push.w_height / 2.f) > push.h_width /2.f;
+  bool in_length  = abs(gl_FragCoord.x - push.w_width / 2.f) < push.edge_x.z * magnification / 2.f;
+  bool out_length = abs(gl_FragCoord.x - push.w_width / 2.f) > push.edge_x.z * magnification / 2.f + line_width;
+  bool in_width  = abs(gl_FragCoord.y - push.w_height / 2.f) < push.h_width / 2.f;
+  bool out_width = abs(gl_FragCoord.y - push.w_height / 2.f) > push.h_width / 2.f + line_width;
+
+  bool in_area = in_length && in_width;
+  bool out_area = out_length || out_width;
+  bool on_outline = !in_area && !out_area;
 
   // outline of field
-  float val = float(on_length) * float(on_width) * 1.f;
-  if (on_length && on_width) {
-    out_color = vec4(val, val, val, 1.f);
-    return;
-  }
+  if (on_outline)
+    out_color = vec4(1.f, 1.f, 1.f, 1.f);
+  else
+    out_color = vec4(0.f, 0.f, 0.f, 1.f);
 
   // out of the field
-  bool in_width = abs(gl_FragCoord.y - push.w_height / 2.f) < push.h_width /2.f;
-  if (!on_length || !in_width) {
-    discard;
-  }
-
-  float x_coord = push.edge_x.z / 2.f + (gl_FragCoord.x - push.w_width / 2.f) / magnification;
-  int idx;
-  if (0 <= x_coord && x_coord < push.edge_x.x) {
-    idx = int(float(push.idx.x) * (x_coord / push.seg_len.x));
-  }
-  else if (push.edge_x.x <= x_coord && x_coord < push.edge_x.y) {
-    idx = push.idx.x +
-      int(float(push.idx.y - push.idx.x) * (x_coord - push.edge_x.x) / push.seg_len.y);
-  }
-  else if (push.edge_x.y <= x_coord && x_coord < push.edge_x.z) {
-    idx = push.idx.y +
-      int(float(push.idx.z - push.idx.y) * (x_coord - push.edge_x.y) / push.seg_len.z);
-  }
-  else {
-    discard;
-  }
-  out_color = vec4(max(field[idx], 0.f), 0, max(-field[idx], 0.f), 0.f);
+//  if (in_area) {
+////    float x_coord = push.edge_x.z / 2.f + (gl_FragCoord.x - push.w_width / 2.f) / magnification;
+////    int idx;
+////    if (0 <= x_coord && x_coord < push.edge_x.x) {
+////      idx = int(float(push.idx.x) * (x_coord / push.seg_len.x));
+////    }
+////    else if (push.edge_x.x <= x_coord && x_coord < push.edge_x.y) {
+////      idx = push.idx.x +
+////        int(float(push.idx.y - push.idx.x) * (x_coord - push.edge_x.x) / push.seg_len.y);
+////    }
+////    else if (push.edge_x.y <= x_coord && x_coord < push.edge_x.z) {
+////      idx = push.idx.y +
+////        int(float(push.idx.z - push.idx.y) * (x_coord - push.edge_x.y) / push.seg_len.z);
+////    }
+////    else {
+////      discard;
+////    }
+//    out_color = vec4(1.f, 0.f, 0.f, 0.f);
+//  }
 }
