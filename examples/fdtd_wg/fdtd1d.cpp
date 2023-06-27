@@ -21,11 +21,9 @@ constexpr float rho = 1.17f;
 const float v_fac = dt / (rho * dx_fdtd);
 const float p_fac = dt * rho * c * c / dx_fdtd;
 
-const float segment_length = 0.2; // 20 cm
-
-struct fdtd_section
+struct fdtd1d
 {
-  fdtd_section() = default;
+  fdtd1d() = default;
 
   void build(float len, int pml_layer_count = 6)
   {
@@ -153,13 +151,13 @@ DEFINE_PURE_ACTOR(horn)
       if (combined) {
         fdtd1_.build(0.2f);
         wg_   .build(0.2f);
-        fdtd2_.build(0.2f);
+        fdtd_.build(0.2f);
         // impulse at 10 cm
-        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
+        fdtd_.p[fdtd_.grid_count / 2] = 100.f;
       }
       else {
         fdtd1_.build(0.f);
-        fdtd2_.build(0.6f);
+        fdtd_.build(1.f);
       }
 
       // setup desc sets
@@ -202,13 +200,13 @@ DEFINE_PURE_ACTOR(horn)
 
     // getter
     vec4 get_seg_len() const
-    { return vec4{ fdtd1_.length, wg_.length, fdtd2_.length, 0.f }; }
+    { return vec4{fdtd1_.length, wg_.length, fdtd_.length, 0.f }; }
 
     vec4 get_edge_x() const
-    { return vec4{ fdtd1_.length, fdtd1_.length + wg_.length, fdtd1_.length + wg_.length + fdtd2_.length, 0.f }; }
+    { return vec4{fdtd1_.length, fdtd1_.length + wg_.length, fdtd1_.length + wg_.length + fdtd_.length, 0.f }; }
 
     ivec4 get_idx() const
-    { return ivec4{ fdtd1_.grid_count, wg_.grid_count, fdtd2_.grid_count, 0 }; }
+    { return ivec4{fdtd1_.grid_count, wg_.grid_count, fdtd_.grid_count, 0 }; }
 
     VkDescriptorSet get_vk_desc_set(int frame_index) const
     { return desc_sets_->get_vk_desc_sets(frame_index)[0]; }
@@ -216,63 +214,23 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(float global_dt)
     {
       // update fdtd_only's velocity ---------------------------------------------------
-      if (frame_count++ < 5)
-        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
+      auto freq = 10000.f;
+      if (frame_count++ < 15)
+        fdtd_.p[fdtd_.grid_count / 2] = 100 * std::cos(frame_count * dt * freq * M_PI * 2);
 
-      fdtd2_.update();
+      fdtd_.update();
 
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
       if (ImGui::Button("impulse")) {
         frame_count = 0;
       }
       ImGui::End();
-
-//      if(frame_count++ < 5)
-//        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
-//
-//      // update combined model velocity ------------------------------------------------
-//      // left part
-//      for (int i = 1; i < fdtd1_.grid_count; i++) {
-//        fdtd1_.v[i] -= v_fac * (fdtd1_.p[i] - fdtd1_.p[i - 1]);
-//      }
-//      // junction part
-//      fdtd1_.ghost_v -= v_fac * (wg_.get_first() - fdtd1_.p[fdtd1_.grid_count - 1]);
-//
-//      // right part
-//      for (int i = 1; i < fdtd2_.grid_count; i++) {
-//        fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
-//      }
-//      // junction
-//      fdtd2_.v[0] -= v_fac * (fdtd2_.p[0] - wg_.get_last());
-//
-//      // update combined model pressure -----------------------------------------------
-//      // left
-//      for (int i = 0; i < fdtd1_.grid_count - 1; i++) {
-//        fdtd1_.p[i] -= p_fac * (fdtd1_.v[i + 1] - fdtd1_.v[i]);
-//      }
-//      // junction
-//      fdtd1_.p[fdtd1_.grid_count - 1] -= p_fac * (fdtd1_.ghost_v - fdtd1_.v[fdtd1_.grid_count - 1]);
-//
-//      // right (include junction)
-//      for (int i = 0; i < fdtd2_.grid_count - 1; i++) {
-//        fdtd2_.p[i] -= p_fac * (fdtd2_.v[i + 1] - fdtd2_.v[i]);
-//      }
-//
-//      // wave guide
-//      wg_.update(fdtd1_.p[fdtd1_.grid_count - 1], fdtd2_.p[0]);
     }
 
     std::vector<float> get_field() const
     {
       std::vector<float> field;
-//      for (const auto& v : fdtd1_.p) {
-//        field.emplace_back(v);
-//      }
-//      auto wg_field = wg_.get_field();
-//      for (const auto& v : wg_field) {
-//        field.emplace_back(v);
-//      }
-      for (const auto& v : fdtd2_.get_field()) {
+      for (const auto& v : fdtd_.get_field()) {
         field.emplace_back(v);
       }
       return field;
@@ -286,9 +244,9 @@ DEFINE_PURE_ACTOR(horn)
     }
 
   private:
-    fdtd_section fdtd1_;
+    fdtd1d fdtd1_;
     wg_section   wg_;
-    fdtd_section fdtd2_;
+    fdtd1d fdtd_;
 
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
