@@ -27,19 +27,51 @@ struct fdtd_section
 {
   fdtd_section() = default;
 
-  void build(float len)
+  void build(float len, int pml_layer_count = 6)
   {
     // plus one grid for additional
     grid_count = static_cast<int>(len / dx_fdtd);
-    p.resize(grid_count, 0);
-    v.resize(grid_count, 0);
     length = len;
+    pml_count = pml_layer_count;
+    whole_grid_count = grid_count + pml_count * 2 + 2;
+    p.resize(whole_grid_count, 0);
+    v.resize(whole_grid_count, 0);
+  }
+
+  void update()
+  {
+    // update velocity
+    for (int i = 1; i < whole_grid_count - 1; i++) {
+      float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
+      float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
+      float pml = std::max(pml_l, pml_r);
+      v[i] -= pml * v[i] + v_fac * (p[i] - p[i - 1]);
+    }
+    // update pressure
+    for (int i = 1; i < whole_grid_count - 1; i++) {
+      float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
+      float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
+      float pml = std::max(pml_l, pml_r);
+      p[i] -= pml * p[i] + p_fac * (v[i + 1] - v[i]);
+    }
+  }
+
+  std::vector<float> get_field() const
+  {
+    std::vector<float> field;
+    for (int i = pml_count + 1; i < whole_grid_count - (pml_count + 1); i++) {
+      field.emplace_back(p[i]);
+    }
+    return p;
   }
 
   std::vector<float> p;
   std::vector<float> v;
+
   float ghost_v = 0;
-  int grid_count;
+  int grid_count; // grid count of main region
+  int whole_grid_count;
+  int pml_count;
   float length;
 };
 
@@ -128,8 +160,6 @@ DEFINE_PURE_ACTOR(horn)
       else {
         fdtd1_.build(0.f);
         fdtd2_.build(0.6f);
-        // impulse at 10 cm
-        fdtd2_.p[fdtd2_.grid_count * 5 / 6] = 100.f;
       }
 
       // setup desc sets
@@ -187,15 +217,15 @@ DEFINE_PURE_ACTOR(horn)
     {
       // update fdtd_only's velocity ---------------------------------------------------
       if (frame_count++ < 5)
-        fdtd2_.p[fdtd2_.grid_count * 5 / 6] = 100.f;
+        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
 
-      for (int i = 1; i < fdtd2_.grid_count - 1; i++) {
-        fdtd2_.v[i] -= v_fac * (fdtd2_.p[i] - fdtd2_.p[i - 1]);
+      fdtd2_.update();
+
+      ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+      if (ImGui::Button("impulse")) {
+        frame_count = 0;
       }
-      // update fdtd_only's pressure ---------------------------------------------------
-      for (int i = 0; i < fdtd2_.grid_count - 1; i++) {
-        fdtd2_.p[i] -= p_fac * (fdtd2_.v[i + 1] - fdtd2_.v[i]);
-      }
+      ImGui::End();
 
 //      if(frame_count++ < 5)
 //        fdtd2_.p[fdtd2_.grid_count / 2] = 100.f;
@@ -235,14 +265,14 @@ DEFINE_PURE_ACTOR(horn)
     std::vector<float> get_field() const
     {
       std::vector<float> field;
-      for (const auto& v : fdtd1_.p) {
-        field.emplace_back(v);
-      }
-      auto wg_field = wg_.get_field();
-      for (const auto& v : wg_field) {
-        field.emplace_back(v);
-      }
-      for (const auto& v : fdtd2_.p) {
+//      for (const auto& v : fdtd1_.p) {
+//        field.emplace_back(v);
+//      }
+//      auto wg_field = wg_.get_field();
+//      for (const auto& v : wg_field) {
+//        field.emplace_back(v);
+//      }
+      for (const auto& v : fdtd2_.get_field()) {
         field.emplace_back(v);
       }
       return field;

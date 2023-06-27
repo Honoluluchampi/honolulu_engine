@@ -12,7 +12,7 @@ layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
 const float magnification = 650.f;
-const float color_scale = 0.01f;
+const float color_scale = 0.007f;
 
 void main() {
   bool in_length  = abs(gl_FragCoord.x - push.w_width / 2.f) < push.edge_x.z * magnification / 2.f;
