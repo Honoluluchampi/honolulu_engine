@@ -83,7 +83,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(1.f);
+      fdtd_.build(0.2f);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
