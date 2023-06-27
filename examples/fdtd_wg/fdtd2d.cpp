@@ -9,17 +9,18 @@
 #include <iostream>
 #include <fstream>
 
+#define ELEM_2D(i, j) (i) + grid_per_axis * (j)
+
 namespace hnll {
 
 constexpr float dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
 constexpr float dt = 7.81e-6; // in seconds
-const float dx_wg = dx_fdtd / std::sqrt(2); // dx for wave guide grid
 
 constexpr float c = 340; // sound speed : 340 m/s
 constexpr float rho = 1.17f;
 
-const float v_fac = dt / (rho * dx_fdtd);
-const float p_fac = dt * rho * c * c / dx_fdtd;
+constexpr float v_fac = dt / (rho * dx_fdtd);
+constexpr float p_fac = dt * rho * c * c / dx_fdtd;
 
 struct fdtd2d
 {
@@ -27,47 +28,69 @@ struct fdtd2d
 
   void build(float len, int pml_layer_count = 6)
   {
-    // plus one grid for additional
+    // grid_count of main domain of each axis
     grid_count = static_cast<int>(len / dx_fdtd);
     length = len;
     pml_count = pml_layer_count;
-    whole_grid_count = grid_count + pml_count * 2 + 2;
+    grid_per_axis = grid_count + pml_count * 2 + 2;
+    whole_grid_count = grid_per_axis * grid_per_axis;
     p.resize(whole_grid_count, 0);
-    v.resize(whole_grid_count, 0);
+    vx.resize(whole_grid_count, 0);
+    vy.resize(whole_grid_count, 0);
   }
 
   void update()
   {
     // update velocity
-    for (int i = 1; i < whole_grid_count - 1; i++) {
-      float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
-      float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
-      float pml = std::max(pml_l, pml_r);
-      v[i] -= pml * v[i] + v_fac * (p[i] - p[i - 1]);
+    for (int i = 1; i < grid_per_axis - 1; i++) {
+      for (int j = 1; j < grid_per_axis - 1; j++) {
+        // x velocity
+        float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
+        float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
+        float pml_x = std::max(pml_l, pml_r);
+        vx[ELEM_2D(i, j)] -= pml_x * vx[ELEM_2D(i, j)] + v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i - 1, j)]);
+
+        // y velocity
+        float pml_u = 0.5 * std::max(pml_count + 1 - j, 0) / pml_count;
+        float pml_d = 0.5 * std::max(j - grid_count - pml_count, 0) / pml_count;
+        float pml_y = std::max(pml_u, pml_d);
+        vy[ELEM_2D(i, j)] -= pml_y * vy[ELEM_2D(i, j)] + v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i, j - 1)]);
+      }
     }
     // update pressure
-    for (int i = 1; i < whole_grid_count - 1; i++) {
-      float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
-      float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
-      float pml = std::max(pml_l, pml_r);
-      p[i] -= pml * p[i] + p_fac * (v[i + 1] - v[i]);
+    for (int i = 1; i < grid_per_axis - 1; i++) {
+      for (int j = 1; j < grid_per_axis - 1; j++) {
+        float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
+        float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
+        float pml_x = std::max(pml_l, pml_r);
+        float pml_u = 0.5 * std::max(pml_count + 1 - j, 0) / pml_count;
+        float pml_d = 0.5 * std::max(j - grid_count - pml_count, 0) / pml_count;
+        float pml_y = std::max(pml_u, pml_d);
+        float pml = std::max(pml_x, pml_y);
+        p[ELEM_2D(i, j)] -= pml_x * p[ELEM_2D(i, j)] + pml_y * p[ELEM_2D(i, j)] +
+          p_fac * (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]);
+      }
     }
   }
 
   std::vector<float> get_field() const
   {
     std::vector<float> field;
-    for (int i = pml_count + 1; i < whole_grid_count - (pml_count + 1); i++) {
-      field.emplace_back(p[i]);
+    for (int i = pml_count + 1; i < grid_per_axis - (pml_count + 1); i++) {
+      for (int j = pml_count + 1; j < grid_per_axis - (pml_count + 1); j++) {
+        field.emplace_back(p[ELEM_2D(i, j)]);
+      }
     }
-    return p;
+    return field;
   }
 
   std::vector<float> p;
-  std::vector<float> v;
+  std::vector<float> vx;
+  std::vector<float> vy;
 
   float ghost_v = 0;
   int grid_count; // grid count of main region
+  int grid_per_axis;
   int whole_grid_count;
   int pml_count;
   float length;
@@ -134,9 +157,11 @@ DEFINE_PURE_ACTOR(horn)
     {
       // update fdtd_only's velocity ---------------------------------------------------
       auto freq = 10000.f;
-      if (frame_count++ < 15)
-        fdtd_.p[fdtd_.grid_count / 2] = 100 * std::cos(frame_count * dt * freq * M_PI * 2);
-
+      if (frame_count++ < 15) {
+        auto half_idx = fdtd_.grid_per_axis / 2;
+        auto idx = half_idx + fdtd_.grid_per_axis * half_idx;
+        fdtd_.p[idx] = 100 * std::cos(frame_count * dt * freq * M_PI * 2);
+      }
       fdtd_.update();
 
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -148,11 +173,7 @@ DEFINE_PURE_ACTOR(horn)
 
     std::vector<float> get_field() const
     {
-      std::vector<float> field;
-      for (const auto& v : fdtd_.get_field()) {
-        field.emplace_back(v);
-      }
-      return field;
+      return fdtd_.get_field();
     }
 
     void update_field(int frame_index)

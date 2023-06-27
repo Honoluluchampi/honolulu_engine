@@ -11,8 +11,10 @@ layout(push_constant) uniform Push { fdtd_2d_push push; };
 layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
-const float magnification = 400.f;
+const float magnification = 800.f;
 const float color_scale = 0.007f;
+
+int ELEM_2D(int i, int j) { return i + push.grid_count * j; }
 
 void main() {
   bool in_x  = abs(gl_FragCoord.x - push.w_width / 2.f) < push.h_len * magnification / 2.f;
@@ -36,10 +38,8 @@ void main() {
     int idx_x = int(float(push.grid_count) * x_coord / push.h_len);
     int idx_y = int(float(push.grid_count) * y_corrd / push.h_len);
 
-    if (idx_y == push.grid_count / 2)
-      out_color = vec4(color_scale * max(field[idx_x], 0.f), 0.f, color_scale * max(-field[idx_x], 0.f), 1.f);
-    else
-      out_color = vec4(0.f, 0.f, 0.f, 1.f);
+    float val = field[ELEM_2D(idx_x, idx_y)];
+    out_color = vec4(color_scale * max(val, 0.f), 0.f, color_scale * max(-val, 0.f), 1.f);
   }
 
   // out area
