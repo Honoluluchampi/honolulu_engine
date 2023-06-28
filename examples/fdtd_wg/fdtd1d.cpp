@@ -50,7 +50,8 @@ struct fdtd1d
       float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
       float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
       float pml = std::max(pml_l, pml_r);
-      p[i] -= pml * p[i] + p_fac * (v[i + 1] - v[i]);
+      p[i] -= //pml * p[i] +
+         p_fac * (v[i + 1] - v[i]);
     }
   }
 
@@ -315,7 +316,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 };
 
 SELECT_COMPUTE_SHADER();
-SELECT_ACTOR();
+SELECT_ACTOR(game::dummy_actor);
 SELECT_SHADING_SYSTEM(fdtd_wg_shading_system);
 
 DEFINE_ENGINE(FDTD_WG)

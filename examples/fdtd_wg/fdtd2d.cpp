@@ -13,20 +13,20 @@
 
 namespace hnll {
 
-constexpr float dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
-constexpr float dt = 7.81e-6; // in seconds
+constexpr double dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
+constexpr double dt = 7.81e-6; // in seconds
 
-constexpr float c = 340; // sound speed : 340 m/s
-constexpr float rho = 1.17f;
+constexpr double c = 340; // sound speed : 340 m/s
+constexpr double rho = 1.17f;
 
-constexpr float v_fac = dt / (rho * dx_fdtd);
-constexpr float p_fac = dt * rho * c * c / dx_fdtd;
+constexpr double v_fac = dt / (rho * dx_fdtd);
+constexpr double p_fac = dt * rho * c * c / dx_fdtd;
 
 struct fdtd2d
 {
   fdtd2d() = default;
 
-  void build(float len, int pml_layer_count = 6)
+  void build(double len, int pml_layer_count = 6)
   {
     // grid_count of main domain of each axis
     grid_count = static_cast<int>(len / dx_fdtd);
@@ -41,41 +41,46 @@ struct fdtd2d
 
   void update()
   {
+    double pml_max = 0.5;
     // update velocity
-    for (int i = 1; i < grid_per_axis - 1; i++) {
-      for (int j = 1; j < grid_per_axis - 1; j++) {
+    for (int j = 1; j < grid_per_axis - 1; j++) {
+      for (int i = 1; i < grid_per_axis - 1; i++) {
         // x velocity
-        float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
-        float pml_x = std::max(pml_l, pml_r);
-        vx[ELEM_2D(i, j)] -= pml_x * vx[ELEM_2D(i, j)] + v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i - 1, j)]);
+        double pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
+        double pml_r = pml_max * std::max(i - grid_count - pml_count, 0) / pml_count;
+        double pml_x = std::max(pml_l, pml_r);
 
         // y velocity
-        float pml_u = 0.5 * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = 0.5 * std::max(j - grid_count - pml_count, 0) / pml_count;
-        float pml_y = std::max(pml_u, pml_d);
-        vy[ELEM_2D(i, j)] -= pml_y * vy[ELEM_2D(i, j)] + v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i, j - 1)]);
+        double pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
+        double pml_d = pml_max * std::max(j - grid_count - pml_count, 0) / pml_count;
+        double pml_y = std::max(pml_u, pml_d);
+
+        double pml = std::max(pml_x, pml_y);
+
+        vx[ELEM_2D(i, j)] = (vx[ELEM_2D(i, j)] - v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i - 1, j)])) / (1 + pml);
+        vy[ELEM_2D(i, j)] = (vy[ELEM_2D(i, j)] - v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i, j - 1)])) / (1 + pml);
       }
     }
     // update pressure
-    for (int i = 1; i < grid_per_axis - 1; i++) {
-      for (int j = 1; j < grid_per_axis - 1; j++) {
-        float pml_l = 0.5 * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = 0.5 * std::max(i - grid_count - pml_count, 0) / pml_count;
-        float pml_x = std::max(pml_l, pml_r);
-        float pml_u = 0.5 * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = 0.5 * std::max(j - grid_count - pml_count, 0) / pml_count;
-        float pml_y = std::max(pml_u, pml_d);
-        float pml = std::max(pml_x, pml_y);
-        p[ELEM_2D(i, j)] -= pml_x * p[ELEM_2D(i, j)] + pml_y * p[ELEM_2D(i, j)] +
-          p_fac * (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]);
+    for (int j = 1; j < grid_per_axis - 1; j++) {
+      for (int i = 1; i < grid_per_axis - 1; i++) {
+        double pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
+        double pml_r = pml_max * std::max(i - grid_count - pml_count, 0) / pml_count;
+        double pml_x = std::max(pml_l, pml_r);
+        double pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
+        double pml_d = pml_max * std::max(j - grid_count - pml_count, 0) / pml_count;
+        double pml_y = std::max(pml_u, pml_d);
+        double pml = std::max(pml_x, pml_y);
+        p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] -
+          p_fac * (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
+            / (1 + pml);
       }
     }
   }
 
-  std::vector<float> get_field() const
+  std::vector<double> get_field() const
   {
-    std::vector<float> field;
+    std::vector<double> field;
     for (int i = pml_count + 1; i < grid_per_axis - (pml_count + 1); i++) {
       for (int j = pml_count + 1; j < grid_per_axis - (pml_count + 1); j++) {
         field.emplace_back(p[ELEM_2D(i, j)]);
@@ -84,16 +89,16 @@ struct fdtd2d
     return field;
   }
 
-  std::vector<float> p;
-  std::vector<float> vx;
-  std::vector<float> vy;
+  std::vector<double> p;
+  std::vector<double> vx;
+  std::vector<double> vy;
 
   float ghost_v = 0;
   int grid_count; // grid count of main region
   int grid_per_axis;
   int whole_grid_count;
   int pml_count;
-  float length;
+  double length;
 };
 
 std::vector<graphics::binding_info> field_bindings = {
@@ -128,7 +133,7 @@ DEFINE_PURE_ACTOR(horn)
       for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
         auto initial_buffer = graphics::buffer::create(
           device,
-          sizeof(float) * initial_field.size(),
+          sizeof(double) * initial_field.size(),
           1,
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -147,7 +152,7 @@ DEFINE_PURE_ACTOR(horn)
     utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
 
     // getter
-    float get_length() const { return fdtd_.length; }
+    double get_length() const { return fdtd_.length; }
     int get_grid_count() const { return fdtd_.grid_count; }
 
     VkDescriptorSet get_vk_desc_set(int frame_index) const
@@ -171,7 +176,7 @@ DEFINE_PURE_ACTOR(horn)
       ImGui::End();
     }
 
-    std::vector<float> get_field() const
+    std::vector<double> get_field() const
     {
       return fdtd_.get_field();
     }
@@ -251,7 +256,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 };
 
 SELECT_COMPUTE_SHADER();
-SELECT_ACTOR();
+SELECT_ACTOR(game::dummy_actor);
 SELECT_SHADING_SYSTEM(fdtd_wg_shading_system);
 
 DEFINE_ENGINE(FDTD2D)
