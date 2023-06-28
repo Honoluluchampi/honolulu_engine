@@ -115,7 +115,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.4f, 0.033f);
+      fdtd_.build(0.6f, 0.033f);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -166,11 +166,11 @@ DEFINE_PURE_ACTOR(horn)
     {
       // update fdtd_only's velocity ---------------------------------------------------
       auto freq = 4000.f;
-      if (frame_count++ < 15) {
+//      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
         auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
-        fdtd_.p[idx] = 100 * std::cos(frame_count * dt * freq * M_PI * 2);
-      }
+        fdtd_.p[idx] = 100 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+//      }
       fdtd_.update();
 
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
