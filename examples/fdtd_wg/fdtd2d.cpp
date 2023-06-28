@@ -26,7 +26,7 @@ struct fdtd2d
 {
   fdtd2d() = default;
 
-  void build(float w, float h, int pml_layer_count = 6)
+  void build(float w, float h, int pml_layer_count = 20)
   {
     // grid_count of main domain of each axis
     main_grid_count.x() = static_cast<int>(w / dx_fdtd);
@@ -115,7 +115,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.5f, 0.2f);
+      fdtd_.build(0.4f, 0.033f);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -165,10 +165,11 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(float global_dt)
     {
       // update fdtd_only's velocity ---------------------------------------------------
-      auto freq = 10000.f;
+      auto freq = 4000.f;
       if (frame_count++ < 15) {
-        auto idx = fdtd_.grid_count.x() * (1 + fdtd_.grid_count.y()) / 2;
-        fdtd_.p[idx] = 100 * std::sin(frame_count * dt * freq * M_PI * 2);
+        auto grid = fdtd_.grid_count;
+        auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
+        fdtd_.p[idx] = 100 * std::cos(frame_count * dt * freq * M_PI * 2);
       }
       fdtd_.update();
 
