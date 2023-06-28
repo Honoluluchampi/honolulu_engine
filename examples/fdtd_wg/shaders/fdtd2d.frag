@@ -12,7 +12,7 @@ layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
 const float magnification = 1200.f;
-const float color_scale = 0.01f;
+const float color_scale = 0.007f;
 
 int ELEM_2D(int i, int j) { return i + push.grid_count.x * j; }
 

@@ -48,16 +48,12 @@ struct fdtd2d
     // update velocity
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        // x velocity
         float pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
         float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
-
-        // y velocity
         float pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
         float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count, 0) / pml_count;
         float pml_y = std::max(pml_u, pml_d);
-
         float pml = std::max(pml_x, pml_y);
 
         vx[ELEM_2D(i, j)] = (vx[ELEM_2D(i, j)] - v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i - 1, j)])) / (1 + pml);
@@ -115,7 +111,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.6f, 0.033f);
+      fdtd_.build(0.4f, 0.017f);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -169,7 +165,7 @@ DEFINE_PURE_ACTOR(horn)
 //      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
         auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
-        fdtd_.p[idx] = 100 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+        fdtd_.p[idx] = 2000 * std::cos(frame_count++ * dt * freq * M_PI * 2);
 //      }
       fdtd_.update();
 
