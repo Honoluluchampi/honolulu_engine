@@ -8,7 +8,7 @@ layout (location = 0) out vec4 out_color;
 
 layout(push_constant) uniform Push { fdtd_2d_push push; };
 
-layout(set = 0, binding = 0) readonly buffer Field { double field[]; };
+layout(set = 0, binding = 0) readonly buffer Field { float field[]; };
 
 const float line_width = 3.f;
 const float magnification = 1200.f;
@@ -38,7 +38,7 @@ void main() {
     int idx_x = int(float(push.grid_count) * x_coord / push.h_len);
     int idx_y = int(float(push.grid_count) * y_corrd / push.h_len);
 
-    float val = float(field[ELEM_2D(idx_x, idx_y)]);
+    float val = field[ELEM_2D(idx_x, idx_y)];
     out_color = vec4(color_scale * max(val, 0.f), 0.f, color_scale * max(-val, 0.f), 1.f);
   }
 
