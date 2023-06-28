@@ -12,9 +12,8 @@ struct fdtd_wg_push {
 
 struct fdtd_2d_push {
   // dimension of tube
-  float h_len;
+  vec2 h_dim;
   // dimension of window
-  float w_height;
-  float w_width;
-  int grid_count; // grid count of each axis
+  vec2 w_dim;
+  ivec2 grid_count; // grid count of each axis
 };

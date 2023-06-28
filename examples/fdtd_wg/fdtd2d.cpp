@@ -9,7 +9,7 @@
 #include <iostream>
 #include <fstream>
 
-#define ELEM_2D(i, j) (i) + grid_per_axis * (j)
+#define ELEM_2D(i, j) (i) + grid_count.x() * (j)
 
 namespace hnll {
 
@@ -26,14 +26,17 @@ struct fdtd2d
 {
   fdtd2d() = default;
 
-  void build(float len, int pml_layer_count = 10)
+  void build(float w, float h, int pml_layer_count = 6)
   {
     // grid_count of main domain of each axis
-    grid_count = static_cast<int>(len / dx_fdtd);
-    length = len;
+    main_grid_count.x() = static_cast<int>(w / dx_fdtd);
+    main_grid_count.y() = static_cast<int>(h / dx_fdtd);
+    height = h;
+    width = w;
     pml_count = pml_layer_count;
-    grid_per_axis = grid_count + pml_count * 2 + 2;
-    whole_grid_count = grid_per_axis * grid_per_axis;
+    grid_count.x() = main_grid_count.x() + pml_count * 2 + 2;
+    grid_count.y() = main_grid_count.y() + pml_count * 2 + 2;
+    whole_grid_count = grid_count.x() * grid_count.y();
     p.resize(whole_grid_count, 0);
     vx.resize(whole_grid_count, 0);
     vy.resize(whole_grid_count, 0);
@@ -43,16 +46,16 @@ struct fdtd2d
   {
     float pml_max = 0.5;
     // update velocity
-    for (int j = 1; j < grid_per_axis - 1; j++) {
-      for (int i = 1; i < grid_per_axis - 1; i++) {
+    for (int j = 1; j < grid_count.y() - 1; j++) {
+      for (int i = 1; i < grid_count.x() - 1; i++) {
         // x velocity
         float pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_max * std::max(i - grid_count - pml_count, 0) / pml_count;
+        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
 
         // y velocity
         float pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_max * std::max(j - grid_count - pml_count, 0) / pml_count;
+        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count, 0) / pml_count;
         float pml_y = std::max(pml_u, pml_d);
 
         float pml = std::max(pml_x, pml_y);
@@ -62,13 +65,13 @@ struct fdtd2d
       }
     }
     // update pressure
-    for (int j = 1; j < grid_per_axis - 1; j++) {
-      for (int i = 1; i < grid_per_axis - 1; i++) {
+    for (int j = 1; j < grid_count.y() - 1; j++) {
+      for (int i = 1; i < grid_count.x() - 1; i++) {
         float pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_max * std::max(i - grid_count - pml_count, 0) / pml_count;
+        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
         float pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_max * std::max(j - grid_count - pml_count, 0) / pml_count;
+        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count, 0) / pml_count;
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
         p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] -
@@ -81,8 +84,8 @@ struct fdtd2d
   std::vector<float> get_field() const
   {
     std::vector<float> field;
-    for (int i = pml_count + 1; i < grid_per_axis - (pml_count + 1); i++) {
-      for (int j = pml_count + 1; j < grid_per_axis - (pml_count + 1); j++) {
+    for (int j = pml_count + 1; j < grid_count.y() - (pml_count + 1); j++) {
+      for (int i = pml_count + 1; i < grid_count.x() - (pml_count + 1); i++) {
         field.emplace_back(p[ELEM_2D(i, j)]);
       }
     }
@@ -94,11 +97,12 @@ struct fdtd2d
   std::vector<float> vy;
 
   float ghost_v = 0;
-  int grid_count; // grid count of main region
-  int grid_per_axis;
+  ivec2 main_grid_count; // grid count of main region
+  ivec2 grid_count;
   int whole_grid_count;
   int pml_count;
-  float length;
+  float height;
+  float width;
 };
 
 std::vector<graphics::binding_info> field_bindings = {
@@ -111,7 +115,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.2f);
+      fdtd_.build(0.5f, 0.2f);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -152,8 +156,8 @@ DEFINE_PURE_ACTOR(horn)
     utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
 
     // getter
-    float get_length() const { return fdtd_.length; }
-    int get_grid_count() const { return fdtd_.grid_count; }
+    vec2 get_dim() const  { return { fdtd_.width, fdtd_.height };}
+    ivec2 get_main_grid_count() const { return fdtd_.main_grid_count; }
 
     VkDescriptorSet get_vk_desc_set(int frame_index) const
     { return desc_sets_->get_vk_desc_sets(frame_index)[0]; }
@@ -163,8 +167,7 @@ DEFINE_PURE_ACTOR(horn)
       // update fdtd_only's velocity ---------------------------------------------------
       auto freq = 10000.f;
       if (frame_count++ < 15) {
-        auto half_idx = fdtd_.grid_per_axis / 2;
-        auto idx = half_idx + fdtd_.grid_per_axis * half_idx;
+        auto idx = fdtd_.grid_count.x() * (1 + fdtd_.grid_count.y()) / 2;
         fdtd_.p[idx] = 100 * std::sin(frame_count * dt * freq * M_PI * 2);
       }
       fdtd_.update();
@@ -237,10 +240,9 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 
         auto viewport_size = game::gui_engine::get_viewport_size();
         fdtd_2d_push push;
-        push.h_len = target.get_length();
-        push.w_width = viewport_size.x;
-        push.w_height = viewport_size.y;
-        push.grid_count = target.get_grid_count();
+        push.h_dim = target.get_dim();
+        push.w_dim = {viewport_size.x, viewport_size.y};
+        push.grid_count = target.get_main_grid_count();
 
         // update field
         target.update_this(1);
