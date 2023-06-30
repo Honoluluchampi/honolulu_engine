@@ -33,9 +33,9 @@ struct fdtd2d
     main_grid_count.y() = static_cast<int>(h / dx_fdtd);
     height = h;
     width = w;
-    pml_count = pml_layer_count;
-    grid_count.x() = main_grid_count.x() + pml_count * 2 + 2;
-    grid_count.y() = main_grid_count.y() + pml_count * 2 + 2;
+    pml_count = { pml_layer_count, pml_layer_count };
+    grid_count.x() = main_grid_count.x() + pml_count.x() * 2 + 2;
+    grid_count.y() = main_grid_count.y() + pml_count.y() * 2 + 2;
     whole_grid_count = grid_count.x() * grid_count.y();
     p.resize(whole_grid_count, 0);
     vx.resize(whole_grid_count, 0);
@@ -48,11 +48,11 @@ struct fdtd2d
     // update velocity
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        float pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count, 0) / pml_count;
+        float pml_l = pml_max * std::max(pml_count.x() + 1 - i, 0) / pml_count.x();
+        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count.x(), 0) / pml_count.x();
         float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count, 0) / pml_count;
+        float pml_u = pml_max * std::max(pml_count.y() + 1 - j, 0) / pml_count.y();
+        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count.y(), 0) / pml_count.y();
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
 
@@ -63,16 +63,24 @@ struct fdtd2d
     // update pressure
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        float pml_l = pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count, 0) / pml_count;
+        float pml_l = pml_max * std::max(pml_count.x() + 1 - i, 0) / pml_count.x();
+        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count.x(), 0) / pml_count.x();
         float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count, 0) / pml_count;
+        float pml_u = pml_max * std::max(pml_count.y() + 1 - j, 0) / pml_count.y();
+        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count.y(), 0) / pml_count.y();
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
-        p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] -
-          p_fac * (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
-            / (1 + pml);
+
+        if (i <= grid_count.x() / 2) {
+          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
+            (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
+               / (1 + pml);
+        }
+        else {
+          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
+                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)]))
+                             / (1 + pml_x);
+        }
       }
     }
   }
@@ -80,8 +88,8 @@ struct fdtd2d
   std::vector<float> get_field() const
   {
     std::vector<float> field;
-    for (int j = pml_count + 1; j < grid_count.y() - (pml_count + 1); j++) {
-      for (int i = pml_count + 1; i < grid_count.x() - (pml_count + 1); i++) {
+    for (int j = pml_count.y() + 1; j < grid_count.y() - (pml_count.y() + 1); j++) {
+      for (int i = pml_count.x() + 1; i < grid_count.x() - (pml_count.x() + 1); i++) {
         field.emplace_back(p[ELEM_2D(i, j)]);
       }
     }
@@ -96,7 +104,7 @@ struct fdtd2d
   ivec2 main_grid_count; // grid count of main region
   ivec2 grid_count;
   int whole_grid_count;
-  int pml_count;
+  ivec2 pml_count;
   float height;
   float width;
 };
@@ -165,7 +173,7 @@ DEFINE_PURE_ACTOR(horn)
 //      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
         auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
-        fdtd_.p[idx] = 2000 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+        fdtd_.p[idx] = 400 * std::cos(frame_count++ * dt * freq * M_PI * 2);
 //      }
       fdtd_.update();
 
