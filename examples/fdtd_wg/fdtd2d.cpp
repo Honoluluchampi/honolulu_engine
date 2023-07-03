@@ -22,24 +22,42 @@ constexpr float rho = 1.17f;
 constexpr float v_fac = dt / (rho * dx_fdtd);
 constexpr float p_fac = dt * rho * c * c / dx_fdtd;
 
+enum class PML_DIR {
+    UPPER,
+    LOWER,
+    LEFT,
+    RIGHT,
+};
+
 struct fdtd2d
 {
   fdtd2d() = default;
 
-  void build(float w, float h, int pml_layer_count = 20)
+  void build(
+    float w,
+    float h,
+    int pml_layer_count = 10,
+    bool up_pml = true,
+    bool down_pml = true,
+    bool left_pml = true,
+    bool right_pml = true)
   {
     // grid_count of main domain of each axis
     main_grid_count.x() = static_cast<int>(w / dx_fdtd);
     main_grid_count.y() = static_cast<int>(h / dx_fdtd);
     height = h;
     width = w;
-    pml_count = { pml_layer_count, pml_layer_count };
-    grid_count.x() = main_grid_count.x() + pml_count.x() * 2 + 2;
-    grid_count.y() = main_grid_count.y() + pml_count.y() * 2 + 2;
+    pml_count = pml_layer_count;
+    grid_count.x() = main_grid_count.x() + pml_count * pml_left + pml_count * pml_right + 2;
+    grid_count.y() = main_grid_count.y() + pml_count * pml_up + pml_count * pml_down + 2;
     whole_grid_count = grid_count.x() * grid_count.y();
     p.resize(whole_grid_count, 0);
     vx.resize(whole_grid_count, 0);
     vy.resize(whole_grid_count, 0);
+    pml_up = up_pml;
+    pml_down = down_pml;
+    pml_left = left_pml;
+    pml_right = right_pml;
   }
 
   void update()
@@ -48,11 +66,11 @@ struct fdtd2d
     // update velocity
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        float pml_l = pml_max * std::max(pml_count.x() + 1 - i, 0) / pml_count.x();
-        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count.x(), 0) / pml_count.x();
+        float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
+        float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_max * std::max(pml_count.y() + 1 - j, 0) / pml_count.y();
-        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count.y(), 0) / pml_count.y();
+        float pml_u = pml_up * pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
+        float pml_d = pml_down * pml_max * std::max(j - main_grid_count.y() - pml_count * pml_up, 0) / pml_count;
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
 
@@ -63,11 +81,11 @@ struct fdtd2d
     // update pressure
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        float pml_l = pml_max * std::max(pml_count.x() + 1 - i, 0) / pml_count.x();
-        float pml_r = pml_max * std::max(i - main_grid_count.x() - pml_count.x(), 0) / pml_count.x();
+        float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
+        float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_max * std::max(pml_count.y() + 1 - j, 0) / pml_count.y();
-        float pml_d = pml_max * std::max(j - main_grid_count.y() - pml_count.y(), 0) / pml_count.y();
+        float pml_u = pml_up * pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
+        float pml_d = pml_down * pml_max * std::max(j - main_grid_count.y() - pml_count * pml_up, 0) / pml_count;
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
 
@@ -88,8 +106,8 @@ struct fdtd2d
   std::vector<float> get_field() const
   {
     std::vector<float> field;
-    for (int j = pml_count.y() + 1; j < grid_count.y() - (pml_count.y() + 1); j++) {
-      for (int i = pml_count.x() + 1; i < grid_count.x() - (pml_count.x() + 1); i++) {
+    for (int j = pml_count * pml_up + 1; j < grid_count.y() - (pml_count * pml_down + 1); j++) {
+      for (int i = pml_count * pml_left + 1; i < grid_count.x() - (pml_count * pml_right + 1); i++) {
         field.emplace_back(p[ELEM_2D(i, j)]);
       }
     }
@@ -104,9 +122,13 @@ struct fdtd2d
   ivec2 main_grid_count; // grid count of main region
   ivec2 grid_count;
   int whole_grid_count;
-  ivec2 pml_count;
+  int pml_count;
   float height;
   float width;
+  bool pml_up;
+  bool pml_down;
+  bool pml_left;
+  bool pml_right;
 };
 
 std::vector<graphics::binding_info> field_bindings = {
