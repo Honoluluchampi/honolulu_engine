@@ -22,13 +22,6 @@ constexpr float rho = 1.17f;
 constexpr float v_fac = dt / (rho * dx_fdtd);
 constexpr float p_fac = dt * rho * c * c / dx_fdtd;
 
-enum class PML_DIR {
-    UPPER,
-    LOWER,
-    LEFT,
-    RIGHT,
-};
-
 struct fdtd2d
 {
   fdtd2d() = default;
@@ -36,7 +29,7 @@ struct fdtd2d
   void build(
     float w,
     float h,
-    int pml_layer_count = 10,
+    int pml_layer_count = 20,
     bool up_pml = true,
     bool down_pml = true,
     bool left_pml = true,
@@ -48,8 +41,8 @@ struct fdtd2d
     height = h;
     width = w;
     pml_count = pml_layer_count;
-    grid_count.x() = main_grid_count.x() + pml_count * pml_left + pml_count * pml_right + 2;
-    grid_count.y() = main_grid_count.y() + pml_count * pml_up + pml_count * pml_down + 2;
+    grid_count.x() = main_grid_count.x() + pml_count * left_pml + pml_count * right_pml + 2;
+    grid_count.y() = main_grid_count.y() + pml_count * up_pml + pml_count * down_pml + 2;
     whole_grid_count = grid_count.x() * grid_count.y();
     p.resize(whole_grid_count, 0);
     vx.resize(whole_grid_count, 0);
@@ -89,16 +82,16 @@ struct fdtd2d
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
 
-        if (i <= grid_count.x() / 2) {
+//        if (i <= grid_count.x() / 2) {
           p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
             (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
                / (1 + pml);
-        }
-        else {
-          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
-                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)]))
-                             / (1 + pml_x);
-        }
+//        }
+//        else {
+//          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
+//                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)]))
+//                             / (1 + pml_x);
+//        }
       }
     }
   }
@@ -118,7 +111,6 @@ struct fdtd2d
   std::vector<float> vx;
   std::vector<float> vy;
 
-  float ghost_v = 0;
   ivec2 main_grid_count; // grid count of main region
   ivec2 grid_count;
   int whole_grid_count;
@@ -141,7 +133,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.4f, 0.017f);
+      fdtd_.build(0.4f, 0.033f, 6, true, true, true, true);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -191,11 +183,11 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(float global_dt)
     {
       // update fdtd_only's velocity ---------------------------------------------------
-      auto freq = 4000.f;
+      auto freq = 1000.f;
 //      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
         auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
-        fdtd_.p[idx] = 400 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+        fdtd_.p[idx] = 100 * std::cos(frame_count++ * dt * freq * M_PI * 2);
 //      }
       fdtd_.update();
 
