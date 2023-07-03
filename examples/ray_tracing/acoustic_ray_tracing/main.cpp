@@ -28,7 +28,7 @@ namespace hnll {
 const std::string SHADERS_DIRECTORY =
   std::string(std::getenv("HNLL_ENGN")) + "/examples/ray_tracing/acoustic_ray_tracing/shaders/spv/";
 
-#define MODEL_NAME utils::get_full_path("interior_with_sound.obj")
+#define MODEL_NAME utils::get_full_path("interior.obj")
 
 #define IR_X 250
 #define IR_Y 250
@@ -406,13 +406,14 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       hnll::audio::engine::start_hae_context();
       source_ = hnll::audio::engine::get_available_source_id();
 
-      convolver_ = audio::convolver::create(AUDIO_SEGMENT_NUM);
+      convolver_right_ = audio::convolver::create(AUDIO_SEGMENT_NUM);
+      convolver_left_  = audio::convolver::create(AUDIO_SEGMENT_NUM);
     }
 
     void update_audio(int frame_index)
     {
       float dt = 0.03; // 16 ms
-      int queue_capability = 4;
+      int queue_capability = 2;
 
       static int cursor = 0;
       // continue if queue is full
@@ -430,22 +431,47 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       auto* p = ir_mapped_pointers_[frame_index];
       std::vector<float> ray_info(p, p + IR_X * IR_Y * 4);
 
-      auto ir_series = unpack_ir(
+      auto ir_series_right = unpack_ir(
         ray_info,
         44100,
         AUDIO_SEGMENT_NUM,
         1,
-        340
+        340,
+        IR_X,
+        IR_Y,
+        vec3(1, 0, 0)
       );
 
-      convolver_->add_segment(std::move(segment), std::move(ir_series));
+      auto ir_series_left = unpack_ir(
+        ray_info,
+        44100,
+        AUDIO_SEGMENT_NUM,
+        1,
+        340,
+        IR_X,
+        IR_Y,
+        vec3(-1, 0, 0)
+      );
+
+      auto segment_left = segment;
+
+      convolver_right_->add_segment(std::move(segment), std::move(ir_series_right));
+      convolver_left_->add_segment(std::move(segment_left), std::move(ir_series_left));
 
       cursor += AUDIO_SEGMENT_NUM;
 
+      std::vector<ALshort> stereo_series;
+      auto right_tmp = convolver_right_->move_buffer();
+      auto left_tmp = convolver_left_->move_buffer();
+      for (int i = 0; i < right_tmp.size(); i++) {
+        stereo_series.emplace_back(left_tmp[i]);
+        stereo_series.emplace_back(right_tmp[i]);
+      }
+
       hnll::audio::audio_data data;
       data.set_sampling_rate(44100)
-        .set_format(AL_FORMAT_MONO16)
-        .set_data(std::move(convolver_->move_buffer()));
+        .set_format(AL_FORMAT_STEREO16)
+        .set_data(std::move(stereo_series));
 
       hnll::audio::engine::bind_audio_to_buffer(data);
       hnll::audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
@@ -475,7 +501,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     AudioFile<short> audio_file_;
     bool started_ = false;
 
-    u_ptr<audio::convolver> convolver_;
+    u_ptr<audio::convolver> convolver_right_;
+    u_ptr<audio::convolver> convolver_left_;
 };
 
 SELECT_SHADING_SYSTEM(model_ray_tracer);
