@@ -7,7 +7,6 @@
 
 // std
 #include <iostream>
-#include <fstream>
 
 #define ELEM_2D(i, j) (i) + grid_count.x() * (j)
 
@@ -59,6 +58,8 @@ struct fdtd2d
     // update velocity
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
+        if (j == 1)
+          continue;
         float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
         float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
         float pml_x = std::max(pml_l, pml_r);
@@ -82,15 +83,23 @@ struct fdtd2d
         float pml_y = std::max(pml_u, pml_d);
         float pml = std::max(pml_x, pml_y);
 
-//        if (i <= grid_count.x() / 2) {
+//        if (i <= grid_count.x() / 3) {
           p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
             (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
                / (1 + pml);
 //        }
+//        else if (i <= grid_count.x() * 2 / 3){
+//          if (j == 1) {
+//            p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac * (vx[ELEM_2D(i + 1, grid_count.y() / 2)] - vx[ELEM_2D(i, grid_count.y() / 2)])) / (1 + pml_x);
+//          }
+//          else {
+//            p[ELEM_2D(i, j)] = p[ELEM_2D(i, 1)];
+//          }
+//        }
 //        else {
 //          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
-//                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)]))
-//                             / (1 + pml_x);
+//                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
+//                             / (1 + pml);
 //        }
       }
     }
@@ -133,7 +142,7 @@ DEFINE_PURE_ACTOR(horn)
     // true : fdtd-wg combined, false : fdtd only
     explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
     {
-      fdtd_.build(0.4f, 0.033f, 6, true, true, true, true);
+      fdtd_.build(0.4f, 0.033f, 6, false, false, true, true);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(device)
@@ -183,11 +192,11 @@ DEFINE_PURE_ACTOR(horn)
     void update_this(float global_dt)
     {
       // update fdtd_only's velocity ---------------------------------------------------
-      auto freq = 1000.f;
+      auto freq = 500.f;
 //      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
-        auto idx = grid.x() / 6 + grid.x() * grid.y() / 2;
-        fdtd_.p[idx] = 100 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+        auto idx = 1 + grid.x() * grid.y() / 2;
+        fdtd_.vx[idx] = 128 * std::cos(frame_count++ * dt * freq * M_PI * 2);
 //      }
       fdtd_.update();
 
