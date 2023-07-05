@@ -9,7 +9,7 @@
 
 namespace hnll::game {
 
-constexpr float MAX_FPS = 500.f;
+constexpr float MAX_FPS = 3000.f;
 constexpr float MIN_DT = 1.f / MAX_FPS;
 
 // static members

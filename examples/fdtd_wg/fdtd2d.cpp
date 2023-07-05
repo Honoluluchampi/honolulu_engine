@@ -8,6 +8,9 @@
 // std
 #include <iostream>
 
+// lib
+#include <AudioFile/AudioFile.h>
+
 #define ELEM_2D(i, j) (i) + grid_count.x() * (j)
 
 namespace hnll {
@@ -58,7 +61,7 @@ struct fdtd2d
     // update velocity
     for (int j = 1; j < grid_count.y() - 1; j++) {
       for (int i = 1; i < grid_count.x() - 1; i++) {
-        if (j == 1)
+        if (j == 1 && i < grid_count.x() * 4 / 5)
           continue;
         float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
         float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
@@ -174,6 +177,13 @@ DEFINE_PURE_ACTOR(horn)
         desc_sets_->set_buffer(0, 0, i, std::move(initial_buffer));
       }
       desc_sets_->build();
+
+      // setup audio file
+      original_audio_.setNumChannels(1);
+      generated_audio_.setNumChannels(1);
+      // record sound for 2 seconds
+      original_audio_.setNumSamplesPerChannel(88200);
+      generated_audio_.setNumSamplesPerChannel(88200);
     }
 
     // to satisfy RenderableComponent
@@ -196,8 +206,20 @@ DEFINE_PURE_ACTOR(horn)
 //      if (frame_count++ < 15) {
         auto grid = fdtd_.grid_count;
         auto idx = 1 + grid.x() * grid.y() / 2;
-        fdtd_.vx[idx] = 128 * std::cos(frame_count++ * dt * freq * M_PI * 2);
+        fdtd_.vx[idx] = 128 * std::cos(frame_count++ * dt * freq * M_PI * 2)
+          * std::min(frame_count, 5000) / 5000.f;
 //      }
+      if (frame_count <= 88200) {
+        auto idx_sample = grid.x() * 9 / 10 + grid.x() * grid.y() / 2;
+        original_audio_.samples[0][frame_count - 1] = fdtd_.vx[idx] / 16;
+        generated_audio_.samples[0][frame_count - 1] = fdtd_.p[idx_sample] / 16;
+      }
+      if (frame_count == 88200) {
+        auto dir = std::string(getenv("HNLL_ENGN")) + "/sounds/";
+        original_audio_.save(dir + "original.wav", AudioFileFormat::Wave);
+        generated_audio_.save(dir + "generated.wav", AudioFileFormat::Wave);
+        std::cout << "finished" << std::endl;
+      }
       fdtd_.update();
 
       ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -221,6 +243,9 @@ DEFINE_PURE_ACTOR(horn)
 
   private:
     fdtd2d fdtd_;
+
+    AudioFile<float> original_audio_;
+    AudioFile<float> generated_audio_;
 
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
