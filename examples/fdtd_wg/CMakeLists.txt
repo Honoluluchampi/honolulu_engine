@@ -20,3 +20,6 @@ target_include_directories(fdtd2d PUBLIC
         $ENV{HNLL_ENGN}/include
         )
 target_link_libraries(fdtd2d PUBLIC hnll_engine)
+
+# add test
+add_subdirectory(test)
