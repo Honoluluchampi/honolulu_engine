@@ -256,6 +256,12 @@ DEFINE_PURE_ACTOR(horn)
 // shared with shaders
 #include "common.h"
 
+struct fdtd12_push {
+  int segment_count; // element count of segment info
+  float horn_x_max;
+  vec2 window_size;
+};
+
 DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 {
   public:
@@ -267,7 +273,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
 
       desc_layout_ = graphics::desc_layout::create_from_bindings(device_, field_bindings);
 
-      pipeline_layout_ = create_pipeline_layout<fdtd_2d_push>(
+      pipeline_layout_ = create_pipeline_layout<fdtd12_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
         { desc_layout_->get_descriptor_set_layout() }
       );
@@ -276,7 +282,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
         pipeline_layout_,
         game::graphics_engine_core::get_default_render_pass(),
         "/examples/fdtd_wg/shaders/spv/",
-        { "fdtd_wg.vert.spv", "fdtd2d.frag.spv" },
+        { "fdtd_wg.vert.spv", "fdtd12.frag.spv" },
         { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
         graphics::pipeline::default_pipeline_config_info()
       );
@@ -292,10 +298,13 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
         set_current_command_buffer(info.command_buffer);
 
         auto viewport_size = game::gui_engine::get_viewport_size();
-        fdtd_2d_push push;
-        push.h_dim = target.get_dim();
-        push.w_dim = {viewport_size.x, viewport_size.y};
-        push.grid_count = target.get_main_grid_count();
+        fdtd12_push push;
+        push.segment_count = 3;
+        push.window_size = vec2{ viewport_size.x, viewport_size.y };
+        push.horn_x_max = 0.6;
+//        push.h_dim = target.get_dim();
+//        push.w_dim = {viewport_size.x, viewport_size.y};
+//        push.grid_count = target.get_main_grid_count();
 
         // update field
         target.update_this(1);
