@@ -17,6 +17,7 @@ class fdtd_horn
       float dx,
       float rho,
       float c,
+      int pml_count,
       std::vector<int> dimensions,
       std::vector<vec2> sizes);
 
@@ -25,6 +26,7 @@ class fdtd_horn
       float dx,
       float rho,
       float c,
+      int pml_count,
       std::vector<int> dimensions,
       std::vector<vec2> sizes);
 
@@ -33,6 +35,7 @@ class fdtd_horn
     float get_dx()  const { return dx_; }
     float get_rho() const { return rho_; }
     float get_c()   const { return c_; }
+    int   get_pml_count() const { return pml_count_; }
 
     std::vector<int>     get_dimensions() const { return dimensions_; }
     std::vector<grid_id> get_start_grid_ids() const { return start_grid_ids_; }
@@ -45,6 +48,7 @@ class fdtd_horn
     float dx_;
     float rho_;
     float c_; // sound speed
+    int pml_count_;
 
     // dimension of each grid
     std::vector<int> dimensions_;
@@ -56,6 +60,7 @@ class fdtd_horn
     // all of grid's value is packed into 1D vector
     // field.x : vx, y : vy, z : pressure, w : empty for now
     std::vector<vec4> field_;
+    std::vector<vec4> grid_conditions_;
 };
 
 } // namespace hnll
