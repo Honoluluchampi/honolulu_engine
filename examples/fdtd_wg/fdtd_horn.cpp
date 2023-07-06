@@ -27,9 +27,9 @@ fdtd_horn::fdtd_horn(
   c_ = c;
   pml_count_ = pml_count;
   dimensions_ = dimensions;
-  sizes_ = sizes;
 
   whole_grid_count_ = 0;
+  sizes_.resize(dimensions_.size());
   start_grid_ids_.resize(dimensions_.size());
   grid_counts_.resize(dimensions_.size());
 
@@ -37,6 +37,7 @@ fdtd_horn::fdtd_horn(
 
   for (int i = 0; i < dimensions_.size(); i++) {
     start_grid_ids_[i] = whole_grid_count_;
+    sizes_[i].x() = sizes[i].x();
     // no pml
     if (i != segment_count - 1) {
       if (dimensions_[i] == 1)

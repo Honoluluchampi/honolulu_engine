@@ -40,7 +40,7 @@ class fdtd_horn
     std::vector<int>     get_dimensions() const { return dimensions_; }
     std::vector<grid_id> get_start_grid_ids() const { return start_grid_ids_; }
     std::vector<ivec2>   get_grid_counts() const { return grid_counts_; }
-    std::vector<vec2>    get_sizes() const { return sizes_; }
+    std::vector<vec4>    get_sizes() const { return sizes_; }
     int get_whole_grid_count() const { return whole_grid_count_; }
 
   private :
@@ -53,7 +53,7 @@ class fdtd_horn
     // dimension of each grid
     std::vector<int> dimensions_;
     // size of segment in meter
-    std::vector<vec2> sizes_;
+    std::vector<vec4> sizes_;
     std::vector<grid_id> start_grid_ids_;
     std::vector<ivec2> grid_counts_;
     int whole_grid_count_;
