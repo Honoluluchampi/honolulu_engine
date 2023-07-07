@@ -38,7 +38,7 @@ void main() {
   else {
     for (int i = 0; i < push.segment_count; i++) {
       if (x_coord < segment_info[i].z) {
-        if (abs(y_coord) < segment_info[i].y)
+        if (abs(y_coord) < segment_info[i].y / 2.f)
           out_color = vec4(x_coord, y_coord, -y_coord, 1.f);
         return;
       }

@@ -14,7 +14,7 @@ target_include_directories(fdtd_wg PUBLIC
 target_link_libraries(fdtd_wg PUBLIC hnll_engine)
 
 project(fdtd2d VERSION 1.0)
-set(SOURCES fdtd2d.cpp)
+set(SOURCES fdtd2d.cpp fdtd_horn.cpp)
 add_executable(fdtd2d ${SOURCES})
 target_include_directories(fdtd2d PUBLIC
         $ENV{HNLL_ENGN}/include

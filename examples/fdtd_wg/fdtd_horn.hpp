@@ -2,6 +2,7 @@
 
 // hnll
 #include <graphics/desc_set.hpp>
+#include <utils/rendering_utils.hpp>
 #include <utils/common_alias.hpp>
 
 namespace hnll {
@@ -12,6 +13,9 @@ class fdtd_horn
 {
   public:
     using grid_id = uint32_t;
+
+    // common desc binding configuration for all desc sets
+    static graphics::binding_info common_binding_info;
 
     enum grid_type {
       NORMAL = 0,
@@ -38,6 +42,17 @@ class fdtd_horn
       int pml_count,
       std::vector<int> dimensions,
       std::vector<vec2> sizes);
+
+    void update(int frame_index);
+
+    // graphics process
+    void build_desc(graphics::device& device);
+    inline void bind(VkCommandBuffer command) {}
+    inline void draw(VkCommandBuffer command) { vkCmdDraw(command, 6, 1, 0, 0); }
+    inline uint32_t get_rc_id() const { return 0; }
+    inline utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
+    inline std::vector<VkDescriptorSet> get_vk_desc_sets(int frame_index) const
+    { return desc_sets_->get_vk_desc_sets(frame_index); }
 
     // getter
     float get_dt()  const { return dt_; }

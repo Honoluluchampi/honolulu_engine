@@ -5,6 +5,8 @@
 #include <game/shading_system.hpp>
 #include <utils/common_alias.hpp>
 
+#include "fdtd_horn.hpp"
+
 // std
 #include <iostream>
 
@@ -135,147 +137,30 @@ struct fdtd2d
   bool pml_right;
 };
 
-std::vector<graphics::binding_info> field_bindings = {
-  { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
-};
-
-DEFINE_PURE_ACTOR(horn)
-{
-  public:
-    // true : fdtd-wg combined, false : fdtd only
-    explicit horn(graphics::device& device) : game::pure_actor_base<horn>()
-    {
-      fdtd_.build(0.4f, 0.033f, 6, false, false, true, true);
-
-      // setup desc sets
-      desc_pool_ = graphics::desc_pool::builder(device)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, utils::FRAMES_IN_FLIGHT)
-        .build();
-
-      graphics::desc_set_info set_info { field_bindings };
-      set_info.is_frame_buffered_ = true;
-
-      desc_sets_ = graphics::desc_sets::create(
-        device,
-        desc_pool_,
-        { set_info },
-        utils::FRAMES_IN_FLIGHT
-      );
-
-      auto initial_field = get_field();
-
-      for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
-        auto initial_buffer = graphics::buffer::create(
-          device,
-          sizeof(float) * initial_field.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          initial_field.data()
-        );
-
-        desc_sets_->set_buffer(0, 0, i, std::move(initial_buffer));
-      }
-      desc_sets_->build();
-
-      // setup audio file
-      original_audio_.setNumChannels(1);
-      generated_audio_.setNumChannels(1);
-      // record sound for 2 seconds
-      original_audio_.setNumSamplesPerChannel(88200);
-      generated_audio_.setNumSamplesPerChannel(88200);
-    }
-
-    // to satisfy RenderableComponent
-    void bind(VkCommandBuffer command) {}
-    void draw(VkCommandBuffer command) { vkCmdDraw(command, 6, 1, 0, 0); }
-    uint32_t get_rc_id() const { return 0; }
-    utils::shading_type get_shading_type() const { return utils::shading_type::UNIQUE; }
-
-    // getter
-    vec2 get_dim() const  { return { fdtd_.width, fdtd_.height };}
-    ivec2 get_main_grid_count() const { return fdtd_.main_grid_count; }
-
-    VkDescriptorSet get_vk_desc_set(int frame_index) const
-    { return desc_sets_->get_vk_desc_sets(frame_index)[0]; }
-
-    void update_this(float global_dt)
-    {
-      // update fdtd_only's velocity ---------------------------------------------------
-      auto freq = 500.f;
-//      if (frame_count++ < 15) {
-        auto grid = fdtd_.grid_count;
-        auto idx = 1 + grid.x() * grid.y() / 2;
-        fdtd_.vx[idx] = 128 * std::cos(frame_count++ * dt * freq * M_PI * 2)
-          * std::min(frame_count, 5000) / 5000.f;
-//      }
-      if (frame_count <= 88200) {
-        auto idx_sample = grid.x() * 9 / 10 + grid.x() * grid.y() / 2;
-        original_audio_.samples[0][frame_count - 1] = fdtd_.vx[idx] / 16;
-        generated_audio_.samples[0][frame_count - 1] = fdtd_.p[idx_sample] / 16;
-      }
-      if (frame_count == 88200) {
-        auto dir = std::string(getenv("HNLL_ENGN")) + "/sounds/";
-        original_audio_.save(dir + "original.wav", AudioFileFormat::Wave);
-        generated_audio_.save(dir + "generated.wav", AudioFileFormat::Wave);
-        std::cout << "finished" << std::endl;
-      }
-      fdtd_.update();
-
-      ImGui::Begin("stats", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-      if (ImGui::Button("impulse")) {
-        frame_count = 0;
-      }
-      ImGui::End();
-    }
-
-    std::vector<float> get_field() const
-    {
-      return fdtd_.get_field();
-    }
-
-    void update_field(int frame_index)
-    {
-      auto data = get_field();
-      desc_sets_->write_to_buffer(0, 0, frame_index, data.data());
-      desc_sets_->flush_buffer(0, 0, frame_index);
-    }
-
-  private:
-    fdtd2d fdtd_;
-
-    AudioFile<float> original_audio_;
-    AudioFile<float> generated_audio_;
-
-    s_ptr<graphics::desc_pool> desc_pool_;
-    u_ptr<graphics::desc_sets> desc_sets_;
-
-    int frame_count = 0;
-};
-
-// shared with shaders
-#include "common.h"
-
 struct fdtd12_push {
   int segment_count; // element count of segment info
   float horn_x_max;
   vec2 window_size;
 };
 
-DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
+DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
 {
   public:
-    DEFAULT_SHADING_SYSTEM_CTOR(fdtd_wg_shading_system, horn);
+    DEFAULT_SHADING_SYSTEM_CTOR(fdtd_wg_shading_system, fdtd_horn);
 
     void setup()
     {
       shading_type_ = utils::shading_type::UNIQUE;
 
-      desc_layout_ = graphics::desc_layout::create_from_bindings(device_, field_bindings);
+      desc_layout_ = graphics::desc_layout::create_from_bindings(device_, {fdtd_horn::common_binding_info});
 
       pipeline_layout_ = create_pipeline_layout<fdtd12_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-        { desc_layout_->get_descriptor_set_layout() }
+        {
+          desc_layout_->get_descriptor_set_layout(),
+          desc_layout_->get_descriptor_set_layout(),
+          desc_layout_->get_descriptor_set_layout(),
+        }
       );
 
       pipeline_ = create_pipeline(
@@ -302,17 +187,10 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, horn)
         push.segment_count = 3;
         push.window_size = vec2{ viewport_size.x, viewport_size.y };
         push.horn_x_max = 0.6;
-//        push.h_dim = target.get_dim();
-//        push.w_dim = {viewport_size.x, viewport_size.y};
-//        push.grid_count = target.get_main_grid_count();
-
-        // update field
-        target.update_this(1);
-        target.update_field(info.frame_index);
 
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-        bind_desc_sets({ target.get_vk_desc_set(info.frame_index) });
+        bind_desc_sets({ target.get_vk_desc_sets(info.frame_index) });
 
         target.draw(info.command_buffer);
       }
@@ -327,12 +205,21 @@ DEFINE_ENGINE(FDTD2D)
 {
   public:
     ENGINE_CTOR(FDTD2D) {
-      horn_ = std::make_unique<horn>(game::graphics_engine_core::get_device_r());
+      horn_ = fdtd_horn::create(
+        dt,
+        dx_fdtd,
+        rho,
+        c,
+        6, // pml count
+        { 2, 1, 2 }, // dimensions
+        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.2f, 0.2f}}
+      );
+      horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);
     }
 
   private:
-    u_ptr<horn> horn_;
+    u_ptr<fdtd_horn> horn_;
 };
 } // namespace hnll
 

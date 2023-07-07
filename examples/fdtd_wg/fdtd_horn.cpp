@@ -1,6 +1,14 @@
+// hnll
 #include "fdtd_horn.hpp"
+#include <graphics/buffer.hpp>
+#include <utils/rendering_utils.hpp>
 
 namespace hnll {
+
+graphics::binding_info fdtd_horn::common_binding_info = {
+  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+};
 
 u_ptr<fdtd_horn> fdtd_horn::create(
   float dt,
@@ -70,10 +78,70 @@ fdtd_horn::fdtd_horn(
   // define grid_conditions
   for (int i = 0; i < start_grid_ids_.size() - 1; i++) {
     for (grid_id j = start_grid_ids_[i]; j < start_grid_ids_[i + 1]; j++) {
-      grid_conditions_[j] = { grid_type::NORMAL, 0.f, dimensions_[i], 0.f };
+      grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
       // TODO : define EXCITER, PML
     }
   }
 }
 
+void fdtd_horn::build_desc(graphics::device &device)
+{
+  desc_pool_ = graphics::desc_pool::builder(device)
+    // field, grid conditions, size_infos
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, utils::FRAMES_IN_FLIGHT * 3)
+    .build();
+
+  graphics::desc_set_info common_set_info {{ common_binding_info }};
+  common_set_info.is_frame_buffered_ = true;
+
+  desc_sets_ = graphics::desc_sets::create(
+    device,
+    desc_pool_,
+    // field, grid conditions, size_infos
+    { common_set_info, common_set_info, common_set_info },
+    utils::FRAMES_IN_FLIGHT
+  );
+
+  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+    auto field_buffer = graphics::buffer::create(
+      device,
+      sizeof(vec4) * field_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      field_.data()
+    );
+
+    auto grid_conditions_buffer = graphics::buffer::create(
+      device,
+      sizeof(vec4) * grid_conditions_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      grid_conditions_.data()
+    );
+
+    auto size_infos_buffer = graphics::buffer::create(
+      device,
+      sizeof(vec4) * size_infos_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      size_infos_.data()
+    );
+
+    desc_sets_->set_buffer(0, 0, i, std::move(field_buffer));
+    desc_sets_->set_buffer(1, 0, i, std::move(grid_conditions_buffer));
+    desc_sets_->set_buffer(2, 0, i, std::move(size_infos_buffer));
+  }
+  desc_sets_->build();
 }
+
+void fdtd_horn::update(int frame_index)
+{
+  // update field buffer
+  desc_sets_->write_to_buffer(0, 0, frame_index, field_.data());
+  desc_sets_->flush_buffer(0, 0, frame_index);
+}
+
+} // namespace hnll
