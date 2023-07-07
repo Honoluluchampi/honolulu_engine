@@ -42,6 +42,7 @@ TEST(fdtd_horn, ctor) {
   EXPECT_DOUBLE_EQ(0.2f, size_infos[2].y());
   EXPECT_DOUBLE_EQ(0.6f, size_infos[2].z());
   EXPECT_DOUBLE_EQ(2.f,  size_infos[2].w());
+  EXPECT_DOUBLE_EQ(0.6f, horn->get_x_max());
 
   auto start_grid_ids = horn->get_start_grid_ids();
   EXPECT_EQ(0, start_grid_ids[0]);

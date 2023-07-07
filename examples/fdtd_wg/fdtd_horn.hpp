@@ -66,6 +66,7 @@ class fdtd_horn
     std::vector<ivec2>   get_grid_counts() const { return grid_counts_; }
     std::vector<vec4>    get_size_infos() const { return size_infos_; }
     int get_whole_grid_count() const { return whole_grid_count_; }
+    float get_x_max() const { return size_infos_[segment_count_ - 1].z(); }
 
   private :
     float dt_;
@@ -73,6 +74,7 @@ class fdtd_horn
     float rho_;
     float c_; // sound speed
     int pml_count_;
+    int segment_count_;
 
     // dimension of each grid
     std::vector<int> dimensions_;

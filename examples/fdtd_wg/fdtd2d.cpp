@@ -186,7 +186,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
         fdtd12_push push;
         push.segment_count = 3;
         push.window_size = vec2{ viewport_size.x, viewport_size.y };
-        push.horn_x_max = 0.6;
+        push.horn_x_max = target.get_x_max();
 
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);

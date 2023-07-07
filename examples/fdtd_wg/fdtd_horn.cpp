@@ -35,6 +35,7 @@ fdtd_horn::fdtd_horn(
   c_ = c;
   pml_count_ = pml_count;
   dimensions_ = dimensions;
+  segment_count_ = dimensions_.size();
 
   whole_grid_count_ = 0;
   size_infos_.resize(dimensions_.size());
