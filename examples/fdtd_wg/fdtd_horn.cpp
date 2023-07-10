@@ -47,33 +47,26 @@ fdtd_horn::fdtd_horn(
   float current_x_edge = 0.f;
 
   for (int i = 0; i < dimensions_.size(); i++) {
-    size_infos_[i].x() = sizes[i].x();
-    size_infos_[i].y() = sizes[i].y();
+    grid_counts_[i].x() = std::floor(sizes[i].x() / dx_);
+    grid_counts_[i].y() = std::floor(sizes[i].y() / dx_);
+
+    size_infos_[i].x() = grid_counts_[i].x() * dx_;
+    size_infos_[i].y() = grid_counts_[i].y() * dx_;
     size_infos_[i].w() = dimensions_[i];
 
-    // no pml
-    if (i != segment_count - 1) {
-      if (dimensions_[i] == 1) {
-        grid_counts_[i] = {size_infos_[i].x() / dx_, 1};
-        // fix size
-        size_infos_[i].x() = grid_counts_[i].x() * dx_;
-      }
+    // if 1D
+    if (dimensions_[i] == 1) {
+      grid_counts_[i].y() = 1;
+    }
+    // if pml
+    if (i == segment_count - 1) {
       if (dimensions_[i] == 2) {
-        grid_counts_[i] = {size_infos_[i].x() / dx_, size_infos_[i].y() / dx_};
-        // fix size
-        size_infos_[i].x() = grid_counts_[i].x() * dx_;
-        size_infos_[i].y() = grid_counts_[i].y() * dx_;
+        grid_counts_[i].x() += pml_count_ * 2;
+        grid_counts_[i].y() += pml_count_ * 2;
       }
-    }
-    // set pml
-    else if (i == segment_count - 1 && dimensions_[i] == 2) {
-      grid_counts_[i] = {size_infos_[i].x() / dx_ + pml_count_ * 2, size_infos_[i].y() / dx_ + pml_count * 2};
-      // fix size
-      size_infos_[i].x() = (grid_counts_[i].x() - 2 * pml_count_) * dx_;
-      size_infos_[i].y() = (grid_counts_[i].y() - 2 * pml_count_) * dx_;
-    }
-    else {
-      throw std::runtime_error("fdtd_horn::unsupported combination.");
+      else {
+        throw std::runtime_error("fdtd_horn::unsupported combination.");
+      }
     }
 
     edge_infos_[i].x() = current_x_edge;

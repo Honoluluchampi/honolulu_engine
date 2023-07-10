@@ -52,11 +52,13 @@ void main() {
                       + push.pml_count * is_last;
           int y_idx = int(local_y / segment_infos[i].y * (grid_counts[i].y - 2 * push.pml_count * is_last))
                       + push.pml_count * is_last;
-          int idx = int(edge_infos[i].y) + x_idx + int(y_idx * (grid_counts[i].x));
+          int idx = int(edge_infos[i].y) + y_idx + int(x_idx * (grid_counts[i].y));
           float val = field[idx].z / push.whole_grid_count;
           int is_normal = int(grid_conditions[idx].x == 0);
           int is_pml    = int(grid_conditions[idx].x == 1);
-          out_color = vec4(val, 0.f, -val, 1.f);
+
+          float c = val / 256.f;
+          out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
 //          out_color = vec4(is_normal, 0.f, is_pml, 1.f);
         }
         return;

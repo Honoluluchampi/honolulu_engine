@@ -19,7 +19,7 @@ TEST(fdtd_horn, ctor) {
     340.f,
     6,
     { 2, 1, 2 },
-    { { 0.1f, 0.2f }, { 0.3f, 0.4f }, { 0.2f, 0.2f } });
+    { { 0.1f, 0.2f }, { 0.30000001f, 0.4f }, { 0.2f, 0.2f } });
 
   // physical constants
   EXPECT_EQ(0.01f, horn->get_dt());
