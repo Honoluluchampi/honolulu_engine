@@ -22,6 +22,7 @@ TEST(fdtd_horn, ctor) {
   EXPECT_EQ(1.1f, horn->get_rho());
   EXPECT_EQ(340.f, horn->get_c());
   EXPECT_EQ(6, horn->get_pml_count());
+  EXPECT_EQ(3, horn->get_segment_count());
 
   // dimensions
   auto dim = horn->get_dimensions();

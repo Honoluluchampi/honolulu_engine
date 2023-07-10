@@ -24,7 +24,7 @@ const float color_scale = 0.007f;
 struct fdtd12_push {
   int segment_count; // element count of segment info
   float horn_x_max;
-  float dx;
+  int pml_count;
   int whole_grid_count;
   vec2 window_size;
 };
@@ -46,11 +46,18 @@ void main() {
       if (x_coord < edge_infos[i + 1].x) {
         if (abs(y_coord) < segment_infos[i].y / 2.f) {
           float local_x = x_coord - edge_infos[i].x;
-          int x_idx = int(local_x / segment_infos[i].x * grid_counts[i].x);
-          int y_idx = int((y_coord / segment_infos[i].y + 0.5) * grid_counts[i].y);
-          int idx = int(edge_infos[i].y) + x_idx + int(y_idx * grid_counts[i].x);
+          float local_y = y_coord + 0.5 * segment_infos[i].y;
+          int is_last = int(i == push.segment_count - 1);
+          int x_idx = int(local_x / segment_infos[i].x * (grid_counts[i].x - 2 * push.pml_count * is_last))
+                      + push.pml_count * is_last;
+          int y_idx = int(local_y / segment_infos[i].y * (grid_counts[i].y - 2 * push.pml_count * is_last))
+                      + push.pml_count * is_last;
+          int idx = int(edge_infos[i].y) + x_idx + int(y_idx * (grid_counts[i].x));
           float val = field[idx].z / push.whole_grid_count;
+          int is_normal = int(grid_conditions[idx].x == 0);
+          int is_pml    = int(grid_conditions[idx].x == 1);
           out_color = vec4(val, 0.f, -val, 1.f);
+//          out_color = vec4(is_normal, 0.f, is_pml, 1.f);
         }
         return;
       }

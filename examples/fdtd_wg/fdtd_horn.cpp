@@ -51,24 +51,34 @@ fdtd_horn::fdtd_horn(
     size_infos_[i].y() = sizes[i].y();
     size_infos_[i].w() = dimensions_[i];
 
-    edge_infos_[i].x() = current_x_edge;
-    edge_infos_[i].y() = whole_grid_count_;
-    current_x_edge += sizes[i].x();
-
     // no pml
     if (i != segment_count - 1) {
-      if (dimensions_[i] == 1)
+      if (dimensions_[i] == 1) {
         grid_counts_[i] = {size_infos_[i].x() / dx_, 1};
-      if (dimensions_[i] == 2)
+        // fix size
+        size_infos_[i].x() = grid_counts_[i].x() * dx_;
+      }
+      if (dimensions_[i] == 2) {
         grid_counts_[i] = {size_infos_[i].x() / dx_, size_infos_[i].y() / dx_};
+        // fix size
+        size_infos_[i].x() = grid_counts_[i].x() * dx_;
+        size_infos_[i].y() = grid_counts_[i].y() * dx_;
+      }
     }
     // set pml
     else if (i == segment_count - 1 && dimensions_[i] == 2) {
       grid_counts_[i] = {size_infos_[i].x() / dx_ + pml_count_ * 2, size_infos_[i].y() / dx_ + pml_count * 2};
+      // fix size
+      size_infos_[i].x() = (grid_counts_[i].x() - 2 * pml_count_) * dx_;
+      size_infos_[i].y() = (grid_counts_[i].y() - 2 * pml_count_) * dx_;
     }
     else {
       throw std::runtime_error("fdtd_horn::unsupported combination.");
     }
+
+    edge_infos_[i].x() = current_x_edge;
+    edge_infos_[i].y() = whole_grid_count_;
+    current_x_edge += size_infos_[i].x();
     whole_grid_count_ += grid_counts_[i].x() * grid_counts_[i].y();
   }
 
@@ -82,6 +92,17 @@ fdtd_horn::fdtd_horn(
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
       // TODO : define EXCITER, PML
+      // detect PML
+      if (i == edge_infos_.size() - 2) {
+        auto local_grid = j - int(edge_infos_[i].y());
+        auto x_idx = local_grid % grid_counts_[i].x();
+        auto y_idx = local_grid / grid_counts_[i].y();
+        bool pml_x = (x_idx < pml_count) || (x_idx >= grid_counts_[i].x() - pml_count);
+        bool pml_y = (y_idx < pml_count) || (y_idx >= grid_counts_[i].y() - pml_count);
+        if (pml_x || pml_y) {
+          grid_conditions_[j].x() = float(grid_type::PML);
+        }
+      }
     }
   }
 

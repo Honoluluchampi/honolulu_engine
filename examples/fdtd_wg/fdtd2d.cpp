@@ -17,7 +17,7 @@
 
 namespace hnll {
 
-constexpr float dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
+constexpr float dx_fdtd = 3.83e-2; // dx for fdtd grid : 3.83mm
 constexpr float dt = 7.81e-6; // in seconds
 
 constexpr float c = 340; // sound speed : 340 m/s
@@ -140,7 +140,7 @@ struct fdtd2d
 struct fdtd12_push {
   int segment_count; // element count of segment info
   float horn_x_max;
-  float dx;
+  int pml_count;
   int whole_grid_count;
   vec2 window_size;
 };
@@ -188,10 +188,10 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
 
         auto viewport_size = game::gui_engine::get_viewport_size();
         fdtd12_push push;
-        push.segment_count = 4;
+        push.segment_count = target.get_segment_count();
         push.window_size = vec2{ viewport_size.x, viewport_size.y };
         push.horn_x_max = target.get_x_max();
-        push.dx = dx_fdtd;
+        push.pml_count = target.get_pml_count();
         push.whole_grid_count = target.get_whole_grid_count();
 
         bind_pipeline();
@@ -217,8 +217,8 @@ DEFINE_ENGINE(FDTD2D)
         rho,
         c,
         6, // pml count
-        { 2, 1, 1, 2 }, // dimensions
-        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.1f, 0.15f}, {0.2f, 0.2f}}
+        { 2, 1, 2, 1, 2 }, // dimensions
+        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.2f, 0.2f}, {0.1f, 0.15f}, {0.2f, 0.2f}}
       );
       horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);

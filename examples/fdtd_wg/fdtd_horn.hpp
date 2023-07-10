@@ -59,6 +59,7 @@ class fdtd_horn
     float get_dx()  const { return dx_; }
     float get_rho() const { return rho_; }
     float get_c()   const { return c_; }
+    int   get_segment_count() const { return segment_count_; };
     int   get_pml_count() const { return pml_count_; }
 
     std::vector<int>   get_dimensions() const { return dimensions_; }
@@ -78,8 +79,6 @@ class fdtd_horn
 
     // dimension of each grid
     std::vector<int> dimensions_;
-    // y = 1 if 1D
-    std::vector<ivec2> grid_counts_;
     int whole_grid_count_;
 
     // ******************** data for desc sets ***************************
@@ -92,6 +91,8 @@ class fdtd_horn
     std::vector<vec4> size_infos_;
     // x : x edge, y : starting_grid_id
     std::vector<vec4> edge_infos_;
+    // y = 1 if 1D
+    std::vector<ivec2> grid_counts_;
 
     // ******************** desc sets **********************************
     s_ptr<graphics::desc_pool> desc_pool_;
