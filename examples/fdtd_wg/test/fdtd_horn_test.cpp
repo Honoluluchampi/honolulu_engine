@@ -68,4 +68,24 @@ TEST(fdtd_horn, ctor) {
   EXPECT_EQ(22, grid_counts[2].y());
 }
 
+TEST(fdtd_horn, pml_marking) {
+  auto horn = fdtd_horn::create(
+    1.f,
+    1.f,
+    1.1f,
+    340.f,
+    2,
+    { 2 },
+    { { 1.f, 1.f } });
+
+  const auto& grid_conditions = horn->get_grid_conditions();
+
+  for (int i = 0; i < grid_conditions.size(); i++) {
+    if (i == 12)
+      EXPECT_EQ(grid_conditions[i].x(), fdtd_horn::grid_type::NORMAL);
+    else
+      EXPECT_EQ(grid_conditions[i].x(), fdtd_horn::grid_type::PML);
+  }
+}
+
 } // namespace hnll

@@ -66,6 +66,10 @@ class fdtd_horn
     std::vector<ivec2> get_grid_counts() const { return grid_counts_; }
     std::vector<vec4>  get_size_infos() const { return size_infos_; }
     std::vector<vec4>  get_edge_infos() const { return edge_infos_; }
+
+    const std::vector<vec4>& get_field() const { return field_; }
+    const std::vector<vec4>& get_grid_conditions() const { return grid_conditions_; }
+
     int   get_whole_grid_count() const { return whole_grid_count_; }
     float get_x_max() const { return edge_infos_[segment_count_].x(); }
 
