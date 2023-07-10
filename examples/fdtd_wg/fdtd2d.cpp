@@ -160,6 +160,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
           desc_layout_->get_descriptor_set_layout(),
           desc_layout_->get_descriptor_set_layout(),
           desc_layout_->get_descriptor_set_layout(),
+          desc_layout_->get_descriptor_set_layout(),
         }
       );
 
@@ -184,7 +185,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
 
         auto viewport_size = game::gui_engine::get_viewport_size();
         fdtd12_push push;
-        push.segment_count = 3;
+        push.segment_count = 4;
         push.window_size = vec2{ viewport_size.x, viewport_size.y };
         push.horn_x_max = target.get_x_max();
 
@@ -211,8 +212,8 @@ DEFINE_ENGINE(FDTD2D)
         rho,
         c,
         6, // pml count
-        { 2, 1, 2 }, // dimensions
-        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.2f, 0.2f}}
+        { 2, 1, 1, 2 }, // dimensions
+        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.1f, 0.3f}, {0.2f, 0.2f}}
       );
       horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);

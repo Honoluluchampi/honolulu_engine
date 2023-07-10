@@ -32,23 +32,24 @@ TEST(fdtd_horn, ctor) {
   EXPECT_EQ(2, dim[2]);
   EXPECT_DOUBLE_EQ(0.1f, size_infos[0].x());
   EXPECT_DOUBLE_EQ(0.2f, size_infos[0].y());
-  EXPECT_DOUBLE_EQ(0.1f, size_infos[0].z());
   EXPECT_DOUBLE_EQ(2.f,  size_infos[0].w());
   EXPECT_DOUBLE_EQ(0.3f, size_infos[1].x());
   EXPECT_DOUBLE_EQ(0.4f, size_infos[1].y());
-  EXPECT_DOUBLE_EQ(0.4f, size_infos[1].z());
   EXPECT_DOUBLE_EQ(1.f,  size_infos[1].w());
   EXPECT_DOUBLE_EQ(0.2f, size_infos[2].x());
   EXPECT_DOUBLE_EQ(0.2f, size_infos[2].y());
-  EXPECT_DOUBLE_EQ(0.6f, size_infos[2].z());
   EXPECT_DOUBLE_EQ(2.f,  size_infos[2].w());
+
+  auto edge_infos = horn->get_edge_infos();
+  EXPECT_DOUBLE_EQ(0.1f, edge_infos[0].x());
+  EXPECT_DOUBLE_EQ(0.4f, edge_infos[1].x());
+  EXPECT_DOUBLE_EQ(0.6f, edge_infos[2].x());
   EXPECT_DOUBLE_EQ(0.6f, horn->get_x_max());
 
-  auto start_grid_ids = horn->get_start_grid_ids();
-  EXPECT_EQ(0, start_grid_ids[0]);
-  EXPECT_EQ(50, start_grid_ids[1]);
-  EXPECT_EQ(65, start_grid_ids[2]);
-  EXPECT_EQ(549, start_grid_ids[3]);
+  EXPECT_EQ(0, edge_infos[0].y());
+  EXPECT_EQ(50, edge_infos[1].y());
+  EXPECT_EQ(65, edge_infos[2].y());
+  EXPECT_EQ(549, edge_infos[3].y());
   EXPECT_EQ(549, horn->get_whole_grid_count());
 
   auto grid_counts = horn->get_grid_counts();

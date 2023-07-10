@@ -10,7 +10,9 @@ layout (location = 0) out vec4 out_color;
 layout(set = 0, binding = 0) readonly buffer Field { vec4 field[]; };
 layout(set = 1, binding = 0) readonly buffer GridCond { vec4 grid_conditions[]; };
 // x, y : size of segment, z : x edge, w : dimension
-layout(set = 2, binding = 0) readonly buffer SegInfo { vec4 segment_info[]; };
+layout(set = 2, binding = 0) readonly buffer SegInfo { vec4 segment_infos[]; };
+// x : x edge, y : starting_grid_id
+layout(set = 3, binding = 0) readonly buffer EdgeInfo { vec4 edge_infos[]; };
 
 const float line_width = 3.f;
 const float magnification = 650.f;
@@ -37,9 +39,11 @@ void main() {
   }
   else {
     for (int i = 0; i < push.segment_count; i++) {
-      if (x_coord < segment_info[i].z) {
-        if (abs(y_coord) < segment_info[i].y / 2.f)
+      if (x_coord < edge_infos[i].x) {
+        if (abs(y_coord) < segment_infos[i].y / 2.f) {
+
           out_color = vec4(x_coord, y_coord, -y_coord, 1.f);
+        }
         return;
       }
     }

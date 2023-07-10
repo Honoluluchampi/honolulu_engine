@@ -61,12 +61,12 @@ class fdtd_horn
     float get_c()   const { return c_; }
     int   get_pml_count() const { return pml_count_; }
 
-    std::vector<int>     get_dimensions() const { return dimensions_; }
-    std::vector<grid_id> get_start_grid_ids() const { return start_grid_ids_; }
-    std::vector<ivec2>   get_grid_counts() const { return grid_counts_; }
-    std::vector<vec4>    get_size_infos() const { return size_infos_; }
+    std::vector<int>   get_dimensions() const { return dimensions_; }
+    std::vector<ivec2> get_grid_counts() const { return grid_counts_; }
+    std::vector<vec4>  get_size_infos() const { return size_infos_; }
+    std::vector<vec4>  get_edge_infos() const { return edge_infos_; }
     int get_whole_grid_count() const { return whole_grid_count_; }
-    float get_x_max() const { return size_infos_[segment_count_ - 1].z(); }
+    float get_x_max() const { return edge_infos_[segment_count_ - 1].x(); }
 
   private :
     float dt_;
@@ -79,7 +79,6 @@ class fdtd_horn
     // dimension of each grid
     std::vector<int> dimensions_;
     // contains whole grid count at the end of the vector
-    std::vector<grid_id> start_grid_ids_;
     std::vector<ivec2> grid_counts_;
     int whole_grid_count_;
 
@@ -91,6 +90,8 @@ class fdtd_horn
     std::vector<vec4> grid_conditions_;
     // x, y : size of segment, z : x edge, w : dimension
     std::vector<vec4> size_infos_;
+    // x : x edge, y : starting_grid_id
+    std::vector<vec4> edge_infos_;
 
     // ******************** desc sets **********************************
     s_ptr<graphics::desc_pool> desc_pool_;

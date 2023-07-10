@@ -39,7 +39,7 @@ fdtd_horn::fdtd_horn(
 
   whole_grid_count_ = 0;
   size_infos_.resize(dimensions_.size());
-  start_grid_ids_.resize(dimensions_.size());
+  edge_infos_.resize(dimensions_.size());
   grid_counts_.resize(dimensions_.size());
 
   auto segment_count = dimensions.size();
@@ -47,12 +47,13 @@ fdtd_horn::fdtd_horn(
   float current_x_edge = 0.f;
 
   for (int i = 0; i < dimensions_.size(); i++) {
-    start_grid_ids_[i] = whole_grid_count_;
     size_infos_[i].x() = sizes[i].x();
     size_infos_[i].y() = sizes[i].y();
-    current_x_edge += sizes[i].x();
-    size_infos_[i].z() = current_x_edge;
     size_infos_[i].w() = dimensions_[i];
+
+    current_x_edge += sizes[i].x();
+    edge_infos_[i].x() = current_x_edge;
+    edge_infos_[i].y() = whole_grid_count_;
 
     // no pml
     if (i != segment_count - 1) {
@@ -71,17 +72,22 @@ fdtd_horn::fdtd_horn(
     whole_grid_count_ += grid_counts_[i].x() * grid_counts_[i].y();
   }
 
-  start_grid_ids_.push_back(whole_grid_count_);
+  edge_infos_.emplace_back(-1.f, static_cast<float>(whole_grid_count_), 0.f, 0.f);
 
   field_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
   grid_conditions_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
 
   // define grid_conditions
-  for (int i = 0; i < start_grid_ids_.size() - 1; i++) {
-    for (grid_id j = start_grid_ids_[i]; j < start_grid_ids_[i + 1]; j++) {
+  for (int i = 0; i < edge_infos_.size() - 1; i++) {
+    for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
       // TODO : define EXCITER, PML
     }
+  }
+
+  // temp : test pressure
+  for (int i = 0; i < field_.size(); i++) {
+    field_[i].z() = static_cast<float>(i);
   }
 }
 
@@ -99,7 +105,7 @@ void fdtd_horn::build_desc(graphics::device &device)
     device,
     desc_pool_,
     // field, grid conditions, size_infos
-    { common_set_info, common_set_info, common_set_info },
+    { common_set_info, common_set_info, common_set_info, common_set_info },
     utils::FRAMES_IN_FLIGHT
   );
 
@@ -131,9 +137,19 @@ void fdtd_horn::build_desc(graphics::device &device)
       size_infos_.data()
     );
 
+    auto edge_infos_buffer = graphics::buffer::create(
+      device,
+      sizeof(vec4) * edge_infos_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      edge_infos_.data()
+    );
+
     desc_sets_->set_buffer(0, 0, i, std::move(field_buffer));
     desc_sets_->set_buffer(1, 0, i, std::move(grid_conditions_buffer));
     desc_sets_->set_buffer(2, 0, i, std::move(size_infos_buffer));
+    desc_sets_->set_buffer(3, 0, i, std::move(edge_infos_buffer));
   }
   desc_sets_->build();
 }
