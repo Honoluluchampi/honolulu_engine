@@ -4,7 +4,12 @@
 // lib
 #include <gtest/gtest.h>
 
+#define EXPECT_NEQ(a, b) EXPECT_TRUE(neq(a, b))
+
 namespace hnll {
+
+bool neq(double a, double b, double eps = 0.00001)
+{ return std::abs(a - b) < eps; }
 
 TEST(fdtd_horn, ctor) {
   auto horn = fdtd_horn::create(
@@ -31,22 +36,22 @@ TEST(fdtd_horn, ctor) {
   EXPECT_EQ(2, dim[0]);
   EXPECT_EQ(1, dim[1]);
   EXPECT_EQ(2, dim[2]);
-  EXPECT_DOUBLE_EQ(0.1f, size_infos[0].x());
-  EXPECT_DOUBLE_EQ(0.2f, size_infos[0].y());
-  EXPECT_DOUBLE_EQ(2.f,  size_infos[0].w());
-  EXPECT_DOUBLE_EQ(0.3f, size_infos[1].x());
-  EXPECT_DOUBLE_EQ(0.4f, size_infos[1].y());
-  EXPECT_DOUBLE_EQ(1.f,  size_infos[1].w());
-  EXPECT_DOUBLE_EQ(0.2f, size_infos[2].x());
-  EXPECT_DOUBLE_EQ(0.2f, size_infos[2].y());
-  EXPECT_DOUBLE_EQ(2.f,  size_infos[2].w());
+  EXPECT_NEQ(0.1f, size_infos[0].x());
+  EXPECT_NEQ(0.2f, size_infos[0].y());
+  EXPECT_NEQ(2.f,  size_infos[0].w());
+  EXPECT_NEQ(0.3f, size_infos[1].x());
+  EXPECT_NEQ(0.4f, size_infos[1].y());
+  EXPECT_NEQ(1.f,  size_infos[1].w());
+  EXPECT_NEQ(0.2f, size_infos[2].x());
+  EXPECT_NEQ(0.2f, size_infos[2].y());
+  EXPECT_NEQ(2.f,  size_infos[2].w());
 
   auto edge_infos = horn->get_edge_infos();
-  EXPECT_DOUBLE_EQ(0.0f, edge_infos[0].x());
-  EXPECT_DOUBLE_EQ(0.1f, edge_infos[1].x());
-  EXPECT_DOUBLE_EQ(0.4f, edge_infos[2].x());
-  EXPECT_DOUBLE_EQ(0.6f, edge_infos[3].x());
-  EXPECT_DOUBLE_EQ(0.6f, horn->get_x_max());
+  EXPECT_NEQ(0.0f, edge_infos[0].x());
+  EXPECT_NEQ(0.1f, edge_infos[1].x());
+  EXPECT_NEQ(0.4f, edge_infos[2].x());
+  EXPECT_NEQ(0.6f, edge_infos[3].x());
+  EXPECT_NEQ(0.6f, horn->get_x_max());
 
   EXPECT_EQ(0, edge_infos[0].y());
   EXPECT_EQ(50, edge_infos[1].y());
