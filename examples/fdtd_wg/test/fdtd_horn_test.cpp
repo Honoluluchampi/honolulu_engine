@@ -41,9 +41,10 @@ TEST(fdtd_horn, ctor) {
   EXPECT_DOUBLE_EQ(2.f,  size_infos[2].w());
 
   auto edge_infos = horn->get_edge_infos();
-  EXPECT_DOUBLE_EQ(0.1f, edge_infos[0].x());
-  EXPECT_DOUBLE_EQ(0.4f, edge_infos[1].x());
-  EXPECT_DOUBLE_EQ(0.6f, edge_infos[2].x());
+  EXPECT_DOUBLE_EQ(0.0f, edge_infos[0].x());
+  EXPECT_DOUBLE_EQ(0.1f, edge_infos[1].x());
+  EXPECT_DOUBLE_EQ(0.4f, edge_infos[2].x());
+  EXPECT_DOUBLE_EQ(0.6f, edge_infos[3].x());
   EXPECT_DOUBLE_EQ(0.6f, horn->get_x_max());
 
   EXPECT_EQ(0, edge_infos[0].y());

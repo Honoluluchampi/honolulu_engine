@@ -9,10 +9,12 @@ layout (location = 0) out vec4 out_color;
 // x : x velo, y : y velo, z : pressure
 layout(set = 0, binding = 0) readonly buffer Field { vec4 field[]; };
 layout(set = 1, binding = 0) readonly buffer GridCond { vec4 grid_conditions[]; };
-// x, y : size of segment, z : x edge, w : dimension
+// x, y : size of segment, w : dimension
 layout(set = 2, binding = 0) readonly buffer SegInfo { vec4 segment_infos[]; };
 // x : x edge, y : starting_grid_id
 layout(set = 3, binding = 0) readonly buffer EdgeInfo { vec4 edge_infos[]; };
+// y = 1 if 1D
+layout(set = 4, binding = 0) readonly buffer GridCount { ivec2 grid_counts[]; };
 
 const float line_width = 3.f;
 const float magnification = 650.f;
@@ -22,6 +24,8 @@ const float color_scale = 0.007f;
 struct fdtd12_push {
   int segment_count; // element count of segment info
   float horn_x_max;
+  float dx;
+  int whole_grid_count;
   vec2 window_size;
 };
 
@@ -39,10 +43,14 @@ void main() {
   }
   else {
     for (int i = 0; i < push.segment_count; i++) {
-      if (x_coord < edge_infos[i].x) {
+      if (x_coord < edge_infos[i + 1].x) {
         if (abs(y_coord) < segment_infos[i].y / 2.f) {
-
-          out_color = vec4(x_coord, y_coord, -y_coord, 1.f);
+          float local_x = x_coord - edge_infos[i].x;
+          int x_idx = int(local_x / segment_infos[i].x * grid_counts[i].x);
+          int y_idx = int((y_coord / segment_infos[i].y + 0.5) * grid_counts[i].y);
+          int idx = int(edge_infos[i].y) + x_idx + int(y_idx * grid_counts[i].x);
+          float val = field[idx].z / push.whole_grid_count;
+          out_color = vec4(val, 0.f, -val, 1.f);
         }
         return;
       }

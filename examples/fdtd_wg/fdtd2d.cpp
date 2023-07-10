@@ -33,7 +33,7 @@ struct fdtd2d
   void build(
     float w,
     float h,
-    int pml_layer_count = 20,
+    int pml_layer_count = 6,
     bool up_pml = true,
     bool down_pml = true,
     bool left_pml = true,
@@ -140,6 +140,8 @@ struct fdtd2d
 struct fdtd12_push {
   int segment_count; // element count of segment info
   float horn_x_max;
+  float dx;
+  int whole_grid_count;
   vec2 window_size;
 };
 
@@ -157,6 +159,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
       pipeline_layout_ = create_pipeline_layout<fdtd12_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
         {
+          desc_layout_->get_descriptor_set_layout(),
           desc_layout_->get_descriptor_set_layout(),
           desc_layout_->get_descriptor_set_layout(),
           desc_layout_->get_descriptor_set_layout(),
@@ -188,6 +191,8 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
         push.segment_count = 4;
         push.window_size = vec2{ viewport_size.x, viewport_size.y };
         push.horn_x_max = target.get_x_max();
+        push.dx = dx_fdtd;
+        push.whole_grid_count = target.get_whole_grid_count();
 
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -213,7 +218,7 @@ DEFINE_ENGINE(FDTD2D)
         c,
         6, // pml count
         { 2, 1, 1, 2 }, // dimensions
-        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.1f, 0.3f}, {0.2f, 0.2f}}
+        { {0.2f, 0.1f}, {0.2f, 0.15f}, {0.1f, 0.15f}, {0.2f, 0.2f}}
       );
       horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);

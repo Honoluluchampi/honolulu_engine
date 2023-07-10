@@ -51,9 +51,9 @@ fdtd_horn::fdtd_horn(
     size_infos_[i].y() = sizes[i].y();
     size_infos_[i].w() = dimensions_[i];
 
-    current_x_edge += sizes[i].x();
     edge_infos_[i].x() = current_x_edge;
     edge_infos_[i].y() = whole_grid_count_;
+    current_x_edge += sizes[i].x();
 
     // no pml
     if (i != segment_count - 1) {
@@ -72,7 +72,7 @@ fdtd_horn::fdtd_horn(
     whole_grid_count_ += grid_counts_[i].x() * grid_counts_[i].y();
   }
 
-  edge_infos_.emplace_back(-1.f, static_cast<float>(whole_grid_count_), 0.f, 0.f);
+  edge_infos_.emplace_back(current_x_edge, static_cast<float>(whole_grid_count_), 0.f, 0.f);
 
   field_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
   grid_conditions_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
@@ -105,7 +105,7 @@ void fdtd_horn::build_desc(graphics::device &device)
     device,
     desc_pool_,
     // field, grid conditions, size_infos
-    { common_set_info, common_set_info, common_set_info, common_set_info },
+    { common_set_info, common_set_info, common_set_info, common_set_info, common_set_info },
     utils::FRAMES_IN_FLIGHT
   );
 
@@ -146,10 +146,20 @@ void fdtd_horn::build_desc(graphics::device &device)
       edge_infos_.data()
     );
 
+    auto grid_counts_buffer = graphics::buffer::create(
+      device,
+      sizeof(ivec2) * grid_counts_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      grid_counts_.data()
+    );
+
     desc_sets_->set_buffer(0, 0, i, std::move(field_buffer));
     desc_sets_->set_buffer(1, 0, i, std::move(grid_conditions_buffer));
     desc_sets_->set_buffer(2, 0, i, std::move(size_infos_buffer));
     desc_sets_->set_buffer(3, 0, i, std::move(edge_infos_buffer));
+    desc_sets_->set_buffer(4, 0, i, std::move(grid_counts_buffer));
   }
   desc_sets_->build();
 }

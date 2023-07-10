@@ -65,8 +65,8 @@ class fdtd_horn
     std::vector<ivec2> get_grid_counts() const { return grid_counts_; }
     std::vector<vec4>  get_size_infos() const { return size_infos_; }
     std::vector<vec4>  get_edge_infos() const { return edge_infos_; }
-    int get_whole_grid_count() const { return whole_grid_count_; }
-    float get_x_max() const { return edge_infos_[segment_count_ - 1].x(); }
+    int   get_whole_grid_count() const { return whole_grid_count_; }
+    float get_x_max() const { return edge_infos_[segment_count_].x(); }
 
   private :
     float dt_;
@@ -78,7 +78,7 @@ class fdtd_horn
 
     // dimension of each grid
     std::vector<int> dimensions_;
-    // contains whole grid count at the end of the vector
+    // y = 1 if 1D
     std::vector<ivec2> grid_counts_;
     int whole_grid_count_;
 
