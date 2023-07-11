@@ -134,7 +134,9 @@ fdtd_horn::fdtd_horn(
         }
 
         float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
-        if (x_idx == pml_count_ && std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f)
+        if (x_idx == pml_count_ &&
+          std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f &&
+          i != 0)
           grid_conditions_[j].x() = grid_type::JUNCTION_21;
       }
     }
