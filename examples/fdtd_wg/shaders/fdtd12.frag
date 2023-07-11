@@ -62,7 +62,7 @@ void main() {
 
           float c = val / 256.f;
           out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
-          out_color = vec4(is_normal, is_exciter + is_junc21, is_junc12 + is_junc21, 1.f);
+          out_color = vec4(is_normal + is_junc12, is_exciter + is_junc21, is_junc12 + is_junc21 + is_pml, 1.f);
         }
         return;
       }

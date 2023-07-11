@@ -86,6 +86,7 @@ fdtd_horn::fdtd_horn(
   for (int i = 0; i < edge_infos_.size() - 1; i++) {
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
+
       // junction 1D -> 2D
       if (dimensions_[i] == 1) {
         // beginning point or ending point
@@ -122,14 +123,14 @@ fdtd_horn::fdtd_horn(
       }
 
       // detect PML
-      if (i == edge_infos_.size() - 2) {
+      if (i == segment_count_ - 1) {
         auto local_grid = j - int(edge_infos_[i].y());
-        auto x_idx = local_grid % grid_counts_[i].x();
-        auto y_idx = local_grid / grid_counts_[i].y();
+        auto x_idx = local_grid / grid_counts_[i].y();
+        auto y_idx = local_grid % grid_counts_[i].y();
         bool pml_x = (x_idx < pml_count) || (x_idx >= grid_counts_[i].x() - pml_count);
         bool pml_y = (y_idx < pml_count) || (y_idx >= grid_counts_[i].y() - pml_count);
         if (pml_x || pml_y) {
-          grid_conditions_[j].x() = float(grid_type::PML);
+          grid_conditions_[j].x() = grid_type::PML;
         }
       }
     }
