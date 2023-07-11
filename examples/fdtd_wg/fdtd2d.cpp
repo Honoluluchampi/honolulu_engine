@@ -17,7 +17,7 @@
 
 namespace hnll {
 
-constexpr float dx_fdtd = 3.83e-2; // dx for fdtd grid : 3.83mm
+constexpr float dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
 constexpr float dt = 7.81e-6; // in seconds
 
 constexpr float c = 340; // sound speed : 340 m/s

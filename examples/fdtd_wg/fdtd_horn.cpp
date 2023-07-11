@@ -49,6 +49,8 @@ fdtd_horn::fdtd_horn(
   for (int i = 0; i < dimensions_.size(); i++) {
     grid_counts_[i].x() = std::floor(sizes[i].x() / dx_);
     grid_counts_[i].y() = std::floor(sizes[i].y() / dx_);
+    if (grid_counts_[i].y() % 2 == 0)
+      grid_counts_[i].y() -= 1;
 
     size_infos_[i].x() = grid_counts_[i].x() * dx_;
     size_infos_[i].y() = grid_counts_[i].y() * dx_;
@@ -84,14 +86,6 @@ fdtd_horn::fdtd_horn(
   for (int i = 0; i < edge_infos_.size() - 1; i++) {
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
-      // TODO : define EXCITER, PML
-      // detect EXCITER
-      // temp : set on the top of the first segment
-      if (i == 0) {
-        if (j < grid_counts_[i].y())
-          grid_conditions_[j].x() = grid_type::EXCITER;
-      }
-
       // junction 1D -> 2D
       if (dimensions_[i] == 1) {
         // beginning point or ending point
@@ -101,7 +95,30 @@ fdtd_horn::fdtd_horn(
 
       // junction 2D -> 1D (other than PML segment)
       if (dimensions_[i] == 2 && i != dimensions_.size() - 1) {
+        auto local_grid = j - int(edge_infos_[i].y());
+        int x_idx = local_grid / grid_counts_[i].y();
+        int y_idx = local_grid % grid_counts_[i].y();
+        // inside a 1D tube's radius
+        float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
+        // beginning point
+        if (x_idx == 0 &&
+          i != 0 &&
+          std::abs(y_coord) <= size_infos_[i - 1].y() / 2) {
+          grid_conditions_[j].x() = grid_type::JUNCTION_21;
+        }
+        // ending point
+        if (x_idx == grid_counts_[i].x() - 1 &&
+          i != segment_count_ - 1 &&
+          std::abs(y_coord) <= size_infos_[i + 1].y() / 2) {
+          grid_conditions_[j].x() = grid_type::JUNCTION_21;
+        }
+      }
 
+      // detect EXCITER
+      // temp : set on the top of the first segment
+      if (i == 0) {
+        if (j < grid_counts_[i].y())
+          grid_conditions_[j].x() = grid_type::EXCITER;
       }
 
       // detect PML

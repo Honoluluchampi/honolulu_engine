@@ -58,10 +58,11 @@ void main() {
           int is_exciter = int(grid_conditions[idx].x == 1);
           int is_pml     = int(grid_conditions[idx].x == 2);
           int is_junc12  = int(grid_conditions[idx].x == 4);
+          int is_junc21  = int(grid_conditions[idx].x == 5);
 
           float c = val / 256.f;
           out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
-          out_color = vec4(is_normal, is_exciter, is_junc12, 1.f);
+          out_color = vec4(is_normal, is_exciter + is_junc21, is_junc12 + is_junc21, 1.f);
         }
         return;
       }
