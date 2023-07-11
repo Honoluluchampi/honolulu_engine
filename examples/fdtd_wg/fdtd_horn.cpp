@@ -126,12 +126,16 @@ fdtd_horn::fdtd_horn(
       if (i == segment_count_ - 1) {
         auto local_grid = j - int(edge_infos_[i].y());
         auto x_idx = local_grid / grid_counts_[i].y();
-        auto y_idx = local_grid % grid_counts_[i].y();
+        int y_idx = local_grid % grid_counts_[i].y();
         bool pml_x = (x_idx < pml_count) || (x_idx >= grid_counts_[i].x() - pml_count);
         bool pml_y = (y_idx < pml_count) || (y_idx >= grid_counts_[i].y() - pml_count);
         if (pml_x || pml_y) {
           grid_conditions_[j].x() = grid_type::PML;
         }
+
+        float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
+        if (x_idx == pml_count_ && std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f)
+          grid_conditions_[j].x() = grid_type::JUNCTION_21;
       }
     }
   }
