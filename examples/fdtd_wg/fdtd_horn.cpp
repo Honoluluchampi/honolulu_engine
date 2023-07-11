@@ -85,6 +85,25 @@ fdtd_horn::fdtd_horn(
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
       // TODO : define EXCITER, PML
+      // detect EXCITER
+      // temp : set on the top of the first segment
+      if (i == 0) {
+        if (j < grid_counts_[i].y())
+          grid_conditions_[j].x() = grid_type::EXCITER;
+      }
+
+      // junction 1D -> 2D
+      if (dimensions_[i] == 1) {
+        // beginning point or ending point
+        if (j == edge_infos_[i].y() || j == edge_infos_[i + 1].y() - 1)
+          grid_conditions_[j].x() = grid_type::JUNCTION_12;
+      }
+
+      // junction 2D -> 1D (other than PML segment)
+      if (dimensions_[i] == 2 && i != dimensions_.size() - 1) {
+
+      }
+
       // detect PML
       if (i == edge_infos_.size() - 2) {
         auto local_grid = j - int(edge_infos_[i].y());

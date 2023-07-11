@@ -54,12 +54,14 @@ void main() {
                       + push.pml_count * is_last;
           int idx = int(edge_infos[i].y) + y_idx + int(x_idx * (grid_counts[i].y));
           float val = field[idx].z / push.whole_grid_count;
-          int is_normal = int(grid_conditions[idx].x == 0);
-          int is_pml    = int(grid_conditions[idx].x == 1);
+          int is_normal  = int(grid_conditions[idx].x == 0);
+          int is_exciter = int(grid_conditions[idx].x == 1);
+          int is_pml     = int(grid_conditions[idx].x == 2);
+          int is_junc12  = int(grid_conditions[idx].x == 4);
 
           float c = val / 256.f;
           out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
-//          out_color = vec4(is_normal, 0.f, is_pml, 1.f);
+          out_color = vec4(is_normal, is_exciter, is_junc12, 1.f);
         }
         return;
       }

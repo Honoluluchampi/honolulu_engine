@@ -18,11 +18,13 @@ class fdtd_horn
     static graphics::binding_info common_binding_info;
 
     enum grid_type {
-      NORMAL = 0,
-      PML = 1,
-      PSEUDO_PML = 2,
-      WALL = 3,
-      EXCITER = 4,
+      NORMAL,
+      EXCITER,
+      PML,
+      PSEUDO_PML,
+      JUNCTION_12,
+      JUNCTION_21,
+      WALL,
     };
 
     static u_ptr<fdtd_horn> create(
