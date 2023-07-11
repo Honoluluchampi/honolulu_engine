@@ -33,6 +33,18 @@ struct fdtd12_push {
 
 layout(push_constant) uniform Push { fdtd12_push push; };
 
+vec4[9] debug_color = vec4[](
+  vec4(0.5f, 0.f, 0.f, 1.f), // NORMAL1
+  vec4(0.f, 0.f, 0.5f, 1.f), // NORMAL2
+  vec4(1.f, 1.f, 1.f, 1.f), // WALL
+  vec4(0.f, 1.f, 0.1f, 1.f), // EXCITER
+  vec4(0.f, 0.f, 1.f, 1.f), // PML
+  vec4(0.7f, 0.7f, 0.f, 1.f), // JUNCTION_12_LEFT
+  vec4(0.7f, 0.f, 0.7f, 1.f), // JUNCTION_12_RIGHT
+  vec4(0.f, 0.7f, 0.7f, 1.f), // JUNCTION_21_LEFT
+  vec4(0.2f, 0.2f, 0.7f, 1.f)  // JUNCTION_21_RIGHT
+);
+
 void main() {
   float fix_ratio = push.horn_x_max / ((1 - x_mergin_ratio * 2.f) * push.window_size.x);
   float x_coord = (gl_FragCoord.x - x_mergin_ratio * push.window_size.x) * fix_ratio;
@@ -56,24 +68,15 @@ void main() {
                       + push.pml_count * is_last;
           int idx = int(edge_infos[i].y) + y_idx + int(x_idx * (grid_counts[i].y));
           float val = field[idx].z / push.whole_grid_count;
-          int is_normal  = int(grid_conditions[idx].x == 0);
-          int is_exciter = int(grid_conditions[idx].x == 1);
-          int is_pml     = int(grid_conditions[idx].x == 2);
-          int is_junc12  = int(grid_conditions[idx].x == 4);
-          int is_junc21  = int(grid_conditions[idx].x == 5);
-          int is_wall    = int(grid_conditions[idx].x == 6);
 
-          float c = val / 256.f;
-          out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
-          vec4 info = vec4(
-            is_normal + is_junc12,
-            is_junc21,
-            is_junc12 + is_junc21 + is_pml,
-            1.f);
-          vec4 wall = is_wall * vec4(1.f, 1.f, 1.f, 1.f);
-          vec4 exciter = is_exciter * vec4(0.f, 1.f, 0.f, 1.f);
-          out_color += wall;
-          out_color += exciter;
+          int state = int(grid_conditions[idx].x);
+          if (state == 2 || state == 3) { // wall or exciter
+            out_color = debug_color[int(grid_conditions[idx].x)];
+          }
+          else {
+            float c = val / 256.f;
+            out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
+          }
         }
 
         // 1D tube wall

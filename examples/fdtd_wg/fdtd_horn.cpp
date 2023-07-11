@@ -85,13 +85,20 @@ fdtd_horn::fdtd_horn(
   // define grid_conditions
   for (int i = 0; i < edge_infos_.size() - 1; i++) {
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
-      grid_conditions_[j] = { float(grid_type::NORMAL), 0.f, float(dimensions_[i]), 0.f };
+      if (dimensions_[i] == 1)
+        grid_conditions_[j] = { float(grid_type::NORMAL1), 0.f, float(dimensions_[i]), 0.f };
+      else if (dimensions_[i] == 2)
+        grid_conditions_[j] = { float(grid_type::NORMAL2), 0.f, float(dimensions_[i]), 0.f };
+      else
+        throw std::runtime_error("fdtd_horn : unsupported dimension.");
 
       // junction 1D -> 2D
       if (dimensions_[i] == 1) {
         // beginning point or ending point
-        if (j == edge_infos_[i].y() || j == edge_infos_[i + 1].y() - 1)
-          grid_conditions_[j].x() = grid_type::JUNCTION_12;
+        if (j == edge_infos_[i].y())
+          grid_conditions_[j].x() = grid_type::JUNCTION_1to2_LEFT;
+        else if (j == edge_infos_[i + 1].y() - 1)
+          grid_conditions_[j].x() = grid_type::JUNCTION_1to2_RIGHT;
       }
 
       // junction 2D -> 1D (other than PML segment)
@@ -105,13 +112,13 @@ fdtd_horn::fdtd_horn(
         if (x_idx == 0 &&
           i != 0 &&
           std::abs(y_coord) <= size_infos_[i - 1].y() / 2) {
-          grid_conditions_[j].x() = grid_type::JUNCTION_21;
+          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_LEFT;
         }
         // ending point
         if (x_idx == grid_counts_[i].x() - 1 &&
           i != segment_count_ - 1 &&
           std::abs(y_coord) <= size_infos_[i + 1].y() / 2) {
-          grid_conditions_[j].x() = grid_type::JUNCTION_21;
+          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_RIGHT;
         }
 
         // detect EXCITER
@@ -141,7 +148,7 @@ fdtd_horn::fdtd_horn(
         if (x_idx == pml_count_ &&
           std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f &&
           i != 0)
-          grid_conditions_[j].x() = grid_type::JUNCTION_21;
+          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_LEFT;
       }
     }
   }
