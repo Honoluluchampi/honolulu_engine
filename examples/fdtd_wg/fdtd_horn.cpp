@@ -33,6 +33,8 @@ fdtd_horn::fdtd_horn(
   dx_ = dx;
   rho_ = rho;
   c_ = c;
+  v_fac_ = dt / (rho * dx);
+  p_fac_ = dt * rho * c * c / dx;
   pml_count_ = pml_count;
   dimensions_ = dimensions;
   segment_count_ = dimensions_.size();
@@ -86,9 +88,9 @@ fdtd_horn::fdtd_horn(
   for (int i = 0; i < edge_infos_.size() - 1; i++) {
     for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
       if (dimensions_[i] == 1)
-        grid_conditions_[j] = { float(grid_type::NORMAL1), 0.f, float(dimensions_[i]), 0.f };
+        grid_conditions_[j] = { float(grid_type::NORMAL1), 0.f, float(dimensions_[i]), float(i) };
       else if (dimensions_[i] == 2)
-        grid_conditions_[j] = { float(grid_type::NORMAL2), 0.f, float(dimensions_[i]), 0.f };
+        grid_conditions_[j] = { float(grid_type::NORMAL2), 0.f, float(dimensions_[i]), float(i) };
       else
         throw std::runtime_error("fdtd_horn : unsupported dimension.");
 
@@ -234,6 +236,24 @@ void fdtd_horn::build_desc(graphics::device &device)
 
 void fdtd_horn::update(int frame_index)
 {
+  // update velocity
+  for (int i = 0; i < whole_grid_count_; i++) {
+    switch(int(grid_conditions_[i].x())) {
+      case NORMAL1 :
+        field_[i].x() = field_[i].x() - v_fac_ * (field_[i + 1].z() - field_[i].z());
+
+      case NORMAL2 : {
+        auto y_grid_count = grid_counts_[int(grid_conditions_[i].w())].y();
+        field_[i].x() = field_[i].x()
+          - v_fac_ * (field_[i + y_grid_count].z() - field_[i].z());
+        field_[i].y() = field_[i].y()
+          - v_fac_ * (field_[i + 1].z() * float(int(grid_conditions_[i + 1].w()) != grid_type::WALL) - field_[i].z());
+      }
+      default :
+        throw std::runtime_error("unsupported grid state.");
+    }
+  }
+
   // update field buffer
   desc_sets_->write_to_buffer(0, 0, frame_index, field_.data());
   desc_sets_->flush_buffer(0, 0, frame_index);

@@ -34,15 +34,15 @@ struct fdtd12_push {
 layout(push_constant) uniform Push { fdtd12_push push; };
 
 vec4[9] debug_color = vec4[](
-  vec4(0.5f, 0.f, 0.f, 1.f), // NORMAL1
-  vec4(0.f, 0.f, 0.5f, 1.f), // NORMAL2
-  vec4(1.f, 1.f, 1.f, 1.f), // WALL
-  vec4(0.f, 1.f, 0.1f, 1.f), // EXCITER
-  vec4(0.f, 0.f, 1.f, 1.f), // PML
+  vec4(0.5f, 0.f, 0.f, 1.f),  // NORMAL1
+  vec4(0.f, 0.f, 0.5f, 1.f),  // NORMAL2
+  vec4(1.f, 1.f, 1.f, 1.f),   // WALL
+  vec4(0.f, 1.f, 0.1f, 1.f),  // EXCITER
+  vec4(0.f, 0.f, 1.f, 1.f),   // PML
   vec4(0.7f, 0.7f, 0.f, 1.f), // JUNCTION_12_LEFT
   vec4(0.7f, 0.f, 0.7f, 1.f), // JUNCTION_12_RIGHT
   vec4(0.f, 0.7f, 0.7f, 1.f), // JUNCTION_21_LEFT
-  vec4(0.2f, 0.2f, 0.7f, 1.f)  // JUNCTION_21_RIGHT
+  vec4(0.2f, 0.2f, 0.7f, 1.f) // JUNCTION_21_RIGHT
 );
 
 void main() {

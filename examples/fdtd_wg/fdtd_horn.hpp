@@ -82,6 +82,8 @@ class fdtd_horn
     float dx_;
     float rho_;
     float c_; // sound speed
+    float v_fac_;
+    float p_fac_;
     int pml_count_;
     int segment_count_;
 
@@ -93,7 +95,7 @@ class fdtd_horn
     // all of grid's value is packed into 1D vector
     // field.x : vx, y : vy, z : pressure, w : empty for now
     std::vector<vec4> field_;
-    // x : grid_type, y : pml coefficient, z : dimension
+    // x : grid_type, y : pml coefficient, z : dimension, w : segment_id
     std::vector<vec4> grid_conditions_;
     // x, y : size of segment, z : x edge, w : dimension
     std::vector<vec4> size_infos_;
