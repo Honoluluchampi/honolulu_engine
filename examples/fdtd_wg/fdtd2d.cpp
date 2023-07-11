@@ -142,6 +142,8 @@ struct fdtd12_push {
   float horn_x_max;
   int pml_count;
   int whole_grid_count;
+  float dx;
+  float dt;
   vec2 window_size;
 };
 
@@ -193,6 +195,8 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
         push.horn_x_max = target.get_x_max();
         push.pml_count = target.get_pml_count();
         push.whole_grid_count = target.get_whole_grid_count();
+        push.dx = target.get_dx();
+        push.dt = target.get_dt();
 
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -218,7 +222,7 @@ DEFINE_ENGINE(FDTD2D)
         c,
         2, // pml count
         { 2, 1, 2, 1, 2 }, // dimensions
-        { {0.2f, 0.15f}, {0.2f, 0.15f}, {0.2f, 0.2f}, {0.1f, 0.15f}, {0.2f, 0.2f}}
+        { {0.1f, 0.04f}, {0.2f, 0.03f}, {0.1f, 0.04f}, {0.1f, 0.03f}, {0.07f, 0.07f}}
       );
       horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);

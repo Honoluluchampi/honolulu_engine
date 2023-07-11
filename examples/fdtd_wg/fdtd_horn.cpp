@@ -113,13 +113,17 @@ fdtd_horn::fdtd_horn(
           std::abs(y_coord) <= size_infos_[i + 1].y() / 2) {
           grid_conditions_[j].x() = grid_type::JUNCTION_21;
         }
-      }
 
-      // detect EXCITER
-      // temp : set on the top of the first segment
-      if (i == 0) {
-        if (j < grid_counts_[i].y())
-          grid_conditions_[j].x() = grid_type::EXCITER;
+        // detect EXCITER
+        // temp : set on the top of the first segment
+        if (i == 0) {
+          if (j < grid_counts_[i].y())
+            grid_conditions_[j].x() = grid_type::EXCITER;
+        }
+
+        // wall
+        if (y_idx == 0 || y_idx == grid_counts_[i].y() - 1)
+          grid_conditions_[j].x() = grid_type::WALL;
       }
 
       // detect PML

@@ -26,6 +26,8 @@ struct fdtd12_push {
   float horn_x_max;
   int pml_count;
   int whole_grid_count;
+  float dx;
+  float dt;
   vec2 window_size;
 };
 
@@ -59,11 +61,28 @@ void main() {
           int is_pml     = int(grid_conditions[idx].x == 2);
           int is_junc12  = int(grid_conditions[idx].x == 4);
           int is_junc21  = int(grid_conditions[idx].x == 5);
+          int is_wall    = int(grid_conditions[idx].x == 6);
 
           float c = val / 256.f;
           out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
-          out_color = vec4(is_normal + is_junc12, is_exciter + is_junc21, is_junc12 + is_junc21 + is_pml, 1.f);
+          vec4 info = vec4(
+            is_normal + is_junc12,
+            is_junc21,
+            is_junc12 + is_junc21 + is_pml,
+            1.f);
+          vec4 wall = is_wall * vec4(1.f, 1.f, 1.f, 1.f);
+          vec4 exciter = is_exciter * vec4(0.f, 1.f, 0.f, 1.f);
+          out_color += wall;
+          out_color += exciter;
         }
+
+        // 1D tube wall
+        else if (
+          segment_infos[i].w == 1 &&
+          abs(y_coord) < segment_infos[i].y / 2.f + push.dx &&
+          abs(y_coord) >= segment_infos[i].y / 2.f)
+          out_color = vec4(1.f, 1.f, 1.f, 1.f);
+
         return;
       }
     }
