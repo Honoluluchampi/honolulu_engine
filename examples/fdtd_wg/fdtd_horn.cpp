@@ -156,9 +156,9 @@ fdtd_horn::fdtd_horn(
   }
 
   // temp : test pressure
-  for (int i = 0; i < field_.size(); i++) {
-    field_[i].z() = static_cast<float>(i);
-  }
+//  for (int i = 0; i < field_.size(); i++) {
+//    field_[i].z() = static_cast<float>(i);
+//  }
 }
 
 void fdtd_horn::build_desc(graphics::device &device)
@@ -236,24 +236,170 @@ void fdtd_horn::build_desc(graphics::device &device)
 
 void fdtd_horn::update(int frame_index)
 {
+  frame_count_++;
   // update velocity
   for (int i = 0; i < whole_grid_count_; i++) {
     switch(int(grid_conditions_[i].x())) {
       case NORMAL1 :
-        field_[i].x() = field_[i].x() - v_fac_ * (field_[i + 1].z() - field_[i].z());
-
-      case NORMAL2 : {
-        auto y_grid_count = grid_counts_[int(grid_conditions_[i].w())].y();
-        field_[i].x() = field_[i].x()
-          - v_fac_ * (field_[i + y_grid_count].z() - field_[i].z());
-        field_[i].y() = field_[i].y()
-          - v_fac_ * (field_[i + 1].z() * float(int(grid_conditions_[i + 1].w()) != grid_type::WALL) - field_[i].z());
+      case JUNCTION_1to2_LEFT : {
+        field_[i].x() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
+        break;
       }
+      case NORMAL2 :
+      case JUNCTION_2to1_LEFT : {
+        auto y_grid_count = grid_counts_[int(grid_conditions_[i].w())].y();
+        field_[i].x() -= v_fac_ * (field_[i + y_grid_count].z() - field_[i].z());
+        if (grid_conditions_[i + 1].w() != grid_type::WALL)
+          field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
+        break;
+      }
+
+      case WALL : {
+        break;
+      }
+
+      case EXCITER : {
+        float freq = 1000; // Hz
+        float amp = 500.f;
+        float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
+        field_[i].x() = val;
+        break;
+      }
+
+      case PML : {
+        auto pml = grid_conditions_[i].y();
+        auto seg_id = int(grid_conditions_[i].w());
+        auto y_grid_count = grid_counts_[seg_id].y();
+        auto local_idx = i - int(edge_infos_[seg_id].y());
+        auto not_upper = (local_idx % y_grid_count) != y_grid_count - 1;
+        auto not_right = (local_idx / y_grid_count) != grid_counts_[seg_id].x() - 1;
+
+//        field_[i].x() = (field_[i].x()
+//          - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
+//        field_[i].y() = (field_[i].y()
+//          - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
+
+        break;
+      }
+
+      case JUNCTION_1to2_RIGHT : {
+        // calc mean pressure
+        auto seg_id = int(grid_conditions_[i].w());
+        // TODO : pml
+        if (grid_conditions_[i + 1].x() == grid_type::PML) {
+
+        }
+        else {
+          float mean_p = 0.f;
+          float count = 0.f;
+          int idx = i + 2;
+          while(grid_conditions_[idx].x() == grid_type::JUNCTION_2to1_LEFT) {
+            mean_p += field_[idx].z();
+            count++;
+            idx++;
+          }
+          mean_p /= count;
+          field_[i].x() -= v_fac_ * (mean_p - field_[i].z());
+        }
+        break;
+      }
+
+      case JUNCTION_2to1_RIGHT : {
+        auto next_seg = grid_conditions_[i].w() + 1;
+        auto next_idx = int(edge_infos_[next_seg].y());
+        auto next_p = field_[next_idx].z();
+        field_[i].x() -= v_fac_ * (next_p - field_[i].z());
+        if (grid_conditions_[i + 1].w() != grid_type::WALL)
+          field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
+        break;
+      }
+
       default :
         throw std::runtime_error("unsupported grid state.");
     }
   }
 
+  // update pressure
+  for (int i = 0; i < whole_grid_count_; i++) {
+    switch (int(grid_conditions_[i].x())) {
+      case NORMAL1 :
+      case JUNCTION_1to2_RIGHT : {
+        field_[i].z() -= p_fac_ * (field_[i].x() - field_[i - 1].x());
+        break;
+      }
+
+      case NORMAL2 :
+      case JUNCTION_2to1_RIGHT : {
+        auto seg_id = int(grid_conditions_[i].w());
+        auto y_grid_count = grid_counts_[seg_id].y();
+        field_[i].z() -= p_fac_ * (
+          field_[i].x() - field_[i - y_grid_count].x() +
+          field_[i].y() - field_[i - 1].y()
+        );
+        break;
+      }
+
+      case WALL : {
+        break;
+      }
+
+      case EXCITER : {
+        float freq = 1000; // Hz
+        float amp = 1.f;
+        float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
+        field_[i].z() = val;
+//        field_[i].z() -= p_fac_ * field_[i].x();
+        break;
+      }
+
+      case PML : {
+        auto pml = grid_conditions_[i].y();
+        auto seg_id = int(grid_conditions_[i].w());
+        auto y_grid_count = grid_counts_[seg_id].y();
+        auto local_idx = i - int(edge_infos_[seg_id].y());
+        auto not_lower = (local_idx % y_grid_count) != 0;
+        auto not_left = (local_idx / y_grid_count) != 0;
+
+        field_[i].z() = (field_[i].z() - p_fac_ *
+          (field_[i].x() - field_[i - y_grid_count].x() * not_left
+          - field_[i].y() - field_[i - 1].y() * not_lower)
+          ) / (1 + pml);
+
+        break;
+      }
+
+      case JUNCTION_1to2_LEFT : {
+        // calc mean vx
+        float mean_vx = 0.f;
+        float count = 0.f;
+        // TODO : pml
+        if (grid_conditions_[i - 1].w() == PML) {
+
+        }
+        else {
+          int idx = i - 2;
+          while (grid_conditions_[idx].w() == JUNCTION_2to1_RIGHT) {
+            mean_vx += field_[idx].z();
+            count++;
+            idx--;
+          }
+          mean_vx /= count;
+          field_[i].z() -= p_fac_ * (field_[i].x() - mean_vx);
+        }
+
+        break;
+      }
+
+      case JUNCTION_2to1_LEFT : {
+        auto this_seg = grid_conditions_[i].w();
+        float last_vx = field_[edge_infos_[this_seg].y() - 1].x();
+        field_[i].z() -= p_fac_ * (
+          field_[i].x() - last_vx +
+          field_[i].y() - field_[i - 1].y()
+        );
+      }
+    }
+  }
   // update field buffer
   desc_sets_->write_to_buffer(0, 0, frame_index, field_.data());
   desc_sets_->flush_buffer(0, 0, frame_index);

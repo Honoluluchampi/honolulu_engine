@@ -86,6 +86,7 @@ class fdtd_horn
     float p_fac_;
     int pml_count_;
     int segment_count_;
+    int frame_count_ = 0;
 
     // dimension of each grid
     std::vector<int> dimensions_;

@@ -67,15 +67,15 @@ void main() {
           int y_idx = int(local_y / segment_infos[i].y * (grid_counts[i].y - 2 * push.pml_count * is_last))
                       + push.pml_count * is_last;
           int idx = int(edge_infos[i].y) + y_idx + int(x_idx * (grid_counts[i].y));
-          float val = field[idx].z / push.whole_grid_count;
+          float val = field[idx].z;
 
           int state = int(grid_conditions[idx].x);
-          if (state == 2 || state == 3) { // wall or exciter
+          if (state == 2) {// || state == 3) { // wall or exciter
             out_color = debug_color[int(grid_conditions[idx].x)];
           }
           else {
-            float c = val / 256.f;
-            out_color = vec4(0, 86.f * c, 56.f * c, 1.f);
+            float c = val; // / 256.f;
+            out_color = vec4(val, 0.f, -val, 1.f);
           }
         }
 

@@ -186,6 +186,9 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
 
       for (auto& target_kv : targets_) {
         auto& target = target_kv.second;
+
+        target.update(info.frame_index);
+
         set_current_command_buffer(info.command_buffer);
 
         auto viewport_size = game::gui_engine::get_viewport_size();
