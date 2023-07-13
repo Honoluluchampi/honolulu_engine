@@ -259,8 +259,8 @@ void fdtd_horn::update(int frame_index)
       }
 
       case EXCITER : {
-        float freq = 1000; // Hz
-        float amp = 500.f;
+        float freq = 5000; // Hz
+        float amp = 1.f;
         float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
         field_[i].x() = val;
         break;
@@ -309,7 +309,7 @@ void fdtd_horn::update(int frame_index)
         auto next_idx = int(edge_infos_[next_seg].y());
         auto next_p = field_[next_idx].z();
         field_[i].x() -= v_fac_ * (next_p - field_[i].z());
-        if (grid_conditions_[i + 1].w() != grid_type::WALL)
+        if (grid_conditions_[i + 1].x() != grid_type::WALL)
           field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
         break;
       }
@@ -347,8 +347,8 @@ void fdtd_horn::update(int frame_index)
         float freq = 1000; // Hz
         float amp = 1.f;
         float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
-        field_[i].z() = val;
-//        field_[i].z() -= p_fac_ * field_[i].x();
+//        field_[i].z() = val;
+        field_[i].z() -= p_fac_ * field_[i].x();
         break;
       }
 
@@ -373,12 +373,12 @@ void fdtd_horn::update(int frame_index)
         float mean_vx = 0.f;
         float count = 0.f;
         // TODO : pml
-        if (grid_conditions_[i - 1].w() == PML) {
+        if (grid_conditions_[i - 1].x() == PML) {
 
         }
         else {
           int idx = i - 2;
-          while (grid_conditions_[idx].w() == JUNCTION_2to1_RIGHT) {
+          while (grid_conditions_[idx].x() == JUNCTION_2to1_RIGHT) {
             mean_vx += field_[idx].z();
             count++;
             idx--;
