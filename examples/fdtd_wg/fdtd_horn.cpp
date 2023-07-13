@@ -379,7 +379,7 @@ void fdtd_horn::update(int frame_index)
         else {
           int idx = i - 2;
           while (grid_conditions_[idx].x() == JUNCTION_2to1_RIGHT) {
-            mean_vx += field_[idx].z();
+            mean_vx += field_[idx].x();
             count++;
             idx--;
           }
