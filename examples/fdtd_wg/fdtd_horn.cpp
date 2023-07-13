@@ -285,22 +285,33 @@ void fdtd_horn::update(int frame_index)
       case JUNCTION_1to2_RIGHT : {
         // calc mean pressure
         auto seg_id = int(grid_conditions_[i].w());
-        // TODO : pml
+        float mean_p = 0.f;
+        float count = 0.f;
+        int idx = -1;
         if (grid_conditions_[i + 1].x() == grid_type::PML) {
-
+          int next_seg = grid_conditions_[i + 1].w();
+          int next_y_grid_count = grid_counts_[next_seg].y();
+          idx = i + 1 + pml_count_ * (next_y_grid_count + 1);
+          // TODO : fix linear search
+          for (int g = 0; g < next_y_grid_count - pml_count_ * 2; g++) {
+            if (grid_conditions_[idx + g].x() == grid_type::JUNCTION_2to1_LEFT) {
+              mean_p += field_[idx].z();
+              count++;
+              idx++;
+            }
+          }
         }
         else {
-          float mean_p = 0.f;
-          float count = 0.f;
-          int idx = i + 2;
-          while(grid_conditions_[idx].x() == grid_type::JUNCTION_2to1_LEFT) {
+          idx = i + 2;
+          while (grid_conditions_[idx].x() == grid_type::JUNCTION_2to1_LEFT) {
             mean_p += field_[idx].z();
             count++;
             idx++;
           }
-          mean_p /= count;
-          field_[i].x() -= v_fac_ * (mean_p - field_[i].z());
         }
+
+        mean_p /= std::max(1.f, count);
+        field_[i].x() -= v_fac_ * (mean_p - field_[i].z());
         break;
       }
 
@@ -344,10 +355,6 @@ void fdtd_horn::update(int frame_index)
       }
 
       case EXCITER : {
-        float freq = 1000; // Hz
-        float amp = 1.f;
-        float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
-//        field_[i].z() = val;
         field_[i].z() -= p_fac_ * field_[i].x();
         break;
       }
