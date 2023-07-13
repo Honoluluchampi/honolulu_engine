@@ -159,6 +159,10 @@ fdtd_horn::fdtd_horn(
           grid_conditions_[j].y() = pml;
         }
 
+        if (x_idx < 10 && x_idx >= pml_count_ && (y_idx == 10 || y_idx == 18)) {
+          grid_conditions_[j].x() = grid_type::WALL;
+        }
+
         float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
         if (x_idx == pml_count_ &&
           std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f &&
@@ -262,7 +266,7 @@ void fdtd_horn::update(int frame_index)
       case JUNCTION_2to1_LEFT : {
         auto y_grid_count = grid_counts_[int(grid_conditions_[i].w())].y();
         field_[i].x() -= v_fac_ * (field_[i + y_grid_count].z() - field_[i].z());
-        if (grid_conditions_[i + 1].w() != grid_type::WALL)
+        if (grid_conditions_[i + 1].x() != grid_type::WALL)
           field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
         break;
       }
@@ -273,9 +277,9 @@ void fdtd_horn::update(int frame_index)
 
       case EXCITER : {
         float freq = 1000; // Hz
-        float amp = 10.f;
+        float amp = 1.f;
         float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
-        field_[i].x() = val;
+        field_[i].x() = val;// * (frame_count_ <= 10);
         break;
       }
 

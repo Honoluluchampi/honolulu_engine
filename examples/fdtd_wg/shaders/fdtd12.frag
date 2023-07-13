@@ -71,7 +71,7 @@ void main() {
 
           int state = int(grid_conditions[idx].x);
           if (state == 2) {// || state == 3) { // wall or exciter
-            out_color = debug_color[int(grid_conditions[idx].x)];
+            out_color = debug_color[state];
           }
           else {
             float c = val; // / 256.f;
