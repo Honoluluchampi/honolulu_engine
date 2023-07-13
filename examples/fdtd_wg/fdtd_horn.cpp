@@ -16,9 +16,10 @@ u_ptr<fdtd_horn> fdtd_horn::create(
   float rho,
   float c,
   int pml_count,
+  float pml_max,
   std::vector<int> dimensions,
   std::vector<vec2> sizes)
-{ return std::make_unique<fdtd_horn>(dt, dx, rho, c, pml_count, dimensions, sizes); }
+{ return std::make_unique<fdtd_horn>(dt, dx, rho, c, pml_count, pml_max, dimensions, sizes); }
 
 fdtd_horn::fdtd_horn(
   float dt,
@@ -26,6 +27,7 @@ fdtd_horn::fdtd_horn(
   float rho,
   float c,
   int pml_count,
+  float pml_max,
   std::vector<int> dimensions,
   std::vector<vec2> sizes)
 {
@@ -36,6 +38,7 @@ fdtd_horn::fdtd_horn(
   v_fac_ = dt / (rho * dx);
   p_fac_ = dt * rho * c * c / dx;
   pml_count_ = pml_count;
+  pml_max_ = pml_max;
   dimensions_ = dimensions;
   segment_count_ = dimensions_.size();
 
@@ -140,10 +143,20 @@ fdtd_horn::fdtd_horn(
         auto local_grid = j - int(edge_infos_[i].y());
         auto x_idx = local_grid / grid_counts_[i].y();
         int y_idx = local_grid % grid_counts_[i].y();
-        bool pml_x = (x_idx < pml_count) || (x_idx >= grid_counts_[i].x() - pml_count);
-        bool pml_y = (y_idx < pml_count) || (y_idx >= grid_counts_[i].y() - pml_count);
-        if (pml_x || pml_y) {
+
+        float pml_l = pml_max * std::max(pml_count_ - int(x_idx), 0) / pml_count_;
+        float pml_r = pml_max * std::max(int(x_idx) - (grid_counts_[i].x() - 1 - pml_count_), 0) / pml_count_;
+        float pml_x = std::max(pml_l, pml_r);
+
+        float pml_d = pml_max * std::max(pml_count_ - int(y_idx), 0) / pml_count_;
+        float pml_u = pml_max * std::max(int(y_idx) - (grid_counts_[i].y() - 1 - pml_count_), 0) / pml_count_;
+        float pml_y = std::max(pml_d, pml_u);
+
+        float pml = std::max(pml_x, pml_y);
+
+        if (pml > 0) {
           grid_conditions_[j].x() = grid_type::PML;
+          grid_conditions_[j].y() = pml;
         }
 
         float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
@@ -259,8 +272,8 @@ void fdtd_horn::update(int frame_index)
       }
 
       case EXCITER : {
-        float freq = 5000; // Hz
-        float amp = 1.f;
+        float freq = 1000; // Hz
+        float amp = 10.f;
         float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
         field_[i].x() = val;
         break;
@@ -274,10 +287,10 @@ void fdtd_horn::update(int frame_index)
         auto not_upper = (local_idx % y_grid_count) != y_grid_count - 1;
         auto not_right = (local_idx / y_grid_count) != grid_counts_[seg_id].x() - 1;
 
-//        field_[i].x() = (field_[i].x()
-//          - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
-//        field_[i].y() = (field_[i].y()
-//          - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
+        field_[i].x() = (field_[i].x()
+          - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
+        field_[i].y() = (field_[i].y()
+          - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
 
         break;
       }
@@ -369,7 +382,7 @@ void fdtd_horn::update(int frame_index)
 
         field_[i].z() = (field_[i].z() - p_fac_ *
           (field_[i].x() - field_[i - y_grid_count].x() * not_left
-          - field_[i].y() - field_[i - 1].y() * not_lower)
+          + field_[i].y() - field_[i - 1].y() * not_lower)
           ) / (1 + pml);
 
         break;

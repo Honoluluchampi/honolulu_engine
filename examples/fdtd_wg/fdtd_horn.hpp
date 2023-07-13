@@ -35,6 +35,7 @@ class fdtd_horn
       float rho,
       float c,
       int pml_count,
+      float pml_max,
       std::vector<int> dimensions,
       std::vector<vec2> sizes);
 
@@ -44,6 +45,7 @@ class fdtd_horn
       float rho,
       float c,
       int pml_count,
+      float pml_max,
       std::vector<int> dimensions,
       std::vector<vec2> sizes);
 
@@ -85,6 +87,7 @@ class fdtd_horn
     float v_fac_;
     float p_fac_;
     int pml_count_;
+    float pml_max_;
     int segment_count_;
     int frame_count_ = 0;
 

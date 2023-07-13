@@ -223,7 +223,8 @@ DEFINE_ENGINE(FDTD2D)
         dx_fdtd,
         rho,
         c,
-        2, // pml count
+        6, // pml count
+        0.5,
         { 2, 1, 2, 1, 2 }, // dimensions
         { {0.1f, 0.04f}, {0.2f, 0.03f}, {0.1f, 0.04f}, {0.1f, 0.03f}, {0.07f, 0.07f}}
       );

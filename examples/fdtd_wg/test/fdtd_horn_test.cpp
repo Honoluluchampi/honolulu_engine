@@ -18,6 +18,7 @@ TEST(fdtd_horn, ctor) {
     1.1f,
     340.f,
     6,
+    0.5,
     { 2, 1, 2 },
     { { 0.1f, 0.2f }, { 0.3f, 0.4f }, { 0.2f, 0.2f } });
 
@@ -75,6 +76,7 @@ TEST(fdtd_horn, pml_marking) {
     1.1f,
     340.f,
     2,
+    0.5,
     { 2 },
     { { 1.f, 1.f } });
 
@@ -82,7 +84,7 @@ TEST(fdtd_horn, pml_marking) {
 
   for (int i = 0; i < grid_conditions.size(); i++) {
     if (i == 12)
-      EXPECT_EQ(grid_conditions[i].x(), fdtd_horn::grid_type::NORMAL);
+      EXPECT_EQ(grid_conditions[i].x(), fdtd_horn::grid_type::NORMAL2);
     else
       EXPECT_EQ(grid_conditions[i].x(), fdtd_horn::grid_type::PML);
   }
