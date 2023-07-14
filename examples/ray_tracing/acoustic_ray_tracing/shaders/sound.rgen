@@ -32,7 +32,7 @@ void main() {
     const float theta = float(gl_LaunchIDEXT.x) / float(gl_LaunchSizeEXT.x) * 2.f * M_PI;
     const float phi   = float(gl_LaunchIDEXT.y) / float(gl_LaunchSizeEXT.y) * 2.f * M_PI;
 
-    // emits rays radically from the listener(camera) position
+    // emits rays radially from the listener(camera) position
     const vec3 rad_direction = vec3(cos(theta), sin(theta) * cos(phi), sin(theta) * sin(phi));
 
     vec4 origin = ubo.inv_view * vec4(0, 0, 0, 1);

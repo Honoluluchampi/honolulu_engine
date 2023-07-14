@@ -16,8 +16,7 @@ layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1) buffer Vertices { vertex v[]; } vertices;
 layout(set = 0, binding = 2) buffer Indices { uint i[]; } indices;
 
-vec3 sphere1_center = vec3(-6, -4, 0);
-vec3 sphere2_center = vec3(2.5, -1.5, 4);
+vec3 sphere_center = vec3(2.5, -1.5, 4);
 float sphere_radius = 0.5f;
 
 const int MAX_HIT = 5;
@@ -36,11 +35,7 @@ void main() {
   // if ray hits sound source
   bool hit_flag = false;
   vec3 hit_point = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-  if (distance(hit_point, sphere1_center) <= sphere_radius + 0.01) {
-    hit_value.y = 1;
-    hit_flag = true;
-  }
-  if (distance(hit_point, sphere2_center) <= sphere_radius + 0.01) {
+  if (distance(hit_point, sphere_center) <= sphere_radius + 0.01) {
     hit_value.y = 2;
     hit_flag = true;
   }
