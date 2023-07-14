@@ -17,6 +17,10 @@ using vec4 = Eigen::Vector4f;
 using mat3 = Eigen::Matrix3f;
 using mat4 = Eigen::Matrix4f;
 
+using ivec2 = Eigen::Vector2i;
+using ivec3 = Eigen::Vector3i;
+using ivec4 = Eigen::Vector4i;
+
 using vec2d = Eigen::Vector2d;
 using vec3d = Eigen::Vector3d;
 using vec4d = Eigen::Vector4d;

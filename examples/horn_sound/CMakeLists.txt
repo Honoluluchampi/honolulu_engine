@@ -12,10 +12,3 @@ target_include_directories(horn_sound PUBLIC
         $ENV{HNLL_ENGN}/include
         )
 target_link_libraries(horn_sound PUBLIC hnll_engine)
-
-set(SOURCES wav_loader.cpp)
-add_executable(wav_loader ${SOURCES})
-target_include_directories(wav_loader PUBLIC
-        $ENV{HNLL_ENGN}/include
-        )
-target_link_libraries(wav_loader PUBLIC hnll_engine)

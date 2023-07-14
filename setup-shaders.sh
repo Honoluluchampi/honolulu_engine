@@ -5,7 +5,7 @@ if [ $# == 1 ]; then
   OUTPUTDIR=$1/spv/
 
   mkdir -p ${OUTPUTDIR}
-  COMPILER=${VULKAN_DIR}/bin/glslc
+  COMPILER=${VULKAN_DIR}/x86_64/bin/glslc
 
   for FILE in ${SHADERDIR}/*.*
     do
