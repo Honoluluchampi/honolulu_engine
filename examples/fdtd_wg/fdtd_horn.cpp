@@ -314,7 +314,6 @@ void fdtd_horn::update(int frame_index)
             if (grid_conditions_[idx + g].x() == grid_type::JUNCTION_2to1_LEFT) {
               mean_p += field_[idx].z();
               count++;
-              idx++;
             }
           }
         }
@@ -359,7 +358,7 @@ void fdtd_horn::update(int frame_index)
       case NORMAL2 :
       case JUNCTION_2to1_RIGHT : {
         auto seg_id = int(grid_conditions_[i].w());
-        auto y_grid_count = grid_counts_[seg_id].y();
+        auto y_grid_count = int(grid_counts_[seg_id].y());
         field_[i].z() -= p_fac_ * (
           field_[i].x() - field_[i - y_grid_count].x() +
           field_[i].y() - field_[i - 1].y()
@@ -407,7 +406,7 @@ void fdtd_horn::update(int frame_index)
             count++;
             idx--;
           }
-          mean_vx /= count;
+          mean_vx /= std::max(count, 1.f);
           field_[i].z() -= p_fac_ * (field_[i].x() - mean_vx);
         }
 
