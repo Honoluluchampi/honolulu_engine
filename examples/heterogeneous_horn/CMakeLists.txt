@@ -13,13 +13,13 @@ target_include_directories(fdtd_wg PUBLIC
         )
 target_link_libraries(fdtd_wg PUBLIC hnll_engine)
 
-project(fdtd2d VERSION 1.0)
-set(SOURCES fdtd2d.cpp fdtd_horn.cpp)
-add_executable(fdtd2d ${SOURCES})
-target_include_directories(fdtd2d PUBLIC
+project(fdtd12 VERSION 1.0)
+set(SOURCES fdtd12.cpp fdtd12_horn.cpp)
+add_executable(fdtd12 ${SOURCES})
+target_include_directories(fdtd12 PUBLIC
         $ENV{HNLL_ENGN}/include
         )
-target_link_libraries(fdtd2d PUBLIC hnll_engine)
+target_link_libraries(fdtd12 PUBLIC hnll_engine)
 
 # add test
 add_subdirectory(test)

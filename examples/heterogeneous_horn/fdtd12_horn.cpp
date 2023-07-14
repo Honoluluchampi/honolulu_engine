@@ -1,7 +1,9 @@
 // hnll
-#include "fdtd_horn.hpp"
+#include "fdtd12_horn.hpp"
 #include <graphics/buffer.hpp>
 #include <utils/rendering_utils.hpp>
+
+#define ID2(x, y) x + y * whole_x_
 
 namespace hnll {
 
@@ -42,140 +44,79 @@ fdtd_horn::fdtd_horn(
   dimensions_ = dimensions;
   segment_count_ = dimensions_.size();
 
+  assert(dimensions.size() == sizes.size()
+    && "fdtd_horn::ctor : element counts of 'dimensions' and 'sizes' should be same.");
+
   whole_grid_count_ = 0;
   size_infos_.resize(dimensions_.size());
   edge_infos_.resize(dimensions_.size());
   grid_counts_.resize(dimensions_.size());
 
-  auto segment_count = dimensions.size();
-
   float current_x_edge = 0.f;
 
-  for (int i = 0; i < dimensions_.size(); i++) {
+  whole_x_ = 0;
+  whole_y_ = 0;
+
+  // calc grid count of whole region
+  for (int i = 0; i < segment_count_; i++) {
     grid_counts_[i].x() = std::floor(sizes[i].x() / dx_);
     grid_counts_[i].y() = std::floor(sizes[i].y() / dx_);
     if (grid_counts_[i].y() % 2 == 0)
       grid_counts_[i].y() -= 1;
 
+    // fix size
     size_infos_[i].x() = grid_counts_[i].x() * dx_;
     size_infos_[i].y() = grid_counts_[i].y() * dx_;
     size_infos_[i].w() = dimensions_[i];
 
-    // if 1D
-    if (dimensions_[i] == 1) {
-      grid_counts_[i].y() = 1;
-    }
-    // if pml
-    if (i == segment_count - 1) {
-      if (dimensions_[i] == 2) {
-        grid_counts_[i].x() += pml_count_ * 2;
-        grid_counts_[i].y() += pml_count_ * 2;
-      }
-      else {
-        throw std::runtime_error("fdtd_horn::unsupported combination.");
-      }
-    }
+    // pml
+//    if (i == segment_count_ - 1) {
+//      if (dimensions_[i] == 2) {
+//        grid_counts_[i].x() += pml_count_ * 2;
+//        grid_counts_[i].y() += pml_count_ * 2;
+//        whole_x_ -= pml_count_;
+//      }
+//      else {
+//        throw std::runtime_error("fdtd_horn::unsupported combination.");
+//      }
+//    }
 
-    edge_infos_[i].x() = current_x_edge;
-    edge_infos_[i].y() = whole_grid_count_;
-    current_x_edge += size_infos_[i].x();
-    whole_grid_count_ += grid_counts_[i].x() * grid_counts_[i].y();
+    whole_x_ += grid_counts_[i].x();
+    whole_y_ = std::max(grid_counts_[i].y(), whole_y_);
   }
 
-  edge_infos_.emplace_back(current_x_edge, static_cast<float>(whole_grid_count_), 0.f, 0.f);
+  x_max_ = whole_x_ * dx_;
+  y_max_ = whole_y_ * dx_;
+  whole_grid_count_ = whole_x_ * whole_y_;
 
   field_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
   grid_conditions_.resize(whole_grid_count_, { 0.f, 0.f, 0.f, 0.f });
 
-  // define grid_conditions
-  for (int i = 0; i < edge_infos_.size() - 1; i++) {
-    for (grid_id j = edge_infos_[i].y(); j < edge_infos_[i + 1].y(); j++) {
-      if (dimensions_[i] == 1)
-        grid_conditions_[j] = { float(grid_type::NORMAL1), 0.f, float(dimensions_[i]), float(i) };
-      else if (dimensions_[i] == 2)
-        grid_conditions_[j] = { float(grid_type::NORMAL2), 0.f, float(dimensions_[i]), float(i) };
-      else
-        throw std::runtime_error("fdtd_horn : unsupported dimension.");
+  // label grids
+  int current_x_idx = 0;
+  for (int i = 0; i < segment_count_; i++) {
+    for (int x = 0; x < grid_counts_[i].x(); x++) {
+      for (int y = 0; y < grid_counts_[i].y(); y++) {
+        int x_idx = current_x_idx + x;
+        int y_idx = whole_y_ / 2 + (y - grid_counts_[i].y() / 2);
+        int idx = ID2(x_idx, y_idx);
 
-      // junction 1D -> 2D
-      if (dimensions_[i] == 1) {
-        // beginning point or ending point
-        if (j == edge_infos_[i].y())
-          grid_conditions_[j].x() = grid_type::JUNCTION_1to2_LEFT;
-        else if (j == edge_infos_[i + 1].y() - 1)
-          grid_conditions_[j].x() = grid_type::JUNCTION_1to2_RIGHT;
-      }
+        if (dimensions_[i] == 1)
+          grid_conditions_[idx].x() = NORMAL1;
 
-      // junction 2D -> 1D (other than PML segment)
-      if (dimensions_[i] == 2 && i != dimensions_.size() - 1) {
-        auto local_grid = j - int(edge_infos_[i].y());
-        int x_idx = local_grid / grid_counts_[i].y();
-        int y_idx = local_grid % grid_counts_[i].y();
-        // inside a 1D tube's radius
-        float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
-        // beginning point
-        if (x_idx == 0 &&
-          i != 0 &&
-          std::abs(y_coord) <= size_infos_[i - 1].y() / 2) {
-          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_LEFT;
+        if (dimensions_[i] == 2) {
+          grid_conditions_[idx].x() = NORMAL2;
+          // pml
+//          if (i == segment_count_ - 1) {
+//            if (x_idx < pml_count_ || x_idx > grid_counts_[i].x() - 1 - pml_count_ ||
+//                y_idx < pml_count_ || y_idx > grid_counts_[i].y() - 1 - pml_count_)
+//              grid_conditions_[idx].x() = PML;
+//          }
         }
-        // ending point
-        if (x_idx == grid_counts_[i].x() - 1 &&
-          i != segment_count_ - 1 &&
-          std::abs(y_coord) <= size_infos_[i + 1].y() / 2) {
-          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_RIGHT;
-        }
-
-        // detect EXCITER
-        // temp : set on the top of the first segment
-        if (i == 0) {
-          if (j < grid_counts_[i].y())
-            grid_conditions_[j].x() = grid_type::EXCITER;
-        }
-
-        // wall
-        if (y_idx == 0 || y_idx == grid_counts_[i].y() - 1)
-          grid_conditions_[j].x() = grid_type::WALL;
-      }
-
-      // detect PML
-      if (i == segment_count_ - 1) {
-        auto local_grid = j - int(edge_infos_[i].y());
-        auto x_idx = local_grid / grid_counts_[i].y();
-        int y_idx = local_grid % grid_counts_[i].y();
-
-        float pml_l = pml_max * std::max(pml_count_ - int(x_idx), 0) / pml_count_;
-        float pml_r = pml_max * std::max(int(x_idx) - (grid_counts_[i].x() - 1 - pml_count_), 0) / pml_count_;
-        float pml_x = std::max(pml_l, pml_r);
-
-        float pml_d = pml_max * std::max(pml_count_ - int(y_idx), 0) / pml_count_;
-        float pml_u = pml_max * std::max(int(y_idx) - (grid_counts_[i].y() - 1 - pml_count_), 0) / pml_count_;
-        float pml_y = std::max(pml_d, pml_u);
-
-        float pml = std::max(pml_x, pml_y);
-
-        if (pml > 0) {
-          grid_conditions_[j].x() = grid_type::PML;
-          grid_conditions_[j].y() = pml;
-        }
-
-        if (x_idx < 10 && x_idx >= pml_count_ && (y_idx == 10 || y_idx == 18)) {
-          grid_conditions_[j].x() = grid_type::WALL;
-        }
-
-        float y_coord = float(y_idx - int(grid_counts_[i].y() / 2)) * dx_;
-        if (x_idx == pml_count_ &&
-          std::abs(y_coord) <= size_infos_[i - 1].y() / 2.f &&
-          i != 0)
-          grid_conditions_[j].x() = grid_type::JUNCTION_2to1_LEFT;
       }
     }
+    current_x_idx += grid_counts_[i].x();
   }
-
-  // temp : test pressure
-//  for (int i = 0; i < field_.size(); i++) {
-//    field_[i].z() = static_cast<float>(i);
-//  }
 }
 
 void fdtd_horn::build_desc(graphics::device &device)

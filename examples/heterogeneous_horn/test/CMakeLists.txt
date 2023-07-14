@@ -1,10 +1,10 @@
 project(fdtd_horn_test)
 set(TEST_SRC
-        ../fdtd_horn.cpp
-        fdtd_horn_test.cpp
+        ../fdtd12_horn.cpp
+        fdtd12_horn_test.cpp
         )
 
-add_executable(fdtd_horn_test ${TEST_SRC})
+add_executable(fdtd12_horn_test ${TEST_SRC})
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -27,10 +27,10 @@ if (APPLE)
     )
     set(GOOGLE_TEST_DIRECTORY ${BREW_PREFIX}/Cellar/googletest/${GOOGLE_TEST_VERSION})
 
-    target_include_directories(fdtd_horn_test PUBLIC ${GOOGLE_TEST_DIRECTORY}/include)
-    target_link_directories(fdtd_horn_test PUBLIC build ${GOOGLE_TEST_DIRECTORY}/lib)
+    target_include_directories(fdtd12_horn_test PUBLIC ${GOOGLE_TEST_DIRECTORY}/include)
+    target_link_directories(fdtd12_horn_test PUBLIC build ${GOOGLE_TEST_DIRECTORY}/lib)
 elseif (UNIX)
-    target_include_directories(fdtd_horn_test PUBLIC $ENV{HNLL_ENGN}/include)
-    target_link_directories(fdtd_horn_test PUBLIC build)
+    target_include_directories(fdtd12_horn_test PUBLIC $ENV{HNLL_ENGN}/include)
+    target_link_directories(fdtd12_horn_test PUBLIC build)
 endif (APPLE)
-target_link_libraries(fdtd_horn_test hnll_engine gtest gtest_main pthread)
+target_link_libraries(fdtd12_horn_test hnll_engine gtest gtest_main pthread)

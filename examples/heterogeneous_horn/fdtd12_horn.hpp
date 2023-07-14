@@ -18,6 +18,7 @@ class fdtd_horn
     static graphics::binding_info common_binding_info;
 
     enum grid_type {
+      EMPTY,
       NORMAL1,
       NORMAL2,
       WALL,
@@ -76,8 +77,10 @@ class fdtd_horn
     const std::vector<vec4>& get_field() const { return field_; }
     const std::vector<vec4>& get_grid_conditions() const { return grid_conditions_; }
 
-    int   get_whole_grid_count() const { return whole_grid_count_; }
-    float get_x_max() const { return edge_infos_[segment_count_].x(); }
+    int   get_whole_x() const { return whole_x_; }
+    int   get_whole_y() const { return whole_y_; }
+    float get_x_max() const { return x_max_; }
+    float get_y_max() const { return y_max_; }
 
   private :
     float dt_;
@@ -94,6 +97,17 @@ class fdtd_horn
     // dimension of each grid
     std::vector<int> dimensions_;
     int whole_grid_count_;
+    int whole_x_;
+    int whole_y_;
+    int active_grid_count_;
+
+    float x_max_;
+    float y_max_;
+
+    std::vector<int> ids_1d_;
+    std::vector<int> ids_2d_;
+    std::vector<int> ids_pml_;
+    std::vector<int> ids_gal_; // gradually averaging layers
 
     // ******************** data for desc sets ***************************
     // all of grid's value is packed into 1D vector

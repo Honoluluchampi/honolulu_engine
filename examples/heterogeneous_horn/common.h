@@ -10,10 +10,12 @@ struct fdtd_wg_push {
   ivec4 idx;
 };
 
-struct fdtd_2d_push {
-  // dimension of tube
-  vec2 h_dim;
-  // dimension of window
-  vec2 w_dim;
-  ivec2 grid_count; // grid count of each axis
+struct fdtd12_push {
+  float horn_x_max;
+  float horn_y_max;
+  int pml_count;
+  int whole_x;
+  float dx;
+  float dt;
+  vec2 window_size;
 };

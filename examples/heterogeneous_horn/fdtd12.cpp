@@ -5,7 +5,7 @@
 #include <game/shading_system.hpp>
 #include <utils/common_alias.hpp>
 
-#include "fdtd_horn.hpp"
+#include "fdtd12_horn.hpp"
 
 // std
 #include <iostream>
@@ -137,15 +137,7 @@ struct fdtd2d
   bool pml_right;
 };
 
-struct fdtd12_push {
-  int segment_count; // element count of segment info
-  float horn_x_max;
-  int pml_count;
-  int whole_grid_count;
-  float dx;
-  float dt;
-  vec2 window_size;
-};
+#include "common.h"
 
 DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
 {
@@ -172,7 +164,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
       pipeline_ = create_pipeline(
         pipeline_layout_,
         game::graphics_engine_core::get_default_render_pass(),
-        "/examples/fdtd_wg/shaders/spv/",
+        "/examples/heterogeneous_horn/shaders/spv/",
         { "fdtd_wg.vert.spv", "fdtd12.frag.spv" },
         { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
         graphics::pipeline::default_pipeline_config_info()
@@ -187,19 +179,19 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
       for (auto& target_kv : targets_) {
         auto& target = target_kv.second;
 
-        target.update(info.frame_index);
+//        target.update(info.frame_index);
 
         set_current_command_buffer(info.command_buffer);
 
         auto viewport_size = game::gui_engine::get_viewport_size();
         fdtd12_push push;
-        push.segment_count = target.get_segment_count();
-        push.window_size = vec2{ viewport_size.x, viewport_size.y };
         push.horn_x_max = target.get_x_max();
+        push.horn_y_max = target.get_y_max();
         push.pml_count = target.get_pml_count();
-        push.whole_grid_count = target.get_whole_grid_count();
+        push.whole_x = target.get_whole_x();
         push.dx = target.get_dx();
         push.dt = target.get_dt();
+        push.window_size = vec2{ viewport_size.x, viewport_size.y };
 
         bind_pipeline();
         bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
