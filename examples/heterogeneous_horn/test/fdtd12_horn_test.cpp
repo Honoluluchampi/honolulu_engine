@@ -62,6 +62,25 @@ TEST(fdtd12_horn, ctor)
     std::cout << i << std::endl;
     EXPECT_EQ(grid_conditions[i].x(), test_grid_types[i]);
   }
+
+  // check gathered indices
+  std::vector<int> test_1d = { 24 };
+  std::vector<int> test_2d = { 16, 17, 18, 21, 27, 28, 36, 37, 38 };
+  std::vector<int> test_pml = { 5, 6, 7, 8, 9, 19, 29, 39, 45, 46, 47, 48, 49 };
+  std::vector<int> test_exc = { 20 };
+  std::vector<int> test_j12l = { 23 };
+  std::vector<int> test_j12r = { 25 };
+  std::vector<int> test_j21l = { 26 };
+  std::vector<int> test_j21r = { 22 };
+
+  EXPECT_TRUE(horn->get_ids_1d() == test_1d);
+  EXPECT_TRUE(horn->get_ids_2d() == test_2d);
+  EXPECT_TRUE(horn->get_ids_pml() == test_pml);
+  EXPECT_TRUE(horn->get_ids_exc() == test_exc);
+  EXPECT_TRUE(horn->get_ids_j12l() == test_j12l);
+  EXPECT_TRUE(horn->get_ids_j12r() == test_j12r);
+  EXPECT_TRUE(horn->get_ids_j21l() == test_j21l);
+  EXPECT_TRUE(horn->get_ids_j21r() == test_j21r);
 }
 
 } // namespace hnll
