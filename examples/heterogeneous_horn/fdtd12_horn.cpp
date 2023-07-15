@@ -96,8 +96,8 @@ fdtd_horn::fdtd_horn(
   int current_x_idx = 0;
   for (int i = 0; i < segment_count_; i++) {
     for (int x = 0; x < grid_counts_[i].x(); x++) {
+      int x_idx = current_x_idx + x;
       for (int y = 0; y < grid_counts_[i].y(); y++) {
-        int x_idx = current_x_idx + x;
         int y_idx = whole_y_ / 2 + (y - grid_counts_[i].y() / 2);
         int idx = ID2(x_idx, y_idx);
 
@@ -113,6 +113,13 @@ fdtd_horn::fdtd_horn(
 //              grid_conditions_[idx].x() = PML;
 //          }
         }
+      }
+      // set 1D tube wall
+      if (dimensions_[i] == 1) {
+        int y_lower_wall = whole_y_ / 2 + (-1 - grid_counts_[i].y() / 2);
+        int y_upper_wall = whole_y_ / 2 + (grid_counts_[i].y() / 2 + 1);
+        grid_conditions_[ID2(x_idx, y_lower_wall)].x() = WALL;
+        grid_conditions_[ID2(x_idx, y_upper_wall)].x() = WALL;
       }
     }
     current_x_idx += grid_counts_[i].x();

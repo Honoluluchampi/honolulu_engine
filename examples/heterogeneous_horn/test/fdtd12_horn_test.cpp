@@ -22,7 +22,7 @@ TEST(fdtd12_horn, ctor)
     0.5,
     {2, 1, 2},
     {{3.f, 3.f},
-     {3.f, 3.f},
+     {3.f, 1.f},
      {3.f, 3.f}});
 
   // physical constants
@@ -39,9 +39,9 @@ TEST(fdtd12_horn, ctor)
 
   const auto& grid_conditions = horn->get_grid_conditions();
   int test_grid_types[] = {
+    2, 2, 2, 3, 3, 3, 2, 2, 2,
     2, 2, 2, 1, 1, 1, 2, 2, 2,
-    2, 2, 2, 1, 1, 1, 2, 2, 2,
-    2, 2, 2, 1, 1, 1, 2, 2, 2,
+    2, 2, 2, 3, 3, 3, 2, 2, 2,
   };
 
   for (int i = 0; i < 27; i++) {
