@@ -254,7 +254,21 @@ void fdtd_horn::build_desc(graphics::device &device)
 void fdtd_horn::update(int frame_index)
 {
   frame_count_++;
-  // update velocity
+
+  update_velocity();
+  update_pressure();
+
+  // update field buffer
+  desc_sets_->write_to_buffer(0, 0, frame_index, field_.data());
+  desc_sets_->flush_buffer(0, 0, frame_index);
+}
+
+void fdtd_horn::update_velocity()
+{
+  for (const auto& id : ids_1d_) {
+    // retrieve x y coord
+
+  }
   for (int i = 0; i < whole_grid_count_; i++) {
     switch(int(grid_conditions_[i].x())) {
       case NORMAL1 :
@@ -292,9 +306,9 @@ void fdtd_horn::update(int frame_index)
         auto not_right = (local_idx / y_grid_count) != grid_counts_[seg_id].x() - 1;
 
         field_[i].x() = (field_[i].x()
-          - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
+                         - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
         field_[i].y() = (field_[i].y()
-          - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
+                         - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
 
         break;
       }
@@ -345,7 +359,10 @@ void fdtd_horn::update(int frame_index)
         throw std::runtime_error("unsupported grid state.");
     }
   }
+}
 
+void fdtd_horn::update_pressure()
+{
   // update pressure
   for (int i = 0; i < whole_grid_count_; i++) {
     switch (int(grid_conditions_[i].x())) {
@@ -384,9 +401,9 @@ void fdtd_horn::update(int frame_index)
         auto not_left = (local_idx / y_grid_count) != 0;
 
         field_[i].z() = (field_[i].z() - p_fac_ *
-          (field_[i].x() - field_[i - y_grid_count].x() * not_left
-          + field_[i].y() - field_[i - 1].y() * not_lower)
-          ) / (1 + pml);
+                                         (field_[i].x() - field_[i - y_grid_count].x() * not_left
+                                          + field_[i].y() - field_[i - 1].y() * not_lower)
+                        ) / (1 + pml);
 
         break;
       }
@@ -423,9 +440,6 @@ void fdtd_horn::update(int frame_index)
       }
     }
   }
-  // update field buffer
-  desc_sets_->write_to_buffer(0, 0, frame_index, field_.data());
-  desc_sets_->flush_buffer(0, 0, frame_index);
 }
 
 } // namespace hnll

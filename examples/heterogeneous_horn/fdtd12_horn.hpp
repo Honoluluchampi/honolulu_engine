@@ -94,6 +94,9 @@ class fdtd_horn
     const std::vector<int>& get_ids_j21r() const { return ids_j21r_; }
 
   private :
+    void update_velocity();
+    void update_pressure();
+
     float dt_;
     float dx_;
     float rho_;
