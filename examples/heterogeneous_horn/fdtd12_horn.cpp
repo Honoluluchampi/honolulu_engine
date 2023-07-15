@@ -101,12 +101,25 @@ fdtd_horn::fdtd_horn(
         int y_idx = whole_y_ / 2 + (y - grid_counts_[i].y() / 2);
         int idx = ID2(x_idx, y_idx);
 
-        if (dimensions_[i] == 1)
+        if (dimensions_[i] == 1) {
+          assert(i != 0 && "1D tube should not be the first segment.");
+          // normal
           grid_conditions_[idx].x() = NORMAL1;
-
+          // junction
+          if (x == 0) {
+            grid_conditions_[idx].x() = JUNCTION_1to2_LEFT;
+            grid_conditions_[idx - 1].x() = JUNCTION_2to1_RIGHT;
+          }
+          if (x == grid_counts_[i].x() - 1) {
+            grid_conditions_[idx].x() = JUNCTION_1to2_RIGHT;
+            grid_conditions_[idx + 1].x() = JUNCTION_2to1_LEFT;
+          }
+        }
         if (dimensions_[i] == 2) {
           // pml off
           if (i != segment_count_ - 1) {
+            if (grid_conditions_[idx].x() != EMPTY)
+              continue;
             // normal
             grid_conditions_[idx].x() = NORMAL2;
             // exciter
@@ -137,6 +150,31 @@ fdtd_horn::fdtd_horn(
       }
     }
     current_x_idx += grid_counts_[i].x();
+  }
+
+  // gather grids
+  for (int i = 0; i < whole_grid_count_; i++) {
+    auto state = static_cast<int>(grid_conditions_[i].x());
+    switch (state) {
+      case NORMAL1 :
+        ids_1d_.push_back(i); break;
+      case NORMAL2 :
+        ids_2d_.push_back(i); break;
+      case PML :
+        ids_pml_.push_back(i); break;
+      case EXCITER :
+        ids_exc_.push_back(i); break;
+      case JUNCTION_1to2_LEFT :
+        ids_j12l_.push_back(i); break;
+      case JUNCTION_1to2_RIGHT :
+        ids_j12r_.push_back(i); break;
+      case JUNCTION_2to1_LEFT :
+        ids_j21l_.push_back(i); break;
+      case JUNCTION_2to1_RIGHT :
+        ids_j21r_.push_back(i); break;
+      default :
+        break;
+    }
   }
 }
 

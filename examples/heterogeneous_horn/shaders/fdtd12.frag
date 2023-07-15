@@ -29,7 +29,7 @@ vec4[10] debug_color = vec4[](
   vec4(0.f, 0.f, 0.5f, 1.f),  // NORMAL2
   vec4(1.f, 1.f, 1.f, 1.f),   // WALL
   vec4(0.f, 1.f, 0.1f, 1.f),  // EXCITER
-  vec4(0.f, 1.f, 1.f, 1.f),   // PML
+  vec4(1.f, 0.3f, 0.f, 1.f),   // PML
   vec4(0.7f, 0.7f, 0.f, 1.f), // JUNCTION_12_LEFT
   vec4(0.7f, 0.f, 0.7f, 1.f), // JUNCTION_12_RIGHT
   vec4(0.f, 0.7f, 0.7f, 1.f), // JUNCTION_21_LEFT

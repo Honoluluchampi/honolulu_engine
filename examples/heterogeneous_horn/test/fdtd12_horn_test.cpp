@@ -11,6 +11,18 @@ namespace hnll {
 bool neq(double a, double b, double eps = 0.00001)
 { return std::abs(a - b) < eps; }
 
+bool operator==(const std::vector<int>& a, const std::vector<int>& b)
+{
+  if (a.size() != b.size())
+    return false;
+
+  for (int i = 0; i < a.size(); i++) {
+    if (a[i] != b[i])
+      return false;
+  }
+  return true;
+}
+
 TEST(fdtd12_horn, ctor)
 {
   auto horn = fdtd_horn::create(
@@ -41,12 +53,12 @@ TEST(fdtd12_horn, ctor)
   int test_grid_types[] = {
     0, 0, 0, 0, 0, 5, 5, 5, 5, 5,
     3, 3, 3, 3, 3, 3, 2, 2, 2, 5,
-    4, 2, 2, 1, 1, 1, 2, 2, 2, 5,
+    4, 2, 9, 6, 1, 7, 8, 2, 2, 5,
     3, 3, 3, 3, 3, 3, 2, 2, 2, 5,
     0, 0, 0, 0, 0, 5, 5, 5, 5, 5,
   };
 
-  for (int i = 0; i < 27; i++) {
+  for (int i = 0; i < 50; i++) {
     std::cout << i << std::endl;
     EXPECT_EQ(grid_conditions[i].x(), test_grid_types[i]);
   }

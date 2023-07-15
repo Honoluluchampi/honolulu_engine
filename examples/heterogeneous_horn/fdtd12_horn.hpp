@@ -82,6 +82,17 @@ class fdtd_horn
     float get_x_max() const { return x_max_; }
     float get_y_max() const { return y_max_; }
 
+    // for test
+    const std::vector<int>& get_ids_1d() const { return ids_1d_; }
+    const std::vector<int>& get_ids_2d() const { return ids_2d_; }
+    const std::vector<int>& get_ids_pml() const { return ids_pml_; }
+    const std::vector<int>& get_ids_gal() const { return ids_gal_; } // gradually averaging layers
+    const std::vector<int>& get_ids_exc() const { return ids_exc_; }
+    const std::vector<int>& get_ids_j12l() const { return ids_j12l_; } // JUNCTION_1to2_LEFT
+    const std::vector<int>& get_ids_j12r() const { return ids_j12r_; }
+    const std::vector<int>& get_ids_j21l() const { return ids_j21l_; }
+    const std::vector<int>& get_ids_j21r() const { return ids_j21r_; }
+
   private :
     float dt_;
     float dx_;
@@ -108,6 +119,11 @@ class fdtd_horn
     std::vector<int> ids_2d_;
     std::vector<int> ids_pml_;
     std::vector<int> ids_gal_; // gradually averaging layers
+    std::vector<int> ids_exc_;
+    std::vector<int> ids_j12l_; // JUNCTION_1to2_LEFT
+    std::vector<int> ids_j12r_;
+    std::vector<int> ids_j21l_;
+    std::vector<int> ids_j21r_;
 
     // ******************** data for desc sets ***************************
     // all of grid's value is packed into 1D vector
