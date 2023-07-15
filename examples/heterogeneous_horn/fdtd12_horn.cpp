@@ -70,16 +70,16 @@ fdtd_horn::fdtd_horn(
     size_infos_[i].w() = dimensions_[i];
 
     // pml
-//    if (i == segment_count_ - 1) {
-//      if (dimensions_[i] == 2) {
-//        grid_counts_[i].x() += pml_count_ * 2;
-//        grid_counts_[i].y() += pml_count_ * 2;
-//        whole_x_ -= pml_count_;
-//      }
-//      else {
-//        throw std::runtime_error("fdtd_horn::unsupported combination.");
-//      }
-//    }
+    if (i == segment_count_ - 1) {
+      if (dimensions_[i] == 2) {
+        grid_counts_[i].x() += pml_count_ * 2;
+        grid_counts_[i].y() += pml_count_ * 2;
+        whole_x_ -= pml_count_;
+      }
+      else {
+        throw std::runtime_error("fdtd_horn::unsupported combination.");
+      }
+    }
 
     whole_x_ += grid_counts_[i].x();
     whole_y_ = std::max(grid_counts_[i].y(), whole_y_);
@@ -105,13 +105,19 @@ fdtd_horn::fdtd_horn(
           grid_conditions_[idx].x() = NORMAL1;
 
         if (dimensions_[i] == 2) {
-          grid_conditions_[idx].x() = NORMAL2;
-          // pml
-//          if (i == segment_count_ - 1) {
-//            if (x_idx < pml_count_ || x_idx > grid_counts_[i].x() - 1 - pml_count_ ||
-//                y_idx < pml_count_ || y_idx > grid_counts_[i].y() - 1 - pml_count_)
-//              grid_conditions_[idx].x() = PML;
-//          }
+          // pml off
+          if (i != segment_count_ - 1)
+            grid_conditions_[idx].x() = NORMAL2;
+          // pml on
+          else {
+            idx -= pml_count_;
+            if (grid_conditions_[idx].x() != EMPTY)
+              continue;
+            grid_conditions_[idx].x() = NORMAL2;
+            if (x < pml_count_ || x_idx > whole_x_ - 1 ||
+                y < pml_count_ || y > grid_counts_[i].y() - 1 - pml_count_)
+              grid_conditions_[idx].x() = PML;
+          }
         }
       }
       // set 1D tube wall

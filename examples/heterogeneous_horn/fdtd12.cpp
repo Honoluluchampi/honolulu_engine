@@ -218,7 +218,7 @@ DEFINE_ENGINE(FDTD2D)
         6, // pml count
         0.5,
         { 2, 1, 2, 1, 2 }, // dimensions
-        { {0.1f, 0.04f}, {0.2f, 0.03f}, {0.1f, 0.04f}, {0.1f, 0.03f}, {0.07f, 0.07f}}
+        { {0.1f, 0.04f}, {0.2f, 0.03f}, {0.1f, 0.04f}, {0.1f, 0.03f}, {0.1f, 0.1f}}
       );
       horn_->build_desc(game::graphics_engine_core::get_device_r());
       add_render_target<fdtd_wg_shading_system>(*horn_);
