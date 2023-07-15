@@ -106,8 +106,16 @@ fdtd_horn::fdtd_horn(
 
         if (dimensions_[i] == 2) {
           // pml off
-          if (i != segment_count_ - 1)
+          if (i != segment_count_ - 1) {
+            // normal
             grid_conditions_[idx].x() = NORMAL2;
+            // exciter
+            if (x_idx == 0)
+              grid_conditions_[idx].x() = EXCITER;
+            // WALL
+            if (y == 0 || y == grid_counts_[i].y() - 1)
+              grid_conditions_[idx].x() = WALL;
+          }
           // pml on
           else {
             idx -= pml_count_;
