@@ -263,102 +263,72 @@ void fdtd_horn::update(int frame_index)
   desc_sets_->flush_buffer(0, 0, frame_index);
 }
 
+void fdtd_horn::update_element(const std::vector<int>& ids, std::function<void(int, int, int)> func)
+{
+  for (const auto& id : ids) {
+    // retrieve x, y coord
+    int x = id % whole_x_;
+    int y = id / whole_y_;
+    func(id, x, y);
+  }
+}
+
 void fdtd_horn::update_velocity()
 {
-  for (const auto& id : ids_1d_) {
-    // retrieve x y coord
+  // 1D tube
+  // TODO update only one grid
+  update_element(ids_1d_, [this](int id, int x, int y) {
+    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+  });
 
-  }
-  for (int i = 0; i < whole_grid_count_; i++) {
-    switch(int(grid_conditions_[i].x())) {
-      case NORMAL1 :
-      case JUNCTION_1to2_LEFT : {
-        field_[i].x() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
-        break;
+  // 2D
+  update_element(ids_2d_, [this](int id, int x, int y) {
+    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+    // fix velocity at the boundary
+    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
+      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
+  });
+
+  // exciter
+  update_element(ids_exc_, [this](int id, int x, int y) {
+    float freq = 1000;
+    float amp = 1.f;
+    float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
+    field_[id].x() = val;
+  });
+
+  // pml
+  update_element(ids_pml_, [this](int id, int x, int y) {
+    auto pml = grid_conditions_[id].y();
+    bool not_right = x != whole_x_ - 1;
+    bool not_upper = y != whole_y_ - 1;
+    field_[id].x() = (field_[id].x() - v_fac_ * (field_[ID2(x + 1, y)].z() * not_right - field_[id].z())) / (1 + pml);
+    field_[id].y() = (field_[id].y() - v_fac_ * (field_[ID2(x, y + 1)].z() * not_upper - field_[id].z())) / (1 + pml);
+  });
+
+  // j12r
+  update_element(ids_j12r_, [this](int id, int x, int y) {
+    // calc mean pressure
+    float mean_p = 0.f;
+    float count = 0.f;
+    for (int y_next = 0; y_next < whole_y_; y_next++) {
+      auto next_id = ID2(x + 1, y_next);
+      if (grid_conditions_[next_id].x() == grid_type::JUNCTION_2to1_LEFT) {
+        mean_p += field_[next_id].z();
+        count++;
       }
-      case NORMAL2 :
-      case JUNCTION_2to1_LEFT : {
-        auto y_grid_count = grid_counts_[int(grid_conditions_[i].w())].y();
-        field_[i].x() -= v_fac_ * (field_[i + y_grid_count].z() - field_[i].z());
-        if (grid_conditions_[i + 1].x() != grid_type::WALL)
-          field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
-        break;
-      }
-
-      case WALL : {
-        break;
-      }
-
-      case EXCITER : {
-        float freq = 1000; // Hz
-        float amp = 1.f;
-        float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
-        field_[i].x() = val;// * (frame_count_ <= 10);
-        break;
-      }
-
-      case PML : {
-        auto pml = grid_conditions_[i].y();
-        auto seg_id = int(grid_conditions_[i].w());
-        auto y_grid_count = grid_counts_[seg_id].y();
-        auto local_idx = i - int(edge_infos_[seg_id].y());
-        auto not_upper = (local_idx % y_grid_count) != y_grid_count - 1;
-        auto not_right = (local_idx / y_grid_count) != grid_counts_[seg_id].x() - 1;
-
-        field_[i].x() = (field_[i].x()
-                         - v_fac_ * (field_[i + y_grid_count].z() * not_right - field_[i].z())) / (1 + pml);
-        field_[i].y() = (field_[i].y()
-                         - v_fac_ * (field_[i + 1].z() * not_upper - field_[i].z())) / (1 + pml);
-
-        break;
-      }
-
-      case JUNCTION_1to2_RIGHT : {
-        // calc mean pressure
-        auto seg_id = int(grid_conditions_[i].w());
-        float mean_p = 0.f;
-        float count = 0.f;
-        int idx = -1;
-        if (grid_conditions_[i + 1].x() == grid_type::PML) {
-          int next_seg = grid_conditions_[i + 1].w();
-          int next_y_grid_count = grid_counts_[next_seg].y();
-          idx = i + 1 + pml_count_ * (next_y_grid_count + 1);
-          // TODO : fix linear search
-          for (int g = 0; g < next_y_grid_count - pml_count_ * 2; g++) {
-            if (grid_conditions_[idx + g].x() == grid_type::JUNCTION_2to1_LEFT) {
-              mean_p += field_[idx].z();
-              count++;
-            }
-          }
-        }
-        else {
-          idx = i + 2;
-          while (grid_conditions_[idx].x() == grid_type::JUNCTION_2to1_LEFT) {
-            mean_p += field_[idx].z();
-            count++;
-            idx++;
-          }
-        }
-
-        mean_p /= std::max(1.f, count);
-        field_[i].x() -= v_fac_ * (mean_p - field_[i].z());
-        break;
-      }
-
-      case JUNCTION_2to1_RIGHT : {
-        auto next_seg = grid_conditions_[i].w() + 1;
-        auto next_idx = int(edge_infos_[next_seg].y());
-        auto next_p = field_[next_idx].z();
-        field_[i].x() -= v_fac_ * (next_p - field_[i].z());
-        if (grid_conditions_[i + 1].x() != grid_type::WALL)
-          field_[i].y() -= v_fac_ * (field_[i + 1].z() - field_[i].z());
-        break;
-      }
-
-      default :
-        throw std::runtime_error("unsupported grid state.");
     }
-  }
+    mean_p /= std::max(1.f, count);
+    field_[id].x() -= v_fac_ * (mean_p - field_[id].z());
+  });
+
+  // j21r
+  update_element(ids_j21r_, [this](int id, int x, int y){
+    // TODO : refer representative grid (y = whole_y_ / 2);
+    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
+      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
+  });
 }
 
 void fdtd_horn::update_pressure()
