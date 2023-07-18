@@ -95,7 +95,7 @@ class fdtd_horn
 
   private :
     // func takes "id", "x_id", "y_id")
-    void update_element(const std::vector<int>& ids, std::function<void(int, int, int)> func);
+    void update_element(const std::vector<int>& ids, const std::function<void(int, int, int)>& func);
     void update_velocity();
     void update_pressure();
 

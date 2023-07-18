@@ -13,8 +13,6 @@
 // lib
 #include <AudioFile/AudioFile.h>
 
-#define ELEM_2D(i, j) (i) + grid_count.x() * (j)
-
 namespace hnll {
 
 constexpr float dx_fdtd = 3.83e-3; // dx for fdtd grid : 3.83mm
@@ -25,117 +23,6 @@ constexpr float rho = 1.17f;
 
 constexpr float v_fac = dt / (rho * dx_fdtd);
 constexpr float p_fac = dt * rho * c * c / dx_fdtd;
-
-struct fdtd2d
-{
-  fdtd2d() = default;
-
-  void build(
-    float w,
-    float h,
-    int pml_layer_count = 6,
-    bool up_pml = true,
-    bool down_pml = true,
-    bool left_pml = true,
-    bool right_pml = true)
-  {
-    // grid_count of main domain of each axis
-    main_grid_count.x() = static_cast<int>(w / dx_fdtd);
-    main_grid_count.y() = static_cast<int>(h / dx_fdtd);
-    height = h;
-    width = w;
-    pml_count = pml_layer_count;
-    grid_count.x() = main_grid_count.x() + pml_count * left_pml + pml_count * right_pml + 2;
-    grid_count.y() = main_grid_count.y() + pml_count * up_pml + pml_count * down_pml + 2;
-    whole_grid_count = grid_count.x() * grid_count.y();
-    p.resize(whole_grid_count, 0);
-    vx.resize(whole_grid_count, 0);
-    vy.resize(whole_grid_count, 0);
-    pml_up = up_pml;
-    pml_down = down_pml;
-    pml_left = left_pml;
-    pml_right = right_pml;
-  }
-
-  void update()
-  {
-    float pml_max = 0.5;
-    // update velocity
-    for (int j = 1; j < grid_count.y() - 1; j++) {
-      for (int i = 1; i < grid_count.x() - 1; i++) {
-        if (j == 1 && i < grid_count.x() * 4 / 5)
-          continue;
-        float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
-        float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_up * pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_down * pml_max * std::max(j - main_grid_count.y() - pml_count * pml_up, 0) / pml_count;
-        float pml_y = std::max(pml_u, pml_d);
-        float pml = std::max(pml_x, pml_y);
-
-        vx[ELEM_2D(i, j)] = (vx[ELEM_2D(i, j)] - v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i - 1, j)])) / (1 + pml);
-        vy[ELEM_2D(i, j)] = (vy[ELEM_2D(i, j)] - v_fac * (p[ELEM_2D(i, j)] - p[ELEM_2D(i, j - 1)])) / (1 + pml);
-      }
-    }
-    // update pressure
-    for (int j = 1; j < grid_count.y() - 1; j++) {
-      for (int i = 1; i < grid_count.x() - 1; i++) {
-        float pml_l = pml_left * pml_max * std::max(pml_count + 1 - i, 0) / pml_count;
-        float pml_r = pml_right * pml_max * std::max(i - main_grid_count.x() - pml_count * pml_left, 0) / pml_count;
-        float pml_x = std::max(pml_l, pml_r);
-        float pml_u = pml_up * pml_max * std::max(pml_count + 1 - j, 0) / pml_count;
-        float pml_d = pml_down * pml_max * std::max(j - main_grid_count.y() - pml_count * pml_up, 0) / pml_count;
-        float pml_y = std::max(pml_u, pml_d);
-        float pml = std::max(pml_x, pml_y);
-
-//        if (i <= grid_count.x() / 3) {
-          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
-            (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
-               / (1 + pml);
-//        }
-//        else if (i <= grid_count.x() * 2 / 3){
-//          if (j == 1) {
-//            p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac * (vx[ELEM_2D(i + 1, grid_count.y() / 2)] - vx[ELEM_2D(i, grid_count.y() / 2)])) / (1 + pml_x);
-//          }
-//          else {
-//            p[ELEM_2D(i, j)] = p[ELEM_2D(i, 1)];
-//          }
-//        }
-//        else {
-//          p[ELEM_2D(i, j)] = (p[ELEM_2D(i, j)] - p_fac *
-//                                                 (vx[ELEM_2D(i + 1, j)] - vx[ELEM_2D(i, j)] + vy[ELEM_2D(i, j + 1)] - vy[ELEM_2D(i, j)]))
-//                             / (1 + pml);
-//        }
-      }
-    }
-  }
-
-  std::vector<float> get_field() const
-  {
-    std::vector<float> field;
-    for (int j = pml_count * pml_up + 1; j < grid_count.y() - (pml_count * pml_down + 1); j++) {
-      for (int i = pml_count * pml_left + 1; i < grid_count.x() - (pml_count * pml_right + 1); i++) {
-        field.emplace_back(p[ELEM_2D(i, j)]);
-      }
-    }
-    return field;
-  }
-
-  std::vector<float> p;
-  std::vector<float> vx;
-  std::vector<float> vy;
-
-  ivec2 main_grid_count; // grid count of main region
-  ivec2 grid_count;
-  int whole_grid_count;
-  int pml_count;
-  float height;
-  float width;
-  bool pml_up;
-  bool pml_down;
-  bool pml_left;
-  bool pml_right;
-};
 
 #include "common.h"
 
@@ -179,7 +66,7 @@ DEFINE_SHADING_SYSTEM(fdtd_wg_shading_system, fdtd_horn)
       for (auto& target_kv : targets_) {
         auto& target = target_kv.second;
 
-//        target.update(info.frame_index);
+        target.update(info.frame_index);
 
         set_current_command_buffer(info.command_buffer);
 

@@ -52,7 +52,9 @@ void main() {
   int idx = x_idx + y_idx * push.whole_x;
 
   int state = int(grid_conditions[idx].x);
-  out_color = debug_color[state];
+  float val = field[idx].z;
+  out_color = vec4(val, 0.f, -val, 1.f);
+//  out_color = debug_color[state];
 
   return;
 }

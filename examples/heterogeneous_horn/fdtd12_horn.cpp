@@ -263,12 +263,12 @@ void fdtd_horn::update(int frame_index)
   desc_sets_->flush_buffer(0, 0, frame_index);
 }
 
-void fdtd_horn::update_element(const std::vector<int>& ids, std::function<void(int, int, int)> func)
+void fdtd_horn::update_element(const std::vector<int>& ids, const std::function<void(int, int, int)>& func)
 {
   for (const auto& id : ids) {
     // retrieve x, y coord
     int x = id % whole_x_;
-    int y = id / whole_y_;
+    int y = id / whole_x_;
     func(id, x, y);
   }
 }
@@ -281,135 +281,133 @@ void fdtd_horn::update_velocity()
     field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
   });
 
-  // 2D
-  update_element(ids_2d_, [this](int id, int x, int y) {
+  update_element(ids_j12l_, [this](int id, int x, int y) {
     field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
-    // fix velocity at the boundary
-    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
-      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
   });
+
+  // 2D
+//  update_element(ids_2d_, [this](int id, int x, int y) {
+//    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+//    // fix velocity at the boundary
+//    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
+//      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
+//  });
+//
+//  update_element(ids_j21l_, [this](int id, int x, int y) {
+//    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+//    // fix velocity at the boundary
+//    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
+//      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
+//  });
 
   // exciter
   update_element(ids_exc_, [this](int id, int x, int y) {
     float freq = 1000;
     float amp = 1.f;
-    float val = amp * std::sin(2.f * M_PI * freq * frame_count_ * dt_);
+    float val = amp * std::cos(2.f * M_PI * freq * frame_count_ * dt_);
     field_[id].x() = val;
   });
 
   // pml
-  update_element(ids_pml_, [this](int id, int x, int y) {
-    auto pml = grid_conditions_[id].y();
-    bool not_right = x != whole_x_ - 1;
-    bool not_upper = y != whole_y_ - 1;
-    field_[id].x() = (field_[id].x() - v_fac_ * (field_[ID2(x + 1, y)].z() * not_right - field_[id].z())) / (1 + pml);
-    field_[id].y() = (field_[id].y() - v_fac_ * (field_[ID2(x, y + 1)].z() * not_upper - field_[id].z())) / (1 + pml);
-  });
+//  update_element(ids_pml_, [this](int id, int x, int y) {
+//    auto pml = grid_conditions_[id].y();
+//    bool not_right = x != whole_x_ - 1;
+//    bool not_upper = y != whole_y_ - 1;
+//    field_[id].x() = (field_[id].x() - v_fac_ * (field_[ID2(x + 1, y)].z() * not_right - field_[id].z())) / (1 + pml);
+//    field_[id].y() = (field_[id].y() - v_fac_ * (field_[ID2(x, y + 1)].z() * not_upper - field_[id].z())) / (1 + pml);
+//  });
 
   // j12r
-  update_element(ids_j12r_, [this](int id, int x, int y) {
-    // calc mean pressure
-    float mean_p = 0.f;
-    float count = 0.f;
-    for (int y_next = 0; y_next < whole_y_; y_next++) {
-      auto next_id = ID2(x + 1, y_next);
-      if (grid_conditions_[next_id].x() == grid_type::JUNCTION_2to1_LEFT) {
-        mean_p += field_[next_id].z();
-        count++;
-      }
-    }
-    mean_p /= std::max(1.f, count);
-    field_[id].x() -= v_fac_ * (mean_p - field_[id].z());
-  });
+//  update_element(ids_j12r_, [this](int id, int x, int y) {
+//    // calc mean pressure
+//    float mean_p = 0.f;
+//    float count = 0.f;
+//    for (int y_next = 0; y_next < whole_y_; y_next++) {
+//      auto next_id = ID2(x + 1, y_next);
+//      if (grid_conditions_[next_id].x() == grid_type::JUNCTION_2to1_LEFT) {
+//        mean_p += field_[next_id].z();
+//        count++;
+//      }
+//    }
+//    mean_p /= std::max(1.f, count);
+//    field_[id].x() -= v_fac_ * (mean_p - field_[id].z());
+//  });
 
   // j21r
-  update_element(ids_j21r_, [this](int id, int x, int y){
-    // TODO : refer representative grid (y = whole_y_ / 2);
-    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
-    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
-      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
-  });
+//  update_element(ids_j21r_, [this](int id, int x, int y){
+//    // TODO : refer representative grid (y = whole_y_ / 2);
+//    field_[id].x() -= v_fac_ * (field_[ID2(x + 1, y)].z() - field_[id].z());
+//    if (grid_conditions_[ID2(x, y + 1)].x() != grid_type::WALL)
+//      field_[id].y() -= v_fac_ * (field_[ID2(x, y + 1)].z() - field_[id].z());
+//  });
 }
 
 void fdtd_horn::update_pressure()
 {
-  // update pressure
-  for (int i = 0; i < whole_grid_count_; i++) {
-    switch (int(grid_conditions_[i].x())) {
-      case NORMAL1 :
-      case JUNCTION_1to2_RIGHT : {
-        field_[i].z() -= p_fac_ * (field_[i].x() - field_[i - 1].x());
-        break;
-      }
+  // 1D
+  update_element(ids_1d_, [this](int id, int x, int y) {
+    field_[id].z() -= p_fac_ * (field_[id].x() - field_[ID2(x - 1, y)].x());
+  });
 
-      case NORMAL2 :
-      case JUNCTION_2to1_RIGHT : {
-        auto seg_id = int(grid_conditions_[i].w());
-        auto y_grid_count = int(grid_counts_[seg_id].y());
-        field_[i].z() -= p_fac_ * (
-          field_[i].x() - field_[i - y_grid_count].x() +
-          field_[i].y() - field_[i - 1].y()
-        );
-        break;
-      }
+  update_element(ids_j12r_, [this](int id, int x, int y) {
+    field_[id].z() -= p_fac_ * (field_[id].x() - field_[ID2(x - 1, y)].x());
+  });
 
-      case WALL : {
-        break;
-      }
+  // 2D
+  update_element(ids_2d_, [this](int id, int x, int y) {
+    field_[id].z() -= p_fac_ * (
+      field_[id].x() - field_[ID2(x - 1, y)].x() +
+      field_[id].y() - field_[ID2(x, y - 1)].y()
+    );
+  });
 
-      case EXCITER : {
-        field_[i].z() -= p_fac_ * field_[i].x();
-        break;
-      }
+  update_element(ids_j21r_, [this](int id, int x, int y) {
+    field_[id].z() -= p_fac_ * (
+      field_[id].x() - field_[ID2(x - 1, y)].x() +
+      field_[id].y() - field_[ID2(x, y - 1)].y()
+    );
+  });
 
-      case PML : {
-        auto pml = grid_conditions_[i].y();
-        auto seg_id = int(grid_conditions_[i].w());
-        auto y_grid_count = grid_counts_[seg_id].y();
-        auto local_idx = i - int(edge_infos_[seg_id].y());
-        auto not_lower = (local_idx % y_grid_count) != 0;
-        auto not_left = (local_idx / y_grid_count) != 0;
+  // exciter
+  update_element(ids_exc_, [this](int id, int x, int y) {
+    field_[id].z() -= p_fac_ * field_[id].x();
+  });
 
-        field_[i].z() = (field_[i].z() - p_fac_ *
-                                         (field_[i].x() - field_[i - y_grid_count].x() * not_left
-                                          + field_[i].y() - field_[i - 1].y() * not_lower)
-                        ) / (1 + pml);
+  // pml
+//  update_element(ids_pml_, [this](int id, int x, int y) {
+//    auto pml = grid_conditions_[id].y();
+//    auto not_lower = y != 0;
+//    auto not_left = x != 0;
+//
+//    field_[id].z() = (field_[id].z() - p_fac_ *
+//      (field_[id].x() - field_[ID2(x - 1, y)].x() * not_left
+//      + field_[id].y() - field_[ID2(x, y - 1)].y() * not_lower)
+//    ) / (1 + pml);
+//  });
 
-        break;
-      }
+  // j12l
+//  update_element(ids_j12l_, [this](int id, int x, int y) {
+//    // calc mean vx
+//    float mean_vx = 0.f;
+//    float count = 0.f;
+//    for (int y_next = 0; y_next < whole_y_; y_next++) {
+//      auto next_id = ID2(x - 1, y_next);
+//      if (grid_conditions_[next_id].x() == JUNCTION_2to1_RIGHT) {
+//        mean_vx += field_[next_id].x();
+//        count++;
+//      }
+//    }
+//    mean_vx /= std::max(count, 1.f);
+//    field_[id].z() -= p_fac_ * (field_[id].x() - mean_vx);
+//  });
 
-      case JUNCTION_1to2_LEFT : {
-        // calc mean vx
-        float mean_vx = 0.f;
-        float count = 0.f;
-        // TODO : pml
-        if (grid_conditions_[i - 1].x() == PML) {
-
-        }
-        else {
-          int idx = i - 2;
-          while (grid_conditions_[idx].x() == JUNCTION_2to1_RIGHT) {
-            mean_vx += field_[idx].x();
-            count++;
-            idx--;
-          }
-          mean_vx /= std::max(count, 1.f);
-          field_[i].z() -= p_fac_ * (field_[i].x() - mean_vx);
-        }
-
-        break;
-      }
-
-      case JUNCTION_2to1_LEFT : {
-        auto this_seg = grid_conditions_[i].w();
-        float last_vx = field_[edge_infos_[this_seg].y() - 1].x();
-        field_[i].z() -= p_fac_ * (
-          field_[i].x() - last_vx +
-          field_[i].y() - field_[i - 1].y()
-        );
-      }
-    }
-  }
+  // j21l
+//  update_element(ids_j21l_, [this](int id, int x, int y) {
+//    field_[id].z() -= p_fac_ * (
+//      field_[id].x() - field_[ID2(x - 1, y)].x() +
+//      field_[id].y() - field_[ID2(x, y - 1)].y()
+//    );
+//  });
 }
 
 } // namespace hnll
