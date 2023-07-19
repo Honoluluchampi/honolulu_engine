@@ -9,12 +9,8 @@
 
 namespace hnll::physics {
 
-//#include "common/fdtd_struct.h"
-struct particle {
-  int state;
-  alignas(16) vec3 values; // x : vx, y : vy, z : pressure
-//  int state; // 0 : fixed, 1 : free
-};
+#include "common/fdtd_struct.h"
+
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
@@ -34,9 +30,9 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
 
   x_len_ = info.x_len;
   y_len_ = info.y_len;
-  sound_speed_ = info.sound_speed;
+  c_ = info.sound_speed;
   rho_ = info.rho;
-  f_max_ = info.f_max;
+  pml_count_ = info.pml_count;
 
   compute_constants();
   setup_desc_sets(info);
@@ -52,17 +48,14 @@ fdtd2_field::~fdtd2_field()
 
 void fdtd2_field::compute_constants()
 {
-  grid_size_ = sound_speed_ / (2 * f_max_) / 10.f;
-  dt_ = grid_size_ / sound_speed_;
-
-  grid_size_ = 3.83e-3;
+  dx_ = 3.83e-3;
   dt_ = 7.81e-6;
 
-  x_grid_ = std::ceil(x_len_ / grid_size_);
-  y_grid_ = std::ceil(y_len_ / grid_size_);
+  x_grid_ = std::ceil(x_len_ / dx_);
+  y_grid_ = std::ceil(y_len_ / dx_);
 
-  v_fac_ = 1 / (rho_ * grid_size_);
-  p_fac_ = rho_ * sound_speed_ * sound_speed_ / grid_size_;
+  v_fac_ = 1 / (rho_ * dx_);
+  p_fac_ = rho_ * c_ * c_ / dx_;
 }
 
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)
@@ -82,7 +75,23 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
   // initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
-  std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f}});
+  std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f, 0.f}});
+
+  // set pml value
+  float pml_each = 0.5f / float(pml_count_);
+  for (int i = 0; i < grid_count; i++) {
+    // retrieve coordinate
+    auto x = float(i % (x_grid_ + 1)) - 1;
+    auto y = float(i / (x_grid_ + 1)) - 1;
+    float pml_l = std::max(float(pml_count_) - x, 0.f) * pml_each;
+    float pml_r = std::max(float(pml_count_) - (x_grid_ - x), 0.f) * pml_each;
+    float pml_d = std::max(float(pml_count_) - y, 0.f) * pml_each;
+    float pml_u = std::max(float(pml_count_) - (y_grid_ - y), 0.f) * pml_each;
+    auto pml_x = std::max(pml_l, pml_r);
+    auto pml_y = std::max(pml_u, pml_d);
+    auto pml = std::max(pml_x, pml_y);
+    initial_grid[i].values.w() = pml;
+  }
 
   int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
   int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);

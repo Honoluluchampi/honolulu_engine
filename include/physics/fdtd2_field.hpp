@@ -15,7 +15,7 @@ struct fdtd_info {
   float y_impulse;
   float sound_speed;
   float rho;
-  float f_max;
+  int   pml_count;
 };
 
 DEFINE_PURE_ACTOR(fdtd2_field)
@@ -36,9 +36,9 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float get_y_len()     const { return y_len_; }
     float get_v_fac()     const { return v_fac_;  }
     float get_p_fac()     const { return p_fac_; }
-    float get_f_max()     const { return f_max_; }
+    int   get_pml_count() const { return pml_count_; }
     float get_dt()        const { return dt_; }
-    float get_grid_size() const { return grid_size_; }
+    float get_dx()        const { return dx_; }
     float get_duration()  const { return duration_; }
     int   get_update_per_frame() const { return update_per_frame_; }
     bool  is_ready()      const { return is_ready_; } // is constructed
@@ -65,12 +65,13 @@ DEFINE_PURE_ACTOR(fdtd2_field)
 
     // physical constants
     float rho_;
-    float f_max_;
-    float sound_speed_;
+    float c_;
 
     float x_len_, y_len_;
     int x_grid_, y_grid_;
-    float dt_, grid_size_;
+    float dt_, dx_;
+
+    int pml_count_;
 
     float p_fac_;
     float v_fac_;

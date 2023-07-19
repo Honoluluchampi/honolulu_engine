@@ -33,8 +33,9 @@ void main()
   float j = (gl_FragCoord.y - y_mergin) * fix_ratio;
 
   bool out_of_area = i < 0 || i >= push.x_grid || j < 0 || j >= push.y_grid;
-  float p_val = curr_p[g_id(int(i), int(j))].values.z;
+//  float p_val = curr_p[g_id(int(i), int(j))].values.z;
+  float p_val = curr_p[g_id(int(i), int(j))].values.w;
   p_val *= int(!out_of_area);
 
-  out_color = vec4(max(p_val, 0.f), 0, max(-p_val, 0.f), 1);
+  out_color = vec4(p_val, 0, -p_val, 1);
 }

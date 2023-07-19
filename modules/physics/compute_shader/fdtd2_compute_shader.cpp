@@ -51,34 +51,36 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
       .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
     };
 
-    // update velocity and pressure
-    for (int i = 0; i < reputation; i++) {
-      // record pressure update
+    {
+      utils::scope_timer timer {"task dispatch"};
+      // update velocity and pressure
       bind_pipeline(command);
-
       bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
-      auto desc_sets = target_->get_frame_desc_sets();
-      bind_desc_sets(command, desc_sets);
+      for (int i = 0; i < reputation; i++) {
+        // record pressure update
+        auto desc_sets = target_->get_frame_desc_sets();
+        bind_desc_sets(command, desc_sets);
 
-      dispatch_command(
-        command,
-        (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-        (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-        1);
-
-      // if not the last loop, waite for velocity update
-      if (i != reputation - 1) {
-        vkCmdPipelineBarrier(
+        dispatch_command(
           command,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_DEPENDENCY_DEVICE_GROUP_BIT,
-          1, &barrier, 0, nullptr, 0, nullptr
-        );
-      }
+          (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
+          (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
+          1);
 
-      target_->update_frame();
+        // if not the last loop, waite for velocity update
+        if (i != reputation - 1) {
+          vkCmdPipelineBarrier(
+            command,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_DEVICE_GROUP_BIT,
+            1, &barrier, 0, nullptr, 0, nullptr
+          );
+        }
+
+        target_->update_frame();
+      }
     }
   }
 }

@@ -29,7 +29,7 @@ void main() {
 
     curr_p[g_id(i, j)].values.z = p;
 
-    // re-calculate the current pressure not to reduce the barrier synchronization
+    // re-calculate the current pressure to reduce the barrier synchronization
     if (i < push.x_grid - 1) {
       float p_x1 = prev_p[g_id(i + 1, j)].values.z - push.p_fac *
       (prev_p[g_id(i + 1, j)].values.x - prev_p[g_id(i, j)].values.x +
