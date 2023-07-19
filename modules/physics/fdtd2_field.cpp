@@ -93,15 +93,8 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     initial_grid[i].values.w() = pml;
   }
 
-  int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
-  int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);
-  int impulse_grid_id = impulse_grid_x + impulse_grid_y * (x_grid_ + 1);
-
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
-//    // setup initial pressure as impulse signal from the center of the room
-//    if (i == 0)
-//      initial_grid[impulse_grid_id].values.z() = 128.f;
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
@@ -133,10 +126,6 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
   // create initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<vec4> initial_grid(grid_count, vec4{0.f, 0.f, 0.f, 0.f});
-
-  int impulse_grid_x = info.x_impulse / info.x_len * (x_grid_ + 1);
-  int impulse_grid_y = info.y_impulse / info.y_len * (y_grid_ + 1);
-  int impulse_grid_id = impulse_grid_x + impulse_grid_y * (x_grid_ + 1);
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {

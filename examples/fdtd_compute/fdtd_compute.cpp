@@ -24,8 +24,6 @@ DEFINE_ENGINE(fdtd_compute)
       physics::fdtd_info info = {
         .x_len = x_len_,
         .y_len = y_len_,
-        .x_impulse = x_impulse_,
-        .y_impulse = y_impulse_,
         .sound_speed = sound_speed_,
         .rho = rho_,
         .pml_count = 6
@@ -48,8 +46,6 @@ DEFINE_ENGINE(fdtd_compute)
 
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
-      ImGui::SliderFloat("x impulse", &x_impulse_, 0.1f, 0.8f);
-      ImGui::SliderFloat("y impulse", &y_impulse_, 0.1f, 0.4f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
       ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
 
@@ -59,8 +55,6 @@ DEFINE_ENGINE(fdtd_compute)
             {
               this->x_len_,
               this->y_len_,
-              this->x_impulse_,
-              this->y_impulse_,
               this->sound_speed_,
               this->rho_,
               6
@@ -90,8 +84,6 @@ DEFINE_ENGINE(fdtd_compute)
 
     float x_len_       = 0.6f;
     float y_len_       = 0.3f;
-    float x_impulse_   = 0.3f;
-    float y_impulse_   = 0.15f;
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
 };
