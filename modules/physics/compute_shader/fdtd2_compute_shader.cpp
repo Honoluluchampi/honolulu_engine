@@ -9,6 +9,8 @@ namespace hnll::physics {
 // shared with shaders
 #include "../common/fdtd2_config.h"
 
+#define UPDATE_PER_FRAME 2134
+
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
 uint32_t fdtd2_compute_shader::target_id_ = -1;
@@ -30,6 +32,18 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
     float local_dt = target_->get_dt();
 
+    // temp
+    // generate sine wave
+    std::vector<float> push_input(UPDATE_PER_FRAME, 0.f);
+    {
+      float amp = 12.f;
+      float freq = 500.f;
+      static float frame_id = 0.f;
+      for (int i = 0; i < UPDATE_PER_FRAME; i++) {
+        push_input[i] = amp * std::sin(2.f * M_PI * freq * local_dt * frame_id++);
+      }
+    }
+
     fdtd2_push push;
     push.x_grid = target_->get_x_grid();
     push.y_grid = target_->get_y_grid();
@@ -38,10 +52,8 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
 
-    auto reputation = std::min(2134, static_cast<int>(info.dt / local_dt));
-
-    target_->add_duration(local_dt * reputation);
-    target_->set_update_per_frame(reputation);
+    target_->add_duration(local_dt * UPDATE_PER_FRAME);
+    target_->set_update_per_frame(UPDATE_PER_FRAME);
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -55,10 +67,12 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
       utils::scope_timer timer {"task dispatch"};
       // update velocity and pressure
       bind_pipeline(command);
-      bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
-      for (int i = 0; i < reputation; i++) {
+      for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         // record pressure update
+        push.input_value = push_input[i];
+        bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
+
         auto desc_sets = target_->get_frame_desc_sets();
         bind_desc_sets(command, desc_sets);
 
@@ -69,7 +83,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
           1);
 
         // if not the last loop, waite for velocity update
-        if (i != reputation - 1) {
+        if (i != UPDATE_PER_FRAME - 1) {
           vkCmdPipelineBarrier(
             command,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,

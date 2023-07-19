@@ -7,10 +7,13 @@ struct fdtd2_push {
   // grid count
   int x_grid;
   int y_grid;
-  // spatial length
+  // domain's dimensions
   float x_len;
   float y_len;
-  // physical
+  // physical constant
   float p_fac;
   float v_fac;
+  // input
+  int input_grid;
+  float input_value;
 };

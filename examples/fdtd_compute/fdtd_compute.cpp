@@ -88,8 +88,8 @@ DEFINE_ENGINE(fdtd_compute)
     u_ptr<physics::fdtd2_field> staging_field_;
     bool wait_for_construction_ = false;
 
-    float x_len_       = 0.8f;
-    float y_len_       = 0.4f;
+    float x_len_       = 0.6f;
+    float y_len_       = 0.3f;
     float x_impulse_   = 0.3f;
     float y_impulse_   = 0.15f;
     float sound_speed_ = 340.f;
