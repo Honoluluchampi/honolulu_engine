@@ -35,7 +35,6 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
   x_len_ = info.x_len;
   y_len_ = info.y_len;
   sound_speed_ = info.sound_speed;
-  kappa_ = info.kappa;
   rho_ = info.rho;
   f_max_ = info.f_max;
 
@@ -56,8 +55,14 @@ void fdtd2_field::compute_constants()
   grid_size_ = sound_speed_ / (2 * f_max_) / 10.f;
   dt_ = grid_size_ / sound_speed_;
 
+  grid_size_ = 3.83e-3;
+  dt_ = 7.81e-6;
+
   x_grid_ = std::ceil(x_len_ / grid_size_);
   y_grid_ = std::ceil(y_len_ / grid_size_);
+
+  v_fac_ = 1 / (rho_ * grid_size_);
+  p_fac_ = rho_ * sound_speed_ * sound_speed_ / grid_size_;
 }
 
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)

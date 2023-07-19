@@ -27,7 +27,6 @@ DEFINE_ENGINE(fdtd_compute)
         .x_impulse = x_impulse_,
         .y_impulse = y_impulse_,
         .sound_speed = sound_speed_,
-        .kappa = kappa_,
         .rho = rho_,
         .f_max = f_max_
       };
@@ -47,13 +46,12 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::Text("grid size : %f", field_->get_grid_size());
       ImGui::Text("duration : %f", field_->get_duration());
 
-      ImGui::SliderFloat("x length", &x_len_, 1.f, 100.f);
-      ImGui::SliderFloat("y length", &y_len_, 1.f, 100.f);
-      ImGui::SliderFloat("x impulse", &x_impulse_, 1.f, 100.f);
-      ImGui::SliderFloat("y impulse", &y_impulse_, 1.f, 100.f);
-      ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 310.f);
-      ImGui::SliderFloat("kappa", &kappa_, 0.f, 10.f);
-      ImGui::SliderFloat("rho", &rho_, 0.f, 0.1f);
+      ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
+      ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
+      ImGui::SliderFloat("x impulse", &x_impulse_, 0.1f, 0.8f);
+      ImGui::SliderFloat("y impulse", &y_impulse_, 0.1f, 0.4f);
+      ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
+      ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
       ImGui::SliderFloat("max freq", &f_max_, 0.f, 1000.f);
 
       if (ImGui::Button("restart")) {
@@ -65,7 +63,6 @@ DEFINE_ENGINE(fdtd_compute)
               this->x_impulse_,
               this->y_impulse_,
               this->sound_speed_,
-              this->kappa_,
               this->rho_,
               this->f_max_
             }
@@ -92,13 +89,12 @@ DEFINE_ENGINE(fdtd_compute)
     u_ptr<physics::fdtd2_field> staging_field_;
     bool wait_for_construction_ = false;
 
-    float x_len_       = 10.f;
-    float y_len_       = 10.f;
-    float x_impulse_   = 5.f;
-    float y_impulse_   = 5.f;
-    float sound_speed_ = 310.f;
-    float kappa_       = 10.f;
-    float rho_         = 0.05f;
+    float x_len_       = 0.6f;
+    float y_len_       = 0.3f;
+    float x_impulse_   = 0.3f;
+    float y_impulse_   = 0.15f;
+    float sound_speed_ = 340.f;
+    float rho_         = 1.1f;
     float f_max_       = 120.f;
 };
 

@@ -38,7 +38,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
 
-    auto reputation = std::min(100, static_cast<int>(info.dt / local_dt));
+    auto reputation = std::min(2134, static_cast<int>(info.dt / local_dt));
 
     target_->add_duration(local_dt * reputation);
     target_->set_update_per_frame(reputation);

@@ -14,7 +14,6 @@ struct fdtd_info {
   float x_impulse;
   float y_impulse;
   float sound_speed;
-  float kappa;
   float rho;
   float f_max;
 };
@@ -35,8 +34,8 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     int get_y_grid()      const { return y_grid_; }
     float get_x_len()     const { return x_len_; }
     float get_y_len()     const { return y_len_; }
-    float get_v_fac()     const { return 1 / (rho_ * grid_size_);  }
-    float get_p_fac()     const { return kappa_ / grid_size_; }
+    float get_v_fac()     const { return v_fac_;  }
+    float get_p_fac()     const { return p_fac_; }
     float get_f_max()     const { return f_max_; }
     float get_dt()        const { return dt_; }
     float get_grid_size() const { return grid_size_; }
@@ -65,7 +64,6 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     std::vector<VkDescriptorSet> texture_vk_desc_sets_;
 
     // physical constants
-    float kappa_;
     float rho_;
     float f_max_;
     float sound_speed_;
@@ -73,6 +71,9 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float x_len_, y_len_;
     int x_grid_, y_grid_;
     float dt_, grid_size_;
+
+    float p_fac_;
+    float v_fac_;
 
     // frame_buffering
     int frame_count_ = 2;
