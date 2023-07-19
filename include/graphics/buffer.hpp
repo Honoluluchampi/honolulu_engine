@@ -81,12 +81,12 @@ class buffer {
     VkBuffer buffer_ = VK_NULL_HANDLE;
     VkDeviceMemory memory_ = VK_NULL_HANDLE;
 
-    VkDeviceSize          buffer_size_;
-    uint32_t              instance_count_;
-    VkDeviceSize          instance_size_;
-    VkDeviceSize          alignment_size_;
-    VkBufferUsageFlags    usage_flags_;
-    VkMemoryPropertyFlags memory_property_flags_;
+    VkDeviceSize          buffer_size_ = 0;
+    uint32_t              instance_count_ = 0;
+    VkDeviceSize          instance_size_ = 0;
+    VkDeviceSize          alignment_size_ = 0;
+    VkBufferUsageFlags    usage_flags_ = 0;
+    VkMemoryPropertyFlags memory_property_flags_ = 0;
 };
 
 }} // namespace hnll::graphics

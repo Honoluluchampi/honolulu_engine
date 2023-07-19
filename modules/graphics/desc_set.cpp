@@ -7,6 +7,7 @@
 // std
 #include <cassert>
 #include <stdexcept>
+#include <iostream>
 
 namespace hnll::graphics {
 // *************** Descriptor Set Layout builder *********************

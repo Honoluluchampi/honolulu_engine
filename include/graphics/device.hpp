@@ -46,11 +46,11 @@ enum class command_type { GRAPHICS, COMPUTE, TRANSFER };
 class device
 {
   public:
-#ifdef NDEBUG
-    const bool enable_validation_layers = false;
-#else
+// #ifdef NDEBUG
+    // const bool enable_validation_layers = false;
+// #else
     const bool enable_validation_layers = true;
-#endif
+// #endif
 
     device(window &window, utils::rendering_type type);
     ~device();

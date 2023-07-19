@@ -76,7 +76,7 @@ void graphics_engine_core::setup_ubo()
       sizeof(utils::global_ubo),
       1,
       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       nullptr
     );
     global_desc_sets_->set_buffer(0, 0, i, std::move(buf));
