@@ -40,9 +40,9 @@ void main()
 
   float state = curr_p[g_id(int(i), int(j))].values.w;
   // wall
-  if (state == -1)
+  if (state == -2)
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
   // exciter
-  if (state == -2 || state == -3)
+  if (state == -1 || state == -3)
     out_color = vec4(0.f, 1.f, 0.f, 1.f);
 }

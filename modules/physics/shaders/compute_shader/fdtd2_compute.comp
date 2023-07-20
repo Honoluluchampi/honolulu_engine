@@ -10,7 +10,7 @@ layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, lo
 // pressure
 layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
 layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
-layout(std430, set = 1, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
+layout(std430, set = 2, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
 
 // push constants
 layout(push_constant) uniform Push { fdtd2_push push; };
@@ -37,12 +37,12 @@ void main() {
   {
     uint idx = g_id(i, j);
     float state = prev_p[idx].values.w;
-    if (state >= 0) {
+    if (state >= -1) {
       float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
-      float right_is_domain = float(prev_p[g_id(i + 1, j)].values.w >= 0);
-      float upper_is_domain = float(prev_p[g_id(i, j + 1)].values.w >= 0);
+      float right_is_domain = float(prev_p[g_id(i + 1, j)].values.w >= -1);
+      float upper_is_domain = float(prev_p[g_id(i, j + 1)].values.w >= -1);
 
       float p = (prev_p[g_id(i, j)].values.z - push.p_fac *
       (prev_p[idx].values.x * right_is_domain - prev_p[g_id(i - 1, j)].values.x +
@@ -53,8 +53,8 @@ void main() {
 
       // re-calculate the current pressure to reduce the barrier synchronization
       if (i < push.x_grid - 1) {
-        float right_is_domain_x1 = float(prev_p[g_id(i + 2, j)].values.w >= 0);
-        float upper_is_domain_x1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= 0);
+        float right_is_domain_x1 = float(prev_p[g_id(i + 2, j)].values.w >= -1);
+        float upper_is_domain_x1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= -1);
 
         float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
         (prev_p[g_id(i + 1, j)].values.x * right_is_domain_x1 - prev_p[idx].values.x +
@@ -66,8 +66,8 @@ void main() {
       }
 
       if (j < push.y_grid - 1) {
-        float right_is_domain_y1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= 0);
-        float upper_is_domain_y1 = float(prev_p[g_id(i, j + 2)].values.w >= 0);
+        float right_is_domain_y1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= -1);
+        float upper_is_domain_y1 = float(prev_p[g_id(i, j + 2)].values.w >= -1);
 
         float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
         (prev_p[g_id(i, j + 1)].values.x * right_is_domain_y1 - prev_p[g_id(i - 1, j + 1)].values.x +
@@ -81,7 +81,7 @@ void main() {
       if (idx == push.listener_index)
         sound_buffer[push.buffer_index] = p;
     }
-    else if (state == -2) // exciter
+    else if (state == -3) // exciter
     {
       float next_p = prev_p[g_id(i + 1, 39)].values.z;
       float dp = mouth_p - next_p;

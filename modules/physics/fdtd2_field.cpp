@@ -98,13 +98,13 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     // temp
     // state (wall, exciter)
     if ((x >= 25 && x <= 130)  && (y == 36 || y == 42)) {
-      initial_grid[i].values.w() = -1; // wall
+      initial_grid[i].values.w() = -2; // wall
     }
     if ((x == 25) && (y > 36 && y < 42)) {
-      initial_grid[i].values.w() = -2; // exciter
+      initial_grid[i].values.w() = -3; // exciter
     }
     if ((x == 136) && (y == 39)) {
-      initial_grid[i].values.w() = -3;
+      initial_grid[i].values.w() = -1;
       listener_index_ = i;
     }
   }
@@ -133,6 +133,9 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       initial_sound_buffer.data()
     );
+
+    sound_buffer->map();
+    sound_buffers_[i] = reinterpret_cast<float*>(sound_buffer->get_mapped_memory());
 
     desc_sets_->set_buffer(1, 0, i, std::move(sound_buffer));
   }

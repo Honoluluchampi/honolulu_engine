@@ -3,12 +3,16 @@
 #include <physics/fdtd2_field.hpp>
 #include <physics/compute_shader/fdtd2_compute_shader.hpp>
 #include <physics/shading_system/fdtd2_shading_system.hpp>
+#include <audio/engine.hpp>
+#include <audio/audio_data.hpp>
 
 // std
 #include <thread>
 
 // lib
 #include <imgui/imgui.h>
+
+#define UPDATE_PER_FRAME 2134
 
 namespace hnll {
 
@@ -27,12 +31,17 @@ DEFINE_ENGINE(fdtd_compute)
         .sound_speed = sound_speed_,
         .rho = rho_,
         .pml_count = 6,
-        .update_per_frame = 2134
+        .update_per_frame = UPDATE_PER_FRAME
       };
 
       field_ = physics::fdtd2_field::create(info);
       field_->set_as_target(field_.get());
+
+      audio::engine::start_hae_context();
+      source_ = audio::engine::get_available_source_id();
     }
+
+    ~fdtd_compute() { audio::engine::kill_hae_context(); }
 
     void update_this(float dt)
     {
@@ -48,10 +57,12 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
       ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
-      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 2134);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, UPDATE_PER_FRAME);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
+
+      update_sound();
 
       if (ImGui::Button("restart")) {
         std::thread t([this] {
@@ -83,6 +94,43 @@ DEFINE_ENGINE(fdtd_compute)
     }
 
   private:
+    void update_sound()
+    {
+      static int frame_index = 0;
+      frame_index = frame_index == 0 ? 1 : 0;
+
+      audio::engine::erase_finished_audio_on_queue(source_);
+
+      if (audio::engine::get_audio_count_on_queue(source_) > queue_capacity_)
+        return;
+
+      float* raw_data = field_->get_sound_buffer(frame_index);
+      float amp = 200;
+      float raw_i = 0.f;
+      while (raw_i < update_per_frame_) {
+        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amp));
+        raw_i += 128000.f / 44100.f;
+      }
+
+      seg_frame_index++;
+
+      if (seg_frame_index == 3) {
+        seg_frame_index = 0;
+        audio::audio_data data;
+        data.set_sampling_rate(44100)
+          .set_format(AL_FORMAT_MONO16)
+          .set_data(segment_);
+        audio::engine::bind_audio_to_buffer(data);
+        audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
+        segment_.clear();
+
+        if (audio::engine::get_audio_count_on_queue(source_) == 1) {
+          audio::engine::play_audio_from_source(source_);
+          started_ = true;
+        }
+      }
+    }
+
     u_ptr<physics::fdtd2_field> field_;
     u_ptr<physics::fdtd2_field> staging_field_;
     bool wait_for_construction_ = false;
@@ -91,7 +139,14 @@ DEFINE_ENGINE(fdtd_compute)
     float y_len_       = 0.3f;
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
-    int   update_per_frame_ = 2134;
+    int   update_per_frame_ = UPDATE_PER_FRAME;
+
+    // AL
+    audio::source_id source_;
+    std::vector<ALshort> segment_;
+    int seg_frame_index = 0; // mod 3
+    bool started_ = false;
+    int queue_capacity_ = 8;
 };
 
 } // namespace hnll

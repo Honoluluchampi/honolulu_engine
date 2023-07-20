@@ -42,6 +42,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     bool  is_ready()      const { return is_ready_; } // is constructed
     int   get_update_per_frame() const { return update_per_frame_; }
     int   get_listener_index() const { return listener_index_; }
+    float* get_sound_buffer(int game_frame_index) { return sound_buffers_[game_frame_index]; }
 
     // setter
     void add_duration() { duration_ += dt_ * update_per_frame_; }
@@ -87,5 +88,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     bool  is_ready_ = false;
 
     int listener_index_ = 0;
+    // pointer for sound buffer
+    float* sound_buffers_[2];
 };
 } // namespace hnll::physics

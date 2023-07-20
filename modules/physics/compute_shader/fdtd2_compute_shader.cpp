@@ -37,6 +37,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.y_len = target_->get_y_len();
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
+    push.listener_index = target_->get_listener_index();
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
