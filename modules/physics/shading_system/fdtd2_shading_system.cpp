@@ -63,7 +63,7 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
       sizeof(fdtd2_frag_push),
       &push);
 
-    auto desc_sets = target_->get_frame_desc_sets()[1];
+    auto desc_sets = target_->get_frame_desc_sets(frame_info.frame_index)[1];
     vkCmdBindDescriptorSets(
       command,
       VK_PIPELINE_BIND_POINT_GRAPHICS,

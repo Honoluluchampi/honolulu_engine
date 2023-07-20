@@ -20,7 +20,7 @@ fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::com
 
   pipeline_ = create_pipeline<fdtd2_push>(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute.comp.spv",
-    { vk_layout, vk_layout });
+    { vk_layout, vk_layout, vk_layout });
 }
 
 void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
@@ -38,6 +38,14 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
 
+    // barrier for pressure, velocity update synchronization
+    VkMemoryBarrier barrier = {
+      .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+      .pNext = nullptr,
+      .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+      .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+    };
+
     {
       utils::scope_timer timer {"task dispatch"};
       // update velocity and pressure
@@ -49,7 +57,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         push.buffer_index = i;
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
-        auto desc_sets = target_->get_frame_desc_sets();
+        auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
         bind_desc_sets(command, desc_sets);
 
         dispatch_command(
@@ -60,14 +68,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
         // if not the last loop, waite for velocity update
         if (i != upf - 1) {
-          // barrier for pressure, velocity update synchronization
-          VkMemoryBarrier barrier = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
-          };
-
           vkCmdPipelineBarrier(
             command,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,

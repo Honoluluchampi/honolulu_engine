@@ -27,7 +27,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     void update_frame() { frame_index_ = frame_index_ == 0 ? 1 : 0; }
 
     // getter
-    std::vector<VkDescriptorSet> get_frame_desc_sets();
+    std::vector<VkDescriptorSet> get_frame_desc_sets(int game_frame_index);
     uint32_t get_field_id() const { return field_id_; }
     int get_x_grid()      const { return x_grid_; }
     int get_y_grid()      const { return y_grid_; }

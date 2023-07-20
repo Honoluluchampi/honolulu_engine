@@ -49,7 +49,7 @@ class device
 // #ifdef NDEBUG
     // const bool enable_validation_layers = false;
 // #else
-    const bool enable_validation_layers = true;
+    bool enable_validation_layers = true;
 // #endif
 
     device(window &window, utils::rendering_type type);

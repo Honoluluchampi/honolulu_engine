@@ -33,6 +33,7 @@ fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_
   c_ = info.sound_speed;
   rho_ = info.rho;
   pml_count_ = info.pml_count;
+  update_per_frame_ = info.update_per_frame;
 
   compute_constants();
   setup_desc_sets(info);
@@ -70,7 +71,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   desc_sets_ = graphics::desc_sets::create(
     device_,
     desc_pool_,
-    {set_info},
+    {set_info, set_info}, // field and sound buffer
     frame_count_);
 
   // initial data
@@ -120,6 +121,20 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       initial_grid.data());
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
+  }
+
+  std::vector<float> initial_sound_buffer(update_per_frame_, 0.f);
+  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+    auto sound_buffer = graphics::buffer::create_with_staging(
+      device_,
+      sizeof(float) * initial_grid.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      initial_sound_buffer.data()
+    );
+
+    desc_sets_->set_buffer(1, 0, i, std::move(sound_buffer));
   }
 
   desc_sets_->build();
@@ -181,19 +196,21 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
   }
 }
 
-std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets()
+std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_index)
 {
   std::vector<VkDescriptorSet> desc_sets;
   if (frame_index_ == 0) {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(0)[0],
-      desc_sets_->get_vk_desc_sets(1)[0]
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(game_frame_index)[1],
     };
   }
   else {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(1)[0],
-      desc_sets_->get_vk_desc_sets(0)[0]
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(game_frame_index)[1],
     };
   }
 

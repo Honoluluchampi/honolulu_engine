@@ -61,6 +61,8 @@ void DestroyDebugUtilsMessengerEXT(
 device::device(window &window, utils::rendering_type type)
   : window_{window}, rendering_type_(type)
 {
+  // temp
+  enable_validation_layers = false;
   create_instance();
   // window surface should be created right after the instance creation,
   // because it can actually influence the physical device selection
