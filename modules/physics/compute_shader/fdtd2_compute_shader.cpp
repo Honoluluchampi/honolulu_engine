@@ -37,7 +37,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     std::vector<float> push_input(UPDATE_PER_FRAME, 0.f);
     {
       float amp = 12.f;
-      float freq = 500.f;
+      float freq = 400.f;
       static float frame_id = 0.f;
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         push_input[i] = amp * std::sin(2.f * M_PI * freq * local_dt * frame_id++);

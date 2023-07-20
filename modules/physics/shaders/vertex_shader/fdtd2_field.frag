@@ -37,4 +37,12 @@ void main()
   p_val *= int(!out_of_area);
 
   out_color = vec4(p_val, 0, -p_val, 1);
+
+  float state = curr_p[g_id(int(i), int(j))].values.w;
+  // wall
+  if (state == -1)
+    out_color = vec4(1.f, 1.f, 1.f, 1.f);
+  // exciter
+  if (state == -2)
+    out_color = vec4(0.f, 1.f, 0.f, 1.f);
 }

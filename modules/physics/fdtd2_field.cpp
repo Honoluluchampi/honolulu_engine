@@ -77,20 +77,31 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f, 0.f}});
 
-  // set pml value
+  // set state
   float pml_each = 0.5f / float(pml_count_);
   for (int i = 0; i < grid_count; i++) {
     // retrieve coordinate
     auto x = float(i % (x_grid_ + 1)) - 1;
     auto y = float(i / (x_grid_ + 1)) - 1;
+
+    // pml
     float pml_l = std::max(float(pml_count_) - x, 0.f) * pml_each;
     float pml_r = std::max(float(pml_count_) - (x_grid_ - x), 0.f) * pml_each;
     float pml_d = std::max(float(pml_count_) - y, 0.f) * pml_each;
     float pml_u = std::max(float(pml_count_) - (y_grid_ - y), 0.f) * pml_each;
-    auto pml_x = std::max(pml_l, pml_r);
-    auto pml_y = std::max(pml_u, pml_d);
-    auto pml = std::max(pml_x, pml_y);
+    auto pml_x  = std::max(pml_l, pml_r);
+    auto pml_y  = std::max(pml_u, pml_d);
+    auto pml    = std::max(pml_x, pml_y);
     initial_grid[i].values.w() = pml;
+
+    // temp
+    // state (wall, exciter)
+    if ((x >= 25 && x <= 130) && (y == 38 || y == 44)) {
+      initial_grid[i].values.w() = -1; // wall
+    }
+    if ((x == 25) && (y > 38 && y < 44)) {
+      initial_grid[i].values.w() = -2; // exciter
+    }
   }
 
   // assign buffer

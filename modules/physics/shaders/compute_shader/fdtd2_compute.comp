@@ -22,7 +22,7 @@ void main() {
   uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
 
   if (i < push.x_grid && j < push.y_grid) {
-    float pml = prev_p[g_id(i, j)].values.w;
+    float pml = max(prev_p[g_id(i, j)].values.w, 0.f);
 
     // update pressure
     float p =  (prev_p[g_id(i, j)].values.z - push.p_fac *
