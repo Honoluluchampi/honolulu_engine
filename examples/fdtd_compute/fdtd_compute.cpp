@@ -25,9 +25,13 @@ DEFINE_ENGINE(fdtd_compute)
   public:
     fdtd_compute()
     {
+      set_max_fps(30.f);
       auto game_fps = get_max_fps();
 
       update_per_frame_ = std::ceil(float(AUDIO_FRAME_RATE) / game_fps);
+      if (update_per_frame_ % 2 != 0)
+        update_per_frame_ += 1;
+
       physics::fdtd_info info = {
         .x_len = x_len_,
         .y_len = y_len_,
@@ -60,7 +64,7 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
       ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
-      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 2134);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 4268);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -127,7 +131,7 @@ DEFINE_ENGINE(fdtd_compute)
         audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
         segment_.clear();
 
-        if (audio::engine::get_audio_count_on_queue(source_) == 1) {
+        if (audio::engine::get_audio_count_on_queue(source_) == 3 && !started_) {
           audio::engine::play_audio_from_source(source_);
           started_ = true;
         }

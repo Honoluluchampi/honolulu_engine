@@ -103,7 +103,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].values.w() = -3; // exciter
     }
-    if ((x == 136) && (y == 39)) {
+    if ((x == 138) && (y == 39)) {
       initial_grid[i].values.w() = -1;
       listener_index_ = i;
     }

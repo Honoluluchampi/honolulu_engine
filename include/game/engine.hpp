@@ -107,7 +107,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
   protected:
     // cleaning method of each specific application
     void cleanup() {}
-    inline void set_fps(float max_fps) { core_.set_max_fps(max_fps); }
+    inline void set_max_fps(float max_fps) { core_.set_max_fps(max_fps); }
 
   private:
     void update();
