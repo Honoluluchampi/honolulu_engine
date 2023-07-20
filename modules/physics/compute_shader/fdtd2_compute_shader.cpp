@@ -9,7 +9,7 @@ namespace hnll::physics {
 // shared with shaders
 #include "../common/fdtd2_config.h"
 
-#define UPDATE_PER_FRAME 2134
+#define UPDATE_PER_FRAME 2
 
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;

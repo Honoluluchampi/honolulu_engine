@@ -21,13 +21,17 @@ void main() {
   uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
   uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
 
-  if (i < push.x_grid && j < push.y_grid) {
+  // inside domain && not wall
+  if (i < push.x_grid && j < push.y_grid && prev_p[g_id(i, j)].values.w != -1) {
     float pml = max(prev_p[g_id(i, j)].values.w, 0.f);
 
     // update pressure
+    bool right_is_wall = prev_p[g_id(i + 1, j)].values.w == -1;
+    bool upper_is_wall = prev_p[g_id(i, j + 1)].values.w == -1;
+
     float p =  (prev_p[g_id(i, j)].values.z - push.p_fac *
-    (prev_p[g_id(i, j)].values.x - prev_p[g_id(i - 1, j)].values.x +
-    prev_p[g_id(i, j)].values.y - prev_p[g_id(i, j - 1)].values.y)
+    (prev_p[g_id(i, j)].values.x * int(!right_is_wall) - prev_p[g_id(i - 1, j)].values.x +
+     prev_p[g_id(i, j)].values.y * int(!upper_is_wall) - prev_p[g_id(i, j - 1)].values.y)
     ) / (1 + pml);
 
     if (i == push.x_grid / 2 && j == push.y_grid / 2) {
@@ -38,9 +42,12 @@ void main() {
 
     // re-calculate the current pressure to reduce the barrier synchronization
     if (i < push.x_grid - 1) {
+      bool right_is_wall_x1 = prev_p[g_id(i + 2, j)].values.w == -1;
+      bool upper_is_wall_x1 = prev_p[g_id(i + 1, j + 1)].values.w == -1;
+
       float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
-      (prev_p[g_id(i + 1, j)].values.x - prev_p[g_id(i, j)].values.x +
-      prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y)
+      (prev_p[g_id(i + 1, j)].values.x * int(!right_is_wall_x1) - prev_p[g_id(i, j)].values.x +
+       prev_p[g_id(i + 1, j)].values.y * int(!upper_is_wall_x1) - prev_p[g_id(i + 1, j - 1)].values.y)
       ) / (1 + pml);
 
       curr_p[g_id(i, j)].values.x =
@@ -48,9 +55,12 @@ void main() {
     }
 
     if (j < push.y_grid - 1) {
+      bool right_is_wall_y1 = prev_p[g_id(i + 1, j + 1)].values.w == -1;
+      bool upper_is_wall_y1 = prev_p[g_id(i, j + 2)].values.w == -1;
+
       float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
-      (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
-      prev_p[g_id(i, j + 1)].values.y - prev_p[g_id(i, j)].values.y)
+      (prev_p[g_id(i, j + 1)].values.x * int(!right_is_wall_y1) - prev_p[g_id(i - 1, j + 1)].values.x +
+       prev_p[g_id(i, j + 1)].values.y * int(!upper_is_wall_y1) - prev_p[g_id(i, j)].values.y)
       ) / (1 + pml);
 
       curr_p[g_id(i, j)].values.y =
