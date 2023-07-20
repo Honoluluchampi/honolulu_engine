@@ -51,6 +51,9 @@ class engine_core
     inline const utils::viewer_info& get_viewer_info() const { return viewer_info_; }
     static inline void set_viewer_info(utils::viewer_info&& v) { viewer_info_ = std::move(v); }
 
+    float get_max_fps() const { return max_fps_; }
+    void set_max_fps(float max_fps) { max_fps_ = max_fps; }
+
   private:
     void update_gui() {}
 
@@ -68,6 +71,7 @@ class engine_core
 #endif
     std::chrono::system_clock::time_point old_time_;
     static utils::viewer_info viewer_info_;
+    float max_fps_ = 60.f;
 };
 
 // parametric impl
@@ -98,9 +102,12 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     inline void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
+    inline float get_max_fps() const { return core_.get_max_fps(); }
+
   protected:
     // cleaning method of each specific application
     void cleanup() {}
+    inline void set_fps(float max_fps) { core_.set_max_fps(max_fps); }
 
   private:
     void update();

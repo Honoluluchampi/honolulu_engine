@@ -12,7 +12,7 @@
 // lib
 #include <imgui/imgui.h>
 
-#define UPDATE_PER_FRAME 2134
+#define AUDIO_FRAME_RATE 128000
 
 namespace hnll {
 
@@ -25,13 +25,16 @@ DEFINE_ENGINE(fdtd_compute)
   public:
     fdtd_compute()
     {
+      auto game_fps = get_max_fps();
+
+      update_per_frame_ = std::ceil(float(AUDIO_FRAME_RATE) / game_fps);
       physics::fdtd_info info = {
         .x_len = x_len_,
         .y_len = y_len_,
         .sound_speed = sound_speed_,
         .rho = rho_,
         .pml_count = 6,
-        .update_per_frame = UPDATE_PER_FRAME
+        .update_per_frame = update_per_frame_
       };
 
       field_ = physics::fdtd2_field::create(info);
@@ -57,7 +60,7 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
       ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
-      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, UPDATE_PER_FRAME);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 2134);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -139,7 +142,7 @@ DEFINE_ENGINE(fdtd_compute)
     float y_len_       = 0.3f;
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
-    int   update_per_frame_ = UPDATE_PER_FRAME;
+    int   update_per_frame_;
 
     // AL
     audio::source_id source_;

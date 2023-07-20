@@ -9,9 +9,6 @@
 
 namespace hnll::game {
 
-constexpr float MAX_FPS = 60.f;
-constexpr float MIN_DT = 1.f / MAX_FPS;
-
 // static members
 std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
 utils::viewer_info engine_core::viewer_info_;
@@ -49,7 +46,7 @@ void engine_core::cleanup() {  }
 float engine_core::get_dt()
 {
   std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();
-  while (std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count() < MIN_DT) {
+  while (std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count() < 1.f / max_fps_) {
     new_time = std::chrono::system_clock::now();
   }
   float dt = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count();
