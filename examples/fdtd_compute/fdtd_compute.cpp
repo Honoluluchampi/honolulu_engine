@@ -103,7 +103,7 @@ DEFINE_ENGINE(fdtd_compute)
   private:
     void update_sound()
     {
-      static int frame_index = 0;
+      static int frame_index = 1;
       frame_index = frame_index == 0 ? 1 : 0;
 
       audio::engine::erase_finished_audio_on_queue(source_);
