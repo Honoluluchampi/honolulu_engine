@@ -10,6 +10,7 @@ layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, lo
 // pressure
 layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
 layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
+layout(std430, set = 1, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
 
 // push constants
 layout(push_constant) uniform Push { fdtd2_push push; };
@@ -34,20 +35,21 @@ void main() {
 
   if (i < push.x_grid && j < push.y_grid) // inside domain
   {
-    float state = prev_p[g_id(i, j)].values.w;
+    uint idx = g_id(i, j);
+    float state = prev_p[idx].values.w;
     if (state >= 0) {
-      float pml = max(prev_p[g_id(i, j)].values.w, 0.f);
+      float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
       float right_is_domain = float(prev_p[g_id(i + 1, j)].values.w >= 0);
       float upper_is_domain = float(prev_p[g_id(i, j + 1)].values.w >= 0);
 
       float p = (prev_p[g_id(i, j)].values.z - push.p_fac *
-      (prev_p[g_id(i, j)].values.x * right_is_domain - prev_p[g_id(i - 1, j)].values.x +
-      prev_p[g_id(i, j)].values.y * upper_is_domain - prev_p[g_id(i, j - 1)].values.y)
+      (prev_p[idx].values.x * right_is_domain - prev_p[g_id(i - 1, j)].values.x +
+      prev_p[idx].values.y * upper_is_domain - prev_p[g_id(i, j - 1)].values.y)
       ) / (1 + pml);
 
-      curr_p[g_id(i, j)].values.z = p;
+      curr_p[idx].values.z = p;
 
       // re-calculate the current pressure to reduce the barrier synchronization
       if (i < push.x_grid - 1) {
@@ -55,12 +57,12 @@ void main() {
         float upper_is_domain_x1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= 0);
 
         float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
-        (prev_p[g_id(i + 1, j)].values.x * right_is_domain_x1 - prev_p[g_id(i, j)].values.x +
+        (prev_p[g_id(i + 1, j)].values.x * right_is_domain_x1 - prev_p[idx].values.x +
         prev_p[g_id(i + 1, j)].values.y * upper_is_domain_x1 - prev_p[g_id(i + 1, j - 1)].values.y)
         ) / (1 + pml);
 
-        curr_p[g_id(i, j)].values.x =
-        (prev_p[g_id(i, j)].values.x - push.v_fac * (p_x1 - p)) / (1 + pml);
+        curr_p[idx].values.x =
+        (prev_p[idx].values.x - push.v_fac * (p_x1 - p)) / (1 + pml);
       }
 
       if (j < push.y_grid - 1) {
@@ -69,11 +71,11 @@ void main() {
 
         float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
         (prev_p[g_id(i, j + 1)].values.x * right_is_domain_y1 - prev_p[g_id(i - 1, j + 1)].values.x +
-        prev_p[g_id(i, j + 1)].values.y * upper_is_domain_y1 - prev_p[g_id(i, j)].values.y)
+        prev_p[g_id(i, j + 1)].values.y * upper_is_domain_y1 - prev_p[idx].values.y)
         ) / (1 + pml);
 
-        curr_p[g_id(i, j)].values.y =
-        (prev_p[g_id(i, j)].values.y - push.v_fac * (p_y1 - p)) / (1 + pml);
+        curr_p[idx].values.y =
+        (prev_p[idx].values.y - push.v_fac * (p_y1 - p)) / (1 + pml);
       }
     }
     else if (state == -2) // exciter
@@ -84,7 +86,7 @@ void main() {
       if (dp < 0)
         u_bore = 0.f;
       float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-      curr_p[g_id(i, j)].values.x = u_bore * shelf / 0.000367;
+      curr_p[idx].values.x = u_bore * shelf / 0.000367;
     }
   }
 }

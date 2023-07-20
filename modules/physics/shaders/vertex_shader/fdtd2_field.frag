@@ -43,6 +43,6 @@ void main()
   if (state == -1)
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
   // exciter
-  if (state == -2)
+  if (state == -2 || state == -3)
     out_color = vec4(0.f, 1.f, 0.f, 1.f);
 }

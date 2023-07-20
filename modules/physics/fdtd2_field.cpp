@@ -96,11 +96,15 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
     // temp
     // state (wall, exciter)
-    if ((x >= 25 && x <= 130) && (y == 36 || y == 42)) {
+    if ((x >= 25 && x <= 130)  && (y == 36 || y == 42)) {
       initial_grid[i].values.w() = -1; // wall
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].values.w() = -2; // exciter
+    }
+    if ((x == 136) && (y == 39)) {
+      initial_grid[i].values.w() = -3;
+      listener_index_ = i;
     }
   }
 

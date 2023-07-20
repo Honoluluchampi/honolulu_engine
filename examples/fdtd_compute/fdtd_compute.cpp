@@ -26,7 +26,8 @@ DEFINE_ENGINE(fdtd_compute)
         .y_len = y_len_,
         .sound_speed = sound_speed_,
         .rho = rho_,
-        .pml_count = 6
+        .pml_count = 6,
+        .update_per_frame = 2134
       };
 
       field_ = physics::fdtd2_field::create(info);
@@ -40,7 +41,6 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::Text("x grid : %d", field_->get_x_grid());
       ImGui::Text("y grid : %d", field_->get_y_grid());
       ImGui::Text("dt : %f", field_->get_dt());
-      ImGui::Text("update per frame : %d", field_->get_update_per_frame());
       ImGui::Text("grid size : %f", field_->get_dx());
       ImGui::Text("duration : %f", field_->get_duration());
 
@@ -48,6 +48,10 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
       ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
       ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 2134);
+
+      field_->add_duration();
+      field_->set_update_per_frame(update_per_frame_);
 
       if (ImGui::Button("restart")) {
         std::thread t([this] {
@@ -57,7 +61,8 @@ DEFINE_ENGINE(fdtd_compute)
               this->y_len_,
               this->sound_speed_,
               this->rho_,
-              6
+              6,
+              update_per_frame_
             }
           );
         });
@@ -86,6 +91,7 @@ DEFINE_ENGINE(fdtd_compute)
     float y_len_       = 0.3f;
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
+    int   update_per_frame_ = 2134;
 };
 
 } // namespace hnll

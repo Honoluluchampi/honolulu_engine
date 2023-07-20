@@ -14,6 +14,7 @@ struct fdtd_info {
   float sound_speed;
   float rho;
   int   pml_count;
+  int   update_per_frame;
 };
 
 DEFINE_PURE_ACTOR(fdtd2_field)
@@ -38,11 +39,12 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float get_dt()        const { return dt_; }
     float get_dx()        const { return dx_; }
     float get_duration()  const { return duration_; }
-    int   get_update_per_frame() const { return update_per_frame_; }
     bool  is_ready()      const { return is_ready_; } // is constructed
+    int   get_update_per_frame() const { return update_per_frame_; }
+    int   get_listener_index() const { return listener_index_; }
 
     // setter
-    void add_duration(float dt) { duration_ += dt; }
+    void add_duration() { duration_ += dt_ * update_per_frame_; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
     void set_as_target(fdtd2_field* target) const;
 
@@ -83,5 +85,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float duration_ = 0.f;
     int update_per_frame_ = 0;
     bool  is_ready_ = false;
+
+    int listener_index_ = 0;
 };
 } // namespace hnll::physics

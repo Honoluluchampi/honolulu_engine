@@ -14,6 +14,6 @@ struct fdtd2_push {
   float p_fac;
   float v_fac;
   // input
-  int input_grid;
-  float input_value;
+  int buffer_index;
+  int listener_index;
 };
