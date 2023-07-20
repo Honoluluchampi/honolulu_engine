@@ -16,4 +16,7 @@ struct fdtd2_push {
   // input
   int buffer_index;
   int listener_index;
+  // pressure
+  float input_pressure;
+  float dummy;
 };

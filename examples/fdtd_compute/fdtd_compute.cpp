@@ -53,7 +53,7 @@ DEFINE_ENGINE(fdtd_compute)
     void update_this(float dt)
     {
       ImGui::Begin("stats");
-      ImGui::Text("fps : %d", int(1.f/dt));
+      ImGui::Text("graphics fps : %d", int(1.f/dt));
       ImGui::Text("x grid : %d", field_->get_x_grid());
       ImGui::Text("y grid : %d", field_->get_y_grid());
       ImGui::Text("dt : %f", field_->get_dt());
@@ -62,12 +62,12 @@ DEFINE_ENGINE(fdtd_compute)
 
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
-      ImGui::SliderFloat("sound speed", &sound_speed_, 10.f, 340.f);
-      ImGui::SliderFloat("rho", &rho_, 1.f, 2.f);
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 4268);
+      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 4000.f);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
+      field_->set_mouth_pressure(mouth_pressure_);
 
       update_sound();
 
@@ -147,6 +147,7 @@ DEFINE_ENGINE(fdtd_compute)
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
     int   update_per_frame_;
+    float mouth_pressure_ = 0.f;
 
     // AL
     audio::source_id source_;

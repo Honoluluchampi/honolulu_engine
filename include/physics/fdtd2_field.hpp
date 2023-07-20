@@ -29,12 +29,16 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets(int game_frame_index);
     uint32_t get_field_id() const { return field_id_; }
+
+    // push constant
     int get_x_grid()      const { return x_grid_; }
     int get_y_grid()      const { return y_grid_; }
     float get_x_len()     const { return x_len_; }
     float get_y_len()     const { return y_len_; }
     float get_v_fac()     const { return v_fac_;  }
     float get_p_fac()     const { return p_fac_; }
+    float get_mouth_pressure() const { return mouth_pressure_; }
+
     int   get_pml_count() const { return pml_count_; }
     float get_dt()        const { return dt_; }
     float get_dx()        const { return dx_; }
@@ -48,6 +52,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     void add_duration() { duration_ += dt_ * update_per_frame_; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
     void set_as_target(fdtd2_field* target) const;
+    void set_mouth_pressure(float mp) { mouth_pressure_ = mp; }
 
     static const std::vector<graphics::binding_info> field_bindings;
     static const std::vector<graphics::binding_info> texture_bindings;
@@ -76,6 +81,8 @@ DEFINE_PURE_ACTOR(fdtd2_field)
 
     float p_fac_;
     float v_fac_;
+
+    float mouth_pressure_ = 0.f;
 
     // frame_buffering
     int frame_count_ = 2;
