@@ -9,7 +9,7 @@ namespace hnll::physics {
 // shared with shaders
 #include "../common/fdtd2_config.h"
 
-#define UPDATE_PER_FRAME 2
+#define UPDATE_PER_FRAME 2134
 
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
@@ -55,14 +55,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     target_->add_duration(local_dt * UPDATE_PER_FRAME);
     target_->set_update_per_frame(UPDATE_PER_FRAME);
 
-    // barrier for pressure, velocity update synchronization
-    VkMemoryBarrier barrier = {
-      .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-      .pNext = nullptr,
-      .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-      .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
-    };
-
     {
       utils::scope_timer timer {"task dispatch"};
       // update velocity and pressure
@@ -84,6 +76,14 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
 
         // if not the last loop, waite for velocity update
         if (i != UPDATE_PER_FRAME - 1) {
+          // barrier for pressure, velocity update synchronization
+          VkMemoryBarrier barrier = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+          };
+
           vkCmdPipelineBarrier(
             command,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
