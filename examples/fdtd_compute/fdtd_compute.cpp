@@ -13,6 +13,7 @@
 #include <imgui/imgui.h>
 
 #define AUDIO_FRAME_RATE 128000
+#define DEFAULT_UPDATE_PER_FRAME 4268
 
 namespace hnll {
 
@@ -62,8 +63,8 @@ DEFINE_ENGINE(fdtd_compute)
 
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
-      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 2, 4268);
-      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 4000.f);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, 4268);
+      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 10000.f);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -131,7 +132,7 @@ DEFINE_ENGINE(fdtd_compute)
         audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
         segment_.clear();
 
-        if (audio::engine::get_audio_count_on_queue(source_) == 3 && !started_) {
+        if (audio::engine::get_audio_count_on_queue(source_) == 5 && !started_) {
           audio::engine::play_audio_from_source(source_);
           started_ = true;
         }
@@ -147,7 +148,7 @@ DEFINE_ENGINE(fdtd_compute)
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
     int   update_per_frame_;
-    float mouth_pressure_ = 0.f;
+    float mouth_pressure_ = 4000.f;
 
     // AL
     audio::source_id source_;
