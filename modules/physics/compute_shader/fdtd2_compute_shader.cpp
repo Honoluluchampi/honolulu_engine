@@ -19,7 +19,7 @@ fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::com
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute.comp.spv",
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_vtl.comp.spv",
     { vk_layout, vk_layout, vk_layout, vk_layout });
 }
 

@@ -34,7 +34,7 @@ void main()
 
   bool out_of_area = i < 0 || i >= push.x_grid || j < 0 || j >= push.y_grid;
   float p_val = curr_p[g_id(int(i), int(j))].values.z;
-  p_val *= int(!out_of_area) / 250.f;
+  p_val *= int(!out_of_area) / 400.f;
 
   out_color = vec4(p_val, 0, -p_val, 1);
 
