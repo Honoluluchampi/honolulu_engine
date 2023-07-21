@@ -126,7 +126,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   }
 
   std::vector<float> initial_sound_buffer(update_per_frame_, 0.f);
-  for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
+  for (int i = 0; i < frame_count_; i++) {
     auto sound_buffer = graphics::buffer::create_with_staging(
       device_,
       sizeof(float) * initial_grid.size(),
@@ -207,12 +207,22 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
   if (frame_index_ == 0) {
     desc_sets = {
       desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(game_frame_index)[1],
+    };
+  }
+  else if (frame_index_ == 1){
+    desc_sets = {
+      desc_sets_->get_vk_desc_sets(1)[0],
+      desc_sets_->get_vk_desc_sets(0)[0],
+      desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(game_frame_index)[1],
     };
   }
   else {
     desc_sets = {
+      desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(game_frame_index)[1],

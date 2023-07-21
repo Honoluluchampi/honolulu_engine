@@ -24,7 +24,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     explicit fdtd2_field(const fdtd_info& info);
     ~fdtd2_field();
 
-    void update_frame() { frame_index_ = frame_index_ == 0 ? 1 : 0; }
+    void update_frame() { frame_index_ = frame_index_ == frame_count_ - 1 ? 0 : frame_index_ + 1; }
 
     // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets(int game_frame_index);
@@ -85,7 +85,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float mouth_pressure_ = 0.f;
 
     // frame_buffering
-    int frame_count_ = 2;
+    int frame_count_ = 3;
     int frame_index_ = 0;
 
     uint32_t field_id_;

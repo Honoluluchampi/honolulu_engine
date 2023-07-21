@@ -10,7 +10,8 @@ layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, lo
 // pressure
 layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
 layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
-layout(std430, set = 2, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
+layout(std430, set = 2, binding = 0) readonly buffer PreviousP2 { particle prev_p2[]; };
+layout(std430, set = 3, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
 
 // push constants
 layout(push_constant) uniform Push { fdtd2_push push; };
