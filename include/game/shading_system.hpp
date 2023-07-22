@@ -6,14 +6,15 @@
 #include <graphics/pipeline.hpp>
 #include <graphics/desc_set.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/singleton.hpp>
 
 // std
 #include <unordered_map>
 
 #define DEFINE_SHADING_SYSTEM(new_system, rc) class new_system : public game::shading_system<new_system, rc>
-#define DEFAULT_SHADING_SYSTEM_CTOR(system, rc) explicit system(graphics::device &device) : game::shading_system<system, rc>(device) {}
-#define DEFAULT_SHADING_SYSTEM_CTOR_DECL(system, rc) explicit system(graphics::device &device)
-#define DEFAULT_SHADING_SYSTEM_CTOR_IMPL(system, rc) system::system(graphics::device &device) : game::shading_system<system, rc>(device) {}
+#define DEFAULT_SHADING_SYSTEM_CTOR(system, rc) explicit system() : game::shading_system<system, rc>() {}
+#define DEFAULT_SHADING_SYSTEM_CTOR_DECL(system, rc) explicit system()
+#define DEFAULT_SHADING_SYSTEM_CTOR_IMPL(system, rc) system::system() : game::shading_system<system, rc>() {}
 
 namespace hnll {
 
@@ -24,11 +25,10 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    explicit shading_system(graphics::device& device) : device_(device) {  }
+    explicit shading_system() : device_(utils::singleton<graphics::device>::get_instance()) {}
     ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
 
-    static u_ptr<Derived> create(graphics::device& device)
-    { return std::make_unique<Derived>(device); }
+    static u_ptr<Derived> create() { return std::make_unique<Derived>(); }
 
     shading_system(const shading_system &) = delete;
     shading_system &operator=(const shading_system &) = delete;

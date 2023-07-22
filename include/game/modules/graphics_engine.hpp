@@ -71,8 +71,6 @@ class graphics_engine_core
 
     bool should_close_window() const;
     GLFWwindow* get_glfw_window() const ;
-    graphics::window& get_window_r();
-    static graphics::device& get_device_r();
     graphics::renderer& get_renderer_r();
     graphics::timeline_semaphore& get_compute_semaphore_r();
 
@@ -87,9 +85,10 @@ class graphics_engine_core
 
     void cleanup();
 
-    // construct in impl
-    static u_ptr<graphics::window> window_;
-    static u_ptr<graphics::device> device_;
+    // construct as singleton in impl
+    graphics::window& window_;
+    graphics::device& device_;
+
     static u_ptr<graphics::renderer> renderer_;
 
     // global config for shading system
@@ -130,6 +129,8 @@ class graphics_engine
   private:
     void cleanup();
 
+    graphics::window& window_; // singleton
+
     graphics_engine_core& core_;
     utils::rendering_type rendering_type_;
     static shading_system_map shading_systems_;
@@ -142,7 +143,8 @@ class graphics_engine
 GRPH_ENGN_API typename graphics_engine<S...>::shading_system_map GRPH_ENGN_TYPE::shading_systems_;
 
 GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name, utils::rendering_type rendering_type)
- : core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type))
+ : core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
+   window_(utils::singleton<graphics::window>::get_instance())
 {
   // construct all selected shading systems
   add_shading_system<S...>();
@@ -171,7 +173,7 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 
     // draw viewport
     command_buffer = core_.begin_command_buffer(1);
-    auto window_extent = core_.get_window_r().get_extent();
+    auto window_extent = window_.get_extent();
     auto left   = gui_engine::get_left_window_ratio();
     auto bottom = gui_engine::get_bottom_window_ratio();
 
@@ -207,7 +209,7 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 GRPH_ENGN_API template <ShadingSystem Head, ShadingSystem... Rest>
 void GRPH_ENGN_TYPE::add_shading_system()
 {
-  auto system = Head::create(core_.get_device_r());
+  auto system = Head::create();
   system->setup();
   shading_systems_[static_cast<uint32_t>(system->get_shading_type())] = std::move(system);
 

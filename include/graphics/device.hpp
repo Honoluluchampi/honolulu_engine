@@ -52,7 +52,9 @@ class device
     bool enable_validation_layers = true;
 // #endif
 
-    device(window &window, utils::rendering_type type);
+    explicit device(utils::rendering_type type);
+    // for singleton
+    device(){}
     ~device();
 
     // Not copyable or movable
@@ -60,9 +62,6 @@ class device
     device& operator=(const device &) = delete;
     device(device &&) = delete;
     device &operator=(device &&) = delete;
-
-    static u_ptr<device> create(window &window, utils::rendering_type type)
-    { return std::make_unique<device>(window, type); }
 
     // getter
     VkCommandPool         get_graphics_command_pool(){ return graphics_command_pool_; }
@@ -136,8 +135,6 @@ class device
     bool check_device_extension_support(VkPhysicalDevice device);
     swap_chain_support_details query_swap_chain_support(VkPhysicalDevice device);
 
-    // hnll
-    window& window_;
     // vulkan
     VkDevice device_;
     VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;

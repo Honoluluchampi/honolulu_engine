@@ -145,7 +145,6 @@ ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rend
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {
     compute_engine_ = compute_engine<C...>::create(
-      graphics_engine_core_.get_device_r(),
       graphics_engine_core_.get_compute_semaphore_r()
     );
   }

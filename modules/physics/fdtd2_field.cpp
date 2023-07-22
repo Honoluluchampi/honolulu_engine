@@ -23,7 +23,8 @@ const std::vector<graphics::binding_info> fdtd2_field::texture_bindings = {
 u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
 { return std::make_unique<fdtd2_field>(info); }
 
-fdtd2_field::fdtd2_field(const fdtd_info& info) : device_(game::graphics_engine_core::get_device_r())
+fdtd2_field::fdtd2_field(const fdtd_info& info)
+  : device_(utils::singleton<graphics::device>::get_instance())
 {
   static uint32_t id = 0;
   field_id_ = id++;

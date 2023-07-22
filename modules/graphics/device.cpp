@@ -1,6 +1,7 @@
 // hnll
 #include <graphics/device.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/singleton.hpp>
 #include <extensions/extensions_vk.hpp>
 
 // ray tracing
@@ -58,8 +59,7 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-device::device(window &window, utils::rendering_type type)
-  : window_{window}, rendering_type_(type)
+device::device(utils::rendering_type type) : rendering_type_(type)
 {
   // temp
 //  enable_validation_layers = false;
@@ -413,7 +413,10 @@ VkCommandPool device::create_command_pool(command_type type)
   return pool;
 }
 
-void device::create_surface() { window_.create_window_surface(instance_, &surface_); }
+void device::create_surface() {
+  auto& window = utils::singleton<graphics::window>::get_instance();
+  window.create_window_surface(instance_, &surface_);
+}
 
 // ensure there is at least one available physical device and
 // the debice can present images to the surface we created

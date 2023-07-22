@@ -17,6 +17,7 @@ class window
 {
   public:
     window(const int w, const int h, const std::string name);
+    window() {} // for singleton access
     ~window();
 
     // delete copy ctor, assignment (to prevent GLFWwindow* from double deleted)

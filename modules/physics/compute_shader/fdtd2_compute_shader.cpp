@@ -13,7 +13,7 @@ namespace hnll::physics {
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
 uint32_t fdtd2_compute_shader::target_id_ = -1;
 
-fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::compute_shader<fdtd2_compute_shader>(device)
+fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_compute_shader>()
 {
   desc_layout_ = graphics::desc_layout::create_from_bindings(device_, fdtd2_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();

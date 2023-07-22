@@ -3,6 +3,7 @@
 // hnll
 #include <utils/common_alias.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/singleton.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
 #include <graphics/timeline_semaphore.hpp>
@@ -24,9 +25,9 @@ class compute_engine
 {
     using shader_map = std::unordered_map<uint32_t, std::variant<u_ptr<C>...>>;
   public:
-    static u_ptr<compute_engine<C...>> create(graphics::device& device, graphics::timeline_semaphore& semaphore)
-    { return std::make_unique<compute_engine<C...>>(device, semaphore); }
-    explicit compute_engine(graphics::device& device, graphics::timeline_semaphore& semaphore);
+    static u_ptr<compute_engine<C...>> create(graphics::timeline_semaphore& semaphore)
+    { return std::make_unique<compute_engine<C...>>(semaphore); }
+    explicit compute_engine(graphics::timeline_semaphore& semaphore);
     ~compute_engine();
 
     void render(float dt);
@@ -63,13 +64,13 @@ template <> class compute_engine<> {};
 #define CMPT_ENGN_API  template<ComputeShader... CS>
 #define CMPT_ENGN_TYPE compute_engine<CS...>
 
-CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::device &device, graphics::timeline_semaphore& semaphore)
- : device_(device), compute_semaphore_(semaphore)
+CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::timeline_semaphore& semaphore)
+ : device_(utils::singleton<graphics::device>::get_instance()), compute_semaphore_(semaphore)
 {
-  command_buffers_ = device.create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  command_buffers_ = device_.create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   semaphore_value_cache_.resize(command_buffers_.size(), 0);
 
-  compute_queue_ = device.get_compute_queue();
+  compute_queue_ = device_.get_compute_queue();
 
   add_shader<CS...>();
 }
@@ -175,7 +176,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::end_frame()
 CMPT_ENGN_API template <ComputeShader Head, ComputeShader... Rest>
 void CMPT_ENGN_TYPE::add_shader()
 {
-  auto system = Head::create(device_);
+  auto system = Head::create();
   static uint32_t shader_id = 0;
   shaders_[shader_id++] = std::move(system);
 
