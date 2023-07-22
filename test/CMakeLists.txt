@@ -3,6 +3,7 @@ set(TEST_SRC
         geometry/primitives_test.cpp
         geometry/intersection_test.cpp
         audio/fft_test.cpp
+        graphics/desc_sets_test.cpp
         )
 
 add_executable(hnll_test ${TEST_SRC})

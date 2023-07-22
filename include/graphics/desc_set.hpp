@@ -35,7 +35,7 @@ struct desc_set_info
     return *this;
   }
 
-  std::vector<binding_info> bindings_;
+  std::vector<binding_info> bindings_{};
   bool is_frame_buffered_ = false;
 };
 
@@ -69,7 +69,7 @@ class desc_layout {
   private:
     device &device_;
     VkDescriptorSetLayout descriptor_set_layout_;
-    std::vector<VkDescriptorSetLayoutBinding> bindings_;
+    std::vector<VkDescriptorSetLayoutBinding> bindings_{};
 
     friend class desc_writer;
 };
@@ -123,7 +123,7 @@ class desc_writer {
   private:
     desc_layout &set_layout_;
     desc_pool &pool_;
-    std::vector<VkWriteDescriptorSet> writes_;
+    std::vector<VkWriteDescriptorSet> writes_{};
 };
 
 // contains multiple sets
@@ -169,17 +169,17 @@ struct desc_sets
 
     device& device_;
     s_ptr<desc_pool> pool_;
-    std::vector<VkDescriptorSet> vk_desc_sets_;
-    std::vector<u_ptr<buffer>> buffers_;
-    std::vector<u_ptr<desc_layout>> layouts_;
+    std::vector<VkDescriptorSet> vk_desc_sets_{};
+    std::vector<u_ptr<buffer>> buffers_{};
+    std::vector<u_ptr<desc_layout>> layouts_{};
     // buffer count offsets for each desc set
-    std::unordered_map<int, int> buffer_offset_dict_;
-    std::unordered_map<int, int> desc_set_offset_dict_;
+    std::unordered_map<int, int> buffer_offset_dict_{};
+    std::unordered_map<int, int> desc_set_offset_dict_{};
 
     int frame_count_ = 1;
 
     // deleted after build
-    std::vector<desc_set_info> set_infos_;
+    std::vector<desc_set_info> set_infos_{};
 };
 
 } // namespace hnll::graphics

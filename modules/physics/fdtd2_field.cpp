@@ -62,7 +62,7 @@ void fdtd2_field::compute_constants()
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 3)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
@@ -99,8 +99,8 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     // state (wall, exciter)
     if ((x >= 25 && x <= 130)  && (y == 36 || y == 42)) {
       initial_grid[i].values.w() = -2; // wall
-//      if (((x >= 100 && x <= 101)) && y == 36)
-//        initial_grid[i].values.w() = 0;
+      if (((x >= 100 && x <= 101)) && y == 36)
+        initial_grid[i].values.w() = 0;
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].values.w() = -3; // exciter
