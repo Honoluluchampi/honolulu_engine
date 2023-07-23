@@ -20,7 +20,7 @@ fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_comput
 
   pipeline_ = create_pipeline<fdtd2_push>(
     utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_vtl.comp.spv",
-    { vk_layout, vk_layout, vk_layout, vk_layout });
+    { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
 void fdtd2_compute_shader::render(const utils::compute_frame_info& info)

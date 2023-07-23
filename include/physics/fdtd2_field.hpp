@@ -98,5 +98,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     int listener_index_ = 0;
     // pointer for sound buffer
     float* sound_buffers_[2];
+
+    std::vector<int> is_active_;
 };
 } // namespace hnll::physics

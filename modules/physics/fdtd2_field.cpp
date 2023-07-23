@@ -71,7 +71,9 @@ void fdtd2_field::set_pml(std::vector<vec4>& grids, int x_min, int x_max, int y_
       auto pml_x = std::max(pml_l, pml_r);
       auto pml_y = std::max(pml_u, pml_d);
       auto pml = std::max(pml_x, pml_y);
-      grids[x + (x_grid_ + 1) * y].w() = pml;
+      auto idx = x + (x_grid_ + 1) * y;
+      grids[idx].w() = pml;
+      is_active_[idx] = 1.f;
     }
   }
 }
@@ -88,15 +90,16 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   desc_sets_ = graphics::desc_sets::create(
     device_,
     desc_pool_,
-    {set_info, set_info}, // field and sound buffer
+    {set_info, set_info, set_info}, // field and sound buffer
     frame_count_);
 
   // initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<vec4> initial_grid(grid_count, {0.f, 0.f, 0.f, 0.f});
+  is_active_.resize(grid_count, 0.f); // active is 1
 
   set_pml(initial_grid, 115, 145, 25, 53);
-  set_pml(initial_grid, 90, 114, 0, 42);
+  set_pml(initial_grid, 70, 114, 20, 42);
 //  set_pml(initial_grid, 0, x_grid_, 0, y_grid_);
 
   // set state
@@ -110,16 +113,19 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     // temp
     // state (wall, exciter)
     if (x >= 25 && x <= 130) {
-      if (y > 36 && y < 42)
+      if (y > 36 && y < 42) {
         initial_grid[i].w() = 0.f;
+        is_active_[i] = 1.f;
+      }
       if (y == 36 || y == 42) {
       initial_grid[i].w() = -2; // wall
-      if (((x >= 100 && x <= 101)) && y == 36)
-        initial_grid[i].w() = 0; // tone hole
+//      if (((x == 86) || (x >= 100 && x <= 101)) && y == 36)
+//        initial_grid[i].w() = 0; // tone hole
       }
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].w() = -3; // exciter
+      is_active_[i] = 1.f;
     }
     if ((x == 138) && (y == 39)) {
       initial_grid[i].w() = -1;
@@ -138,7 +144,17 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_grid.data());
 
+    auto is_active_buffer = graphics::buffer::create_with_staging(
+      device_,
+      sizeof(int) * is_active_.size(),
+      1,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      is_active_.data()
+    );
+
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
+    desc_sets_->set_buffer(2, 0, i, std::move(is_active_buffer));
   }
 
   std::vector<float> initial_sound_buffer(update_per_frame_, 0.f);
@@ -226,6 +242,7 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(game_frame_index)[1],
+      desc_sets_->get_vk_desc_sets(0)[2]
     };
   }
   else if (frame_index_ == 1){
@@ -234,6 +251,7 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(game_frame_index)[1],
+      desc_sets_->get_vk_desc_sets(1)[2]
     };
   }
   else {
@@ -242,6 +260,7 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(game_frame_index)[1],
+      desc_sets_->get_vk_desc_sets(2)[2]
     };
   }
 
