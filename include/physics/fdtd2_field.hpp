@@ -61,6 +61,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     void compute_constants();
     void setup_desc_sets(const fdtd_info& info);
     void setup_textures(const fdtd_info& info);
+    void set_pml(std::vector<vec4>& grids, int x_min, int x_max, int y_min, int y_max);
 
     graphics::device& device_;
     u_ptr<graphics::desc_sets> desc_sets_;

@@ -64,7 +64,8 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, 4268);
-      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 10000.f);
+      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
+      ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -113,10 +114,9 @@ DEFINE_ENGINE(fdtd_compute)
         return;
 
       float* raw_data = field_->get_sound_buffer(frame_index);
-      float amp = 200;
       float raw_i = 0.f;
       while (raw_i < update_per_frame_) {
-        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amp));
+        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
         raw_i += 128000.f / 44100.f;
       }
 
@@ -149,6 +149,7 @@ DEFINE_ENGINE(fdtd_compute)
     float rho_         = 1.1f;
     int   update_per_frame_;
     float mouth_pressure_ = 4000.f;
+    float amplify_ = 100.f;
 
     // AL
     audio::source_id source_;

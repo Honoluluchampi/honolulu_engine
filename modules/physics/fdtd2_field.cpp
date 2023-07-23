@@ -9,8 +9,6 @@
 
 namespace hnll::physics {
 
-#include "common/fdtd_struct.h"
-
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
@@ -60,6 +58,24 @@ void fdtd2_field::compute_constants()
   p_fac_ = rho_ * c_ * c_ / dx_;
 }
 
+void fdtd2_field::set_pml(std::vector<vec4>& grids, int x_min, int x_max, int y_min, int y_max)
+{
+  float pml_each = 0.5f / float(pml_count_);
+
+  for (int x = x_min; x <= x_max; x++) {
+    for (int y = y_min; y <= y_max; y++) {
+      float pml_l = std::max(float(pml_count_ - (x - x_min)), 0.f) * pml_each;
+      float pml_r = std::max(float(pml_count_ - (x_max - x)), 0.f) * pml_each;
+      float pml_d = std::max(float(pml_count_ - (y - y_min)), 0.f) * pml_each;
+      float pml_u = std::max(float(pml_count_ - (y_max - y)), 0.f) * pml_each;
+      auto pml_x = std::max(pml_l, pml_r);
+      auto pml_y = std::max(pml_u, pml_d);
+      auto pml = std::max(pml_x, pml_y);
+      grids[x + (x_grid_ + 1) * y].w() = pml;
+    }
+  }
+}
+
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
@@ -77,37 +93,36 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
   // initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
-  std::vector<particle> initial_grid(grid_count, {.values = {0.f, 0.f, 0.f, 0.f}});
+  std::vector<vec4> initial_grid(grid_count, {0.f, 0.f, 0.f, 0.f});
+
+  set_pml(initial_grid, 115, 145, 25, 53);
+  set_pml(initial_grid, 90, 114, 0, 42);
+//  set_pml(initial_grid, 0, x_grid_, 0, y_grid_);
 
   // set state
-  float pml_each = 0.5f / float(pml_count_);
   for (int i = 0; i < grid_count; i++) {
     // retrieve coordinate
     auto x = float(i % (x_grid_ + 1)) - 1;
     auto y = float(i / (x_grid_ + 1)) - 1;
 
-    // pml
-    float pml_l = std::max(float(pml_count_) - x, 0.f) * pml_each;
-    float pml_r = std::max(float(pml_count_) - (x_grid_ - x), 0.f) * pml_each;
-    float pml_d = std::max(float(pml_count_) - y, 0.f) * pml_each;
-    float pml_u = std::max(float(pml_count_) - (y_grid_ - y), 0.f) * pml_each;
-    auto pml_x  = std::max(pml_l, pml_r);
-    auto pml_y  = std::max(pml_u, pml_d);
-    auto pml    = std::max(pml_x, pml_y);
-    initial_grid[i].values.w() = pml;
+    std::vector<int> active_grid_ids;
 
     // temp
     // state (wall, exciter)
-    if ((x >= 25 && x <= 130)  && (y == 36 || y == 42)) {
-      initial_grid[i].values.w() = -2; // wall
+    if (x >= 25 && x <= 130) {
+      if (y > 36 && y < 42)
+        initial_grid[i].w() = 0.f;
+      if (y == 36 || y == 42) {
+      initial_grid[i].w() = -2; // wall
       if (((x >= 100 && x <= 101)) && y == 36)
-        initial_grid[i].values.w() = 0;
+        initial_grid[i].w() = 0; // tone hole
+      }
     }
     if ((x == 25) && (y > 36 && y < 42)) {
-      initial_grid[i].values.w() = -3; // exciter
+      initial_grid[i].w() = -3; // exciter
     }
     if ((x == 138) && (y == 39)) {
-      initial_grid[i].values.w() = -1;
+      initial_grid[i].w() = -1;
       listener_index_ = i;
     }
   }
@@ -117,7 +132,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
     auto press_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(particle) * initial_grid.size(),
+      sizeof(vec4) * initial_grid.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
