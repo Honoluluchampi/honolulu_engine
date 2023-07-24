@@ -14,9 +14,9 @@ struct fdtd2_push {
   float p_fac;
   float v_fac;
   // input
-  int buffer_index;
+  int active_grid_count;
   int listener_index;
   // pressure
   float input_pressure;
-  float dummy;
+  int buffer_index;
 };

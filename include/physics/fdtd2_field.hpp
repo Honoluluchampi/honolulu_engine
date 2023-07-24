@@ -6,6 +6,9 @@
 #include <game/actor.hpp>
 #include <utils/common_alias.hpp>
 
+// std
+#include <set>
+
 namespace hnll::physics {
 
 struct fdtd_info {
@@ -39,6 +42,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     float get_p_fac()     const { return p_fac_; }
     float get_mouth_pressure() const { return mouth_pressure_; }
 
+    size_t get_active_ids_count() const { return active_ids_count_; }
     int   get_pml_count() const { return pml_count_; }
     float get_dt()        const { return dt_; }
     float get_dx()        const { return dx_; }
@@ -63,7 +67,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     void setup_textures(const fdtd_info& info);
     void set_pml(
       std::vector<vec4>& grids,
-      std::vector<int>&  is_active,
+      std::set<int>&  active_ids,
       int x_min, int x_max, int y_min, int y_max);
 
     graphics::device& device_;
@@ -91,6 +95,8 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     // frame_buffering
     int frame_count_ = 3;
     int frame_index_ = 0;
+
+    size_t active_ids_count_;
 
     uint32_t field_id_;
 

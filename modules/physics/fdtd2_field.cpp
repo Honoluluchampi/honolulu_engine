@@ -60,7 +60,7 @@ void fdtd2_field::compute_constants()
 
 void fdtd2_field::set_pml(
   std::vector<vec4>& grids,
-  std::vector<int>& is_active,
+  std::set<int>& active_ids,
   int x_min, int x_max, int y_min, int y_max)
 {
   float pml_each = 0.5f / float(pml_count_);
@@ -76,7 +76,7 @@ void fdtd2_field::set_pml(
       auto pml = std::max(pml_x, pml_y);
       auto idx = x + (x_grid_ + 1) * y;
       grids[idx].w() = pml;
-      is_active[idx] = 1.f;
+      active_ids.insert(idx);
     }
   }
 }
@@ -84,7 +84,7 @@ void fdtd2_field::set_pml(
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(device_)
-    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 3)
+    .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 12)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
@@ -99,11 +99,11 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   // initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<vec4> initial_grid(grid_count, {0.f, 0.f, 0.f, 0.f});
-  std::vector<int> is_active(grid_count, 0.f);
+  std::set<int> active_ids;
 
-  set_pml(initial_grid, is_active, 115, 145, 25, 53);
-  set_pml(initial_grid, is_active, 70, 114, 20, 42);
-  set_pml(initial_grid, is_active, 0, x_grid_, 0, y_grid_);
+  set_pml(initial_grid, active_ids, 115, 145, 25, 53);
+  set_pml(initial_grid, active_ids, 70, 114, 20, 42);
+//  set_pml(initial_grid, active_ids, 0, x_grid_, 0, y_grid_);
 
   // set state
   for (int i = 0; i < grid_count; i++) {
@@ -111,14 +111,12 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     auto x = float(i % (x_grid_ + 1)) - 1;
     auto y = float(i / (x_grid_ + 1)) - 1;
 
-    std::vector<int> active_grid_ids;
-
     // temp
     // state (wall, exciter)
     if (x >= 25 && x <= 130) {
       if (y > 36 && y < 42) {
         initial_grid[i].w() = 0.f;
-        is_active[i] = 1.f;
+        active_ids.insert(i);
       }
       if (y == 36 || y == 42) {
       initial_grid[i].w() = -2; // wall
@@ -128,13 +126,21 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].w() = -3; // exciter
-      is_active[i] = 1.f;
+      active_ids.insert(i);
     }
     if ((x == 138) && (y == 39)) {
       initial_grid[i].w() = -1;
       listener_index_ = i;
     }
   }
+
+  // gather ids
+  std::vector<int> active_ids_buffer;
+  for (const auto& id : active_ids) {
+    active_ids_buffer.emplace_back(id);
+  }
+
+  active_ids_count_ = active_ids_buffer.size();
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
@@ -147,17 +153,17 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_grid.data());
 
-    auto is_active_buffer = graphics::buffer::create_with_staging(
+    auto active_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(int) * is_active.size(),
+      sizeof(int) * active_ids_buffer.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      is_active.data()
+      active_ids_buffer.data()
     );
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
-    desc_sets_->set_buffer(2, 0, i, std::move(is_active_buffer));
+    desc_sets_->set_buffer(2, 0, i, std::move(active_buffer));
   }
 
   std::vector<float> initial_sound_buffer;

@@ -19,7 +19,7 @@ fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_comput
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_vtl.comp.spv",
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_active_grids.comp.spv",
     { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
@@ -39,6 +39,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.p_fac = local_dt * target_->get_p_fac();
     push.listener_index = target_->get_listener_index();
     push.input_pressure = target_->get_mouth_pressure();
+    push.active_grid_count = target_->get_active_ids_count();
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -62,11 +63,18 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
         bind_desc_sets(command, desc_sets);
 
+//        dispatch_command(
+//          command,
+//          (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
+//          (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
+//          1);
+
         dispatch_command(
           command,
-          (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-          (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-          1);
+          (int(target_->get_active_ids_count()) + 63) / 64,
+          1,
+          1
+        );
 
         // if not the last loop, waite for velocity update
         if (i != upf - 1) {
