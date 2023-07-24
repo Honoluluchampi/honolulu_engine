@@ -58,7 +58,10 @@ void fdtd2_field::compute_constants()
   p_fac_ = rho_ * c_ * c_ / dx_;
 }
 
-void fdtd2_field::set_pml(std::vector<vec4>& grids, int x_min, int x_max, int y_min, int y_max)
+void fdtd2_field::set_pml(
+  std::vector<vec4>& grids,
+  std::vector<int>& is_active,
+  int x_min, int x_max, int y_min, int y_max)
 {
   float pml_each = 0.5f / float(pml_count_);
 
@@ -73,7 +76,7 @@ void fdtd2_field::set_pml(std::vector<vec4>& grids, int x_min, int x_max, int y_
       auto pml = std::max(pml_x, pml_y);
       auto idx = x + (x_grid_ + 1) * y;
       grids[idx].w() = pml;
-      is_active_[idx] = 1.f;
+      is_active[idx] = 1.f;
     }
   }
 }
@@ -96,11 +99,11 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   // initial data
   int grid_count = (x_grid_ + 1) * (y_grid_ + 1);
   std::vector<vec4> initial_grid(grid_count, {0.f, 0.f, 0.f, 0.f});
-  is_active_.resize(grid_count, 0.f); // active is 1
+  std::vector<int> is_active(grid_count, 0.f);
 
-  set_pml(initial_grid, 115, 145, 25, 53);
-  set_pml(initial_grid, 70, 114, 20, 42);
-//  set_pml(initial_grid, 0, x_grid_, 0, y_grid_);
+  set_pml(initial_grid, is_active, 115, 145, 25, 53);
+  set_pml(initial_grid, is_active, 70, 114, 20, 42);
+  set_pml(initial_grid, is_active, 0, x_grid_, 0, y_grid_);
 
   // set state
   for (int i = 0; i < grid_count; i++) {
@@ -115,7 +118,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     if (x >= 25 && x <= 130) {
       if (y > 36 && y < 42) {
         initial_grid[i].w() = 0.f;
-        is_active_[i] = 1.f;
+        is_active[i] = 1.f;
       }
       if (y == 36 || y == 42) {
       initial_grid[i].w() = -2; // wall
@@ -125,7 +128,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].w() = -3; // exciter
-      is_active_[i] = 1.f;
+      is_active[i] = 1.f;
     }
     if ((x == 138) && (y == 39)) {
       initial_grid[i].w() = -1;
@@ -146,29 +149,29 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
     auto is_active_buffer = graphics::buffer::create_with_staging(
       device_,
-      sizeof(int) * is_active_.size(),
+      sizeof(int) * is_active.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      is_active_.data()
+      is_active.data()
     );
 
     desc_sets_->set_buffer(0, 0, i, std::move(press_buffer));
     desc_sets_->set_buffer(2, 0, i, std::move(is_active_buffer));
   }
 
-  std::vector<float> initial_sound_buffer(update_per_frame_, 0.f);
+  std::vector<float> initial_sound_buffer;
+  initial_sound_buffer.resize(update_per_frame_, 0.f);
   for (int i = 0; i < frame_count_; i++) {
-    auto sound_buffer = graphics::buffer::create_with_staging(
+    auto sound_buffer = graphics::buffer::create(
       device_,
-      sizeof(float) * initial_grid.size(),
+      sizeof(float) * initial_sound_buffer.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       initial_sound_buffer.data()
     );
 
-    sound_buffer->map();
     sound_buffers_[i] = reinterpret_cast<float*>(sound_buffer->get_mapped_memory());
 
     desc_sets_->set_buffer(1, 0, i, std::move(sound_buffer));
