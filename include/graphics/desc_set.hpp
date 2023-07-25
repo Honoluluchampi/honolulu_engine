@@ -152,6 +152,9 @@ struct desc_sets
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame);
     const std::vector<std::string>& get_buffer_debug_names() const { return buffer_debug_names_; }
     const std::vector<std::string>& get_vk_desc_sets_debug_names() const { return vk_desc_sets_debug_names_; }
+    // for test
+    int get_buffer_id(int frame, int set, int binding);
+    int get_vk_desc_set_id(int frame, int set);
 
     // setter
     void set_buffer(int set, int binding, int frame, u_ptr<buffer>&& desc_buffer);
