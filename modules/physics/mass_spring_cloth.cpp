@@ -111,7 +111,6 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
   set_info.add_binding(
     VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
     device,

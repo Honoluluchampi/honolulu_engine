@@ -88,7 +88,6 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
-  set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
     device_,

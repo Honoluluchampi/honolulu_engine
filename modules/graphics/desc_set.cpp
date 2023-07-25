@@ -238,18 +238,26 @@ void desc_sets::calc_resource_counts()
   int buffer_count = 0;
   int desc_set_count = 0;
 
-  for (int set = 0; set < set_infos_.size(); set++) {
-    int resource_count = set_infos_[set].is_frame_buffered_ ? frame_count_ : 1;
-    for (int frame = 0; frame < resource_count; frame++) {
+  for (int frame = 0; frame < frame_count_; frame++) {
+    for (int set = 0; set < set_infos_.size(); set++) {
       // update buffer count
       size_t binding_count = set_infos_[set].bindings_.size();
       for (int binding = 0; binding < binding_count; binding++) {
         int key = calc_buffer_offset(set, binding, frame);
         buffer_offset_dict_[key] = buffer_count++;
+        // for test
+        buffer_debug_names_.emplace_back(
+          "frame" + std::to_string(frame) + " " +
+          set_infos_[set].name + " " +
+          set_infos_[set].bindings_[binding].name);
       }
       // update desc set count
       int key = calc_desc_set_offset(set, frame);
       desc_set_offset_dict_[key] = desc_set_count++;
+      vk_desc_sets_debug_names_.emplace_back(
+        "frame" + std::to_string(frame) + " " +
+        set_infos_[set].name
+      );
     }
   }
 
@@ -271,9 +279,8 @@ void desc_sets::build_layouts()
 void desc_sets::build()
 {
   // build raw desc sets
-  for (int set_id = 0; set_id < set_infos_.size(); set_id++) {
-    int resource_count = set_infos_[set_id].is_frame_buffered_ ? frame_count_ : 1;
-    for (int frame = 0; frame < resource_count; frame++) {
+  for (int frame = 0; frame < frame_count_; frame++) {
+    for (int set_id = 0; set_id < set_infos_.size(); set_id++) {
       // build for each frame
       auto& bindings = set_infos_[set_id].bindings_;
       auto writer = desc_writer(*layouts_[set_id], *pool_);
