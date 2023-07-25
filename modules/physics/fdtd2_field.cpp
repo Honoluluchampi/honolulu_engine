@@ -74,7 +74,7 @@ void fdtd2_field::set_pml(
       auto pml_x = std::max(pml_l, pml_r);
       auto pml_y = std::max(pml_u, pml_d);
       auto pml = std::max(pml_x, pml_y);
-      auto idx = (x + 1) + (x_grid_ + 1) * (y + 1);
+      auto idx = x + (x_grid_ + 1) * y;
       grids[idx].w() = pml;
       active_ids.insert(idx);
     }
@@ -102,13 +102,13 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 
   set_pml(initial_grid, active_ids, 115, 145, 25, 53);
   set_pml(initial_grid, active_ids, 70, 114, 20, 42);
-//  set_pml(initial_grid, active_ids, 0, x_grid_, 0, y_grid_);
+  set_pml(initial_grid, active_ids, 0, x_grid_, 0, y_grid_);
 
   // set state
   for (int i = 0; i < grid_count; i++) {
     // retrieve coordinate
-    auto x = float(i % (x_grid_ + 1)) - 1;
-    auto y = float(i / (x_grid_ + 1)) - 1;
+    auto x = float(i % (x_grid_ + 1));
+    auto y = float(i / (x_grid_ + 1));
 
     // temp
     // state (wall, exciter)
@@ -119,8 +119,8 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       }
       if (y == 36 || y == 42) {
       initial_grid[i].w() = -2; // wall
-//      if (((x == 86) || (x >= 100 && x <= 101)) && y == 36)
-//        initial_grid[i].w() = 0; // tone hole
+      if (((x == 86) || (x >= 100 && x <= 101)) && y == 36)
+        initial_grid[i].w() = 0; // tone hole
       }
     }
     if ((x == 25) && (y > 36 && y < 42)) {
