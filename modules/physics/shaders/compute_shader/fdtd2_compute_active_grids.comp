@@ -45,14 +45,12 @@ const float ubf_b1 = -0.590436;
 const float ubf_b2 = 0.233886;
 
 void main() {
-//  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
-//  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
-//  uint idx = g_id(i, j);
-  uint idx = active_ids[gl_LocalInvocationID.x + gl_WorkGroupID.x * 64];
+  uint thread_id = gl_LocalInvocationID.x + gl_WorkGroupID.x * 64;
+  uint idx = active_ids[thread_id];
   uint i = idx % (push.x_grid + 1);
   uint j = idx / (push.x_grid + 1);
 
-  if (idx < push.active_grid_count) // inside domain
+  if (thread_id < push.active_grid_count)
   {
     float state = prev_p[idx].values.w;
     if (state >= -1) {

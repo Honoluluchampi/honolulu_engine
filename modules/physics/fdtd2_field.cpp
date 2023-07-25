@@ -158,7 +158,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       sizeof(int) * active_ids_buffer.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       active_ids_buffer.data()
     );
 
