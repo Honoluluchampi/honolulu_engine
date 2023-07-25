@@ -63,12 +63,6 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
         bind_desc_sets(command, desc_sets);
 
-//        dispatch_command(
-//          command,
-//          (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-//          (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-//          1);
-
         dispatch_command(
           command,
           (int(target_->get_active_ids_count()) + 63) / 64,

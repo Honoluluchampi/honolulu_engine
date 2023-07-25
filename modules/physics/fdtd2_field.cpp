@@ -74,7 +74,7 @@ void fdtd2_field::set_pml(
       auto pml_x = std::max(pml_l, pml_r);
       auto pml_y = std::max(pml_u, pml_d);
       auto pml = std::max(pml_x, pml_y);
-      auto idx = x + (x_grid_ + 1) * y;
+      auto idx = (x + 1) + (x_grid_ + 1) * (y + 1);
       grids[idx].w() = pml;
       active_ids.insert(idx);
     }

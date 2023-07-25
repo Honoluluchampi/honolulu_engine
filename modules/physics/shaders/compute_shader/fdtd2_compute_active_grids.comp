@@ -5,7 +5,7 @@
 #include "../../common/fdtd2_config.h"
 #include "../../common/fdtd_struct.h"
 
-layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = fdtd2_local_size_z) in;
 
 // pressure
 layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
@@ -47,8 +47,8 @@ const float ubf_b2 = 0.233886;
 void main() {
   uint thread_id = gl_LocalInvocationID.x + gl_WorkGroupID.x * 64;
   uint idx = active_ids[thread_id];
-  uint i = idx % (push.x_grid + 1);
-  uint j = idx / (push.x_grid + 1);
+  uint i = idx % (push.x_grid + 1) - 1;
+  uint j = idx / (push.x_grid + 1) - 1;
 
   if (thread_id < push.active_grid_count)
   {
@@ -57,7 +57,7 @@ void main() {
       float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
-      float p = (prev_p[g_id(i, j)].values.z - push.p_fac *
+      float p = (prev_p[idx].values.z - push.p_fac *
       (prev_p[idx].values.x - prev_p[g_id(i - 1, j)].values.x +
       prev_p[idx].values.y - prev_p[g_id(i, j - 1)].values.y)
       ) / (1 + pml);
