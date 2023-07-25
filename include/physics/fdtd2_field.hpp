@@ -71,8 +71,8 @@ DEFINE_PURE_ACTOR(fdtd2_field)
       int x_min, int x_max, int y_min, int y_max);
 
     graphics::device& device_;
-    u_ptr<graphics::desc_sets> desc_sets_;
     s_ptr<graphics::desc_pool> desc_pool_;
+    u_ptr<graphics::desc_sets> desc_sets_;
 
     // texture
     std::vector<VkDescriptorSet> texture_vk_desc_sets_;
@@ -106,6 +106,6 @@ DEFINE_PURE_ACTOR(fdtd2_field)
 
     int listener_index_ = 0;
     // pointer for sound buffer
-    float* sound_buffers_[2];
+    float* sound_buffers_[3];
 };
 } // namespace hnll::physics

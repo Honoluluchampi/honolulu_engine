@@ -49,7 +49,7 @@ DEFINE_ENGINE(fdtd_compute)
       source_ = audio::engine::get_available_source_id();
     }
 
-    ~fdtd_compute() { audio::engine::kill_hae_context(); }
+    void cleanup() { field_.reset(); audio::engine::kill_hae_context(); }
 
     void update_this(float dt)
     {

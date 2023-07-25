@@ -152,7 +152,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       initial_grid.data());
 
-    auto active_buffer = graphics::buffer::create_with_staging(
+    auto active_buffer = graphics::buffer::create(
       device_,
       sizeof(int) * active_ids_buffer.size(),
       1,
@@ -243,9 +243,8 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
 
 std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_index)
 {
-  std::vector<VkDescriptorSet> desc_sets;
   if (frame_index_ == 0) {
-    desc_sets = {
+    return {
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
@@ -254,7 +253,7 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
     };
   }
   else if (frame_index_ == 1){
-    desc_sets = {
+    return {
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
@@ -263,7 +262,7 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
     };
   }
   else {
-    desc_sets = {
+    return {
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
@@ -271,8 +270,6 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
       desc_sets_->get_vk_desc_sets(2)[2]
     };
   }
-
-  return desc_sets;
 }
 
 void fdtd2_field::set_as_target(fdtd2_field* target) const

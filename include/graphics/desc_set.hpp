@@ -25,7 +25,7 @@ struct binding_info
 struct desc_set_info
 {
   desc_set_info() {}
-  desc_set_info(const std::vector<binding_info>& bindings, std::string set_name = "name")
+  desc_set_info(const std::vector<binding_info>& bindings, std::string set_name = "")
   { bindings_ = bindings; name = set_name; }
 
   desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type, std::string binding_name = "")
