@@ -54,16 +54,21 @@ class engine_core
     float get_max_fps() const { return max_fps_; }
     void set_max_fps(float max_fps) { max_fps_ = max_fps; }
 
+    // glfw
+    vec2 get_cursor_pos() const;
+    static void add_glfw_mouse_button_callback(std::function<void(GLFWwindow *, int, int, int)> &&func);
+
   private:
     void update_gui() {}
 
     void cleanup();
 
     // glfw
-    void set_glfw_mouse_button_callbacks();
-    void add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow *, int, int, int)>> &&func);
+    void set_glfw_callbacks();
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
-    static std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> glfw_mouse_button_callbacks_;
+    static void glfw_cursor_pos_callback(GLFWwindow *window, double xpos, double ypos);
+    static std::vector<std::function<void(GLFWwindow *, int, int, int)>> glfw_mouse_button_callbacks_;
+    static vec2 cursor_pos_;
 
     graphics_engine_core& graphics_engine_core_;
 #ifndef IMGUI_DISABLED
@@ -109,6 +114,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void cleanup() {}
     inline void set_max_fps(float max_fps) { core_.set_max_fps(max_fps); }
 
+    engine_core& core_;
+
   private:
     void update();
     void render();
@@ -118,7 +125,6 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
     // common part
     graphics_engine_core& graphics_engine_core_;
-    engine_core& core_;
 
     float dt_;
 

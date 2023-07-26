@@ -47,6 +47,11 @@ DEFINE_ENGINE(fdtd_compute)
 
       audio::engine::start_hae_context();
       source_ = audio::engine::get_available_source_id();
+
+      // get gui input
+      game::engine_core::add_glfw_mouse_button_callback([this](GLFWwindow* win, int button, int action, int mods){
+        this->process_input(button, action);
+      });
     }
 
     void cleanup() { field_.reset(); audio::engine::kill_hae_context(); }
@@ -136,6 +141,21 @@ DEFINE_ENGINE(fdtd_compute)
           audio::engine::play_audio_from_source(source_);
           started_ = true;
         }
+      }
+    }
+
+    void process_input(int button, int action)
+    {
+      static bool button_down = false;
+      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        button_down = true;
+      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        button_down = false;
+
+      if (button_down) {
+        auto pos = core_.get_cursor_pos();
+        std::cout << "x : " << pos.x() << std::endl;
+        std::cout << "y : " << pos.y() << std::endl;
       }
     }
 
