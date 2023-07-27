@@ -66,9 +66,7 @@ class engine_core
     // glfw
     void set_glfw_callbacks();
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
-    static void glfw_cursor_pos_callback(GLFWwindow *window, double xpos, double ypos);
     static std::vector<std::function<void(GLFWwindow *, int, int, int)>> glfw_mouse_button_callbacks_;
-    static vec2 cursor_pos_;
 
     graphics_engine_core& graphics_engine_core_;
 #ifndef IMGUI_DISABLED
