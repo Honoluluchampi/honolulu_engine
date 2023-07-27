@@ -65,6 +65,8 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::Text("dt : %f", field_->get_dt());
       ImGui::Text("grid size : %f", field_->get_dx());
       ImGui::Text("duration : %f", field_->get_duration());
+      ImGui::Text("cursor x : %f", cursor_pos_.x());
+      ImGui::Text("cursor y : %f", cursor_pos_.y());
 
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
@@ -76,6 +78,7 @@ DEFINE_ENGINE(fdtd_compute)
       field_->set_update_per_frame(update_per_frame_);
       field_->set_mouth_pressure(mouth_pressure_);
 
+      update_gui();
       update_sound();
 
       if (ImGui::Button("restart")) {
@@ -108,6 +111,23 @@ DEFINE_ENGINE(fdtd_compute)
     }
 
   private:
+
+    void process_input(int button, int action)
+    {
+      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        button_pressed_ = true;
+      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        button_pressed_ = false;
+    }
+
+    void update_gui()
+    {
+      if (button_pressed_) {
+        cursor_pos_ = core_.get_cursor_pos();
+        cursor_pos_.x() = std::max(0.f, cursor_pos_.x());
+      }
+    }
+
     void update_sound()
     {
       static int frame_index = 1;
@@ -144,21 +164,6 @@ DEFINE_ENGINE(fdtd_compute)
       }
     }
 
-    void process_input(int button, int action)
-    {
-      static bool button_down = false;
-      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-        button_down = true;
-      if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-        button_down = false;
-
-      if (button_down) {
-        auto pos = core_.get_cursor_pos();
-        std::cout << "x : " << pos.x() << std::endl;
-        std::cout << "y : " << pos.y() << std::endl;
-      }
-    }
-
     u_ptr<physics::fdtd2_field> field_;
     u_ptr<physics::fdtd2_field> staging_field_;
     bool wait_for_construction_ = false;
@@ -171,6 +176,10 @@ DEFINE_ENGINE(fdtd_compute)
     float mouth_pressure_ = 4000.f;
     float amplify_ = 100.f;
 
+    // GUI
+    static bool button_pressed_;
+    vec2 cursor_pos_;
+
     // AL
     audio::source_id source_;
     std::vector<ALshort> segment_;
@@ -178,6 +187,8 @@ DEFINE_ENGINE(fdtd_compute)
     bool started_ = false;
     int queue_capacity_ = 8;
 };
+
+bool fdtd_compute::button_pressed_ = false;
 
 } // namespace hnll
 
