@@ -40,6 +40,7 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.listener_index = target_->get_listener_index();
     push.input_pressure = target_->get_mouth_pressure();
     push.active_grid_count = target_->get_active_ids_count();
+    push.hole_open = target_->get_tone_hole_is_open();
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {

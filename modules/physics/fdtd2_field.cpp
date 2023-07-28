@@ -118,16 +118,18 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
         active_ids.insert(i);
       }
       if (y == 36 || y == 42) {
-      initial_grid[i].w() = -2; // wall
-      if (((x == 86) || (x >= 100 && x <= 101)) && y == 36)
-        initial_grid[i].w() = 0; // tone hole
+        initial_grid[i].w() = -2; // wall
+        if (((x == 86) || (x >= 100 && x <= 101)) && y == 36) {
+          initial_grid[i].w() = -4; // tone hole
+          tone_hole_open_ = true;
+        }
       }
     }
     if ((x == 25) && (y > 36 && y < 42)) {
       initial_grid[i].w() = -3; // exciter
       active_ids.insert(i);
     }
-    if ((x == 138) && (y == 39)) {
+    if ((x == 125) && (y == 20)) {
       initial_grid[i].w() = -1;
       listener_index_ = i;
     }

@@ -51,12 +51,14 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     int   get_update_per_frame() const { return update_per_frame_; }
     int   get_listener_index() const { return listener_index_; }
     float* get_sound_buffer(int game_frame_index) { return sound_buffers_[game_frame_index]; }
+    bool get_tone_hole_is_open() const { return tone_hole_open_; }
 
     // setter
     void add_duration() { duration_ += dt_ * update_per_frame_; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
     void set_as_target(fdtd2_field* target) const;
     void set_mouth_pressure(float mp) { mouth_pressure_ = mp; }
+    void set_tone_hole_state(bool state) { tone_hole_open_ = state; }
 
     static const std::vector<graphics::binding_info> field_bindings;
     static const std::vector<graphics::binding_info> texture_bindings;
@@ -107,5 +109,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     int listener_index_ = 0;
     // pointer for sound buffer
     float* sound_buffers_[3];
+
+    bool tone_hole_open_ = false;
 };
 } // namespace hnll::physics

@@ -97,6 +97,11 @@ DEFINE_ENGINE(fdtd_compute)
         t.detach();
         wait_for_construction_ = true;
       }
+
+      if (ImGui::Button("open/close hole")) {
+        field_->set_tone_hole_state(!field_->get_tone_hole_is_open());
+      }
+
       ImGui::End();
 
       if (wait_for_construction_) {
@@ -157,7 +162,7 @@ DEFINE_ENGINE(fdtd_compute)
         audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
         segment_.clear();
 
-        if (audio::engine::get_audio_count_on_queue(source_) == 5 && !started_) {
+        if (audio::engine::get_audio_count_on_queue(source_) == 2 && !started_) {
           audio::engine::play_audio_from_source(source_);
           started_ = true;
         }
@@ -185,7 +190,7 @@ DEFINE_ENGINE(fdtd_compute)
     std::vector<ALshort> segment_;
     int seg_frame_index = 0; // mod 3
     bool started_ = false;
-    int queue_capacity_ = 8;
+    int queue_capacity_ = 3;
 };
 
 bool fdtd_compute::button_pressed_ = false;

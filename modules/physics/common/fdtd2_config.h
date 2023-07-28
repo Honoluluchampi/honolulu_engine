@@ -20,4 +20,7 @@ struct fdtd2_push {
   // pressure
   float input_pressure;
   int buffer_index;
+  // tone hole
+  int hole_open;
+  float dyn_b;
 };

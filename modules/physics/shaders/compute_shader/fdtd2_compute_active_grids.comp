@@ -53,7 +53,7 @@ void main() {
   if (thread_id < push.active_grid_count)
   {
     float state = prev_p[idx].values.w;
-    if (state >= -1) {
+    if (state >= -1 || (state == -4 && push.hole_open == 1)) {
       float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
@@ -129,6 +129,10 @@ void main() {
 
       if (idx == push.listener_index)
       sound_buffer[push.buffer_index] = p;
+    }
+
+    else if (state == -4 && push.hole_open == 0) {
+      curr_p[idx].values = vec4(0.f, 0.f, 0.f, -4.f);
     }
 
     else if (state == -3) // exciter
