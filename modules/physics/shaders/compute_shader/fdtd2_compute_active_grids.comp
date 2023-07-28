@@ -44,6 +44,8 @@ const float ubf_a2 = 0.160863;
 const float ubf_b1 = -0.590436;
 const float ubf_b2 = 0.233886;
 
+const float dt = 7.81e-6;
+
 void main() {
   uint thread_id = gl_LocalInvocationID.x + gl_WorkGroupID.x * 64;
   uint idx = active_ids[thread_id];
@@ -53,7 +55,7 @@ void main() {
   if (thread_id < push.active_grid_count)
   {
     float state = prev_p[idx].values.w;
-    if (state >= -1 || (state == -4 && push.hole_open == 1)) {
+    if (state >= -1) {
       float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
@@ -131,8 +133,43 @@ void main() {
       sound_buffer[push.buffer_index] = p;
     }
 
-    else if (state == -4 && push.hole_open == 0) {
-      curr_p[idx].values = vec4(0.f, 0.f, 0.f, -4.f);
+    else if (state == -4) {
+      float b = push.dyn_b;
+      float sigma = 1 - b;
+
+      // update pressure
+      float p = (prev_p[idx].values.z - push.p_fac *
+      (prev_p[idx].values.x - prev_p[g_id(i - 1, j)].values.x +
+      prev_p[idx].values.y - prev_p[g_id(i, j - 1)].values.y)
+      ) / (1 + sigma * dt);
+
+      curr_p[idx].values.z = p;
+
+      // re-calculate the current pressure to reduce the barrier synchronization
+      // update x velo
+      if (i < push.x_grid - 1) {
+        float right_is_not_exc = float(prev_p[g_id(i + 1, j)].values.w != -3);
+
+        float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
+        (prev_p[g_id(i + 1, j)].values.x - prev_p[idx].values.x +
+        prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y)
+        ) / (1 + sigma);
+
+        // TODO : introduce v_b
+        curr_p[idx].values.x =
+        (b * prev_p[idx].values.x - b * b * push.v_fac * (p_x1 * right_is_not_exc - p)) / (1 + sigma);
+      }
+
+      // update y velo
+      if (j < push.y_grid - 1) {
+        float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
+        (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
+        prev_p[g_id(i, j + 1)].values.y - prev_p[idx].values.y)
+        ) / (1 + sigma);
+
+        curr_p[idx].values.y =
+        (b * prev_p[idx].values.y - b * b * push.v_fac * (p_y1 - p)) / (1 + sigma);
+      }
     }
 
     else if (state == -3) // exciter

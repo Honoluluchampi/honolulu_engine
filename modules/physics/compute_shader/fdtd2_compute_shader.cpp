@@ -42,6 +42,9 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.active_grid_count = target_->get_active_ids_count();
     push.hole_open = target_->get_tone_hole_is_open();
 
+    static float dynamic_b = 0.f;
+    float each = 1.f / 1280.f;
+
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
       .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
@@ -60,6 +63,10 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
         // record pressure update
         push.buffer_index = i;
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
+        // dynamic geometry
+        dynamic_b += push.hole_open ? each : -each;
+        dynamic_b = std::clamp(dynamic_b, 0.f, 1.f);
+        push.dyn_b = dynamic_b;
 
         auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
         bind_desc_sets(command, desc_sets);
