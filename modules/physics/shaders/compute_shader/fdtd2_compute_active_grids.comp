@@ -153,11 +153,11 @@ void main() {
         float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
         (prev_p[g_id(i + 1, j)].values.x - prev_p[idx].values.x +
         prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y)
-        ) / (1 + sigma);
+        ) / (1 + sigma * dt);
 
         // TODO : introduce v_b
         curr_p[idx].values.x =
-        (b * prev_p[idx].values.x - b * b * push.v_fac * (p_x1 * right_is_not_exc - p)) / (1 + sigma);
+        (b * prev_p[idx].values.x - b * b * push.v_fac * (p_x1 * right_is_not_exc - p)) / (b + sigma * dt);
       }
 
       // update y velo
@@ -165,10 +165,10 @@ void main() {
         float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
         (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
         prev_p[g_id(i, j + 1)].values.y - prev_p[idx].values.y)
-        ) / (1 + sigma);
+        ) / (1 + sigma * dt);
 
         curr_p[idx].values.y =
-        (b * prev_p[idx].values.y - b * b * push.v_fac * (p_y1 - p)) / (1 + sigma);
+        (b * prev_p[idx].values.y - b * b * push.v_fac * (p_y1 - p)) / (b + sigma * dt);
       }
     }
 
