@@ -1,78 +1,73 @@
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <x86_64-linux-gnu/sys/ioctl.h>
-//#include <fcntl.h>
-//#include <termios.h>
-#include <unistd.h>
-//
-//char *portname = "/dev/ttyACM0";
-//char buf[256];
-//
-//int main() {
-//  int fd;
-//  // open in non-blocking mode
-//  fd = open(portname, O_RDWR | O_NOCTTY);
-//
-//  termios tms;
-//  tcgetattr(fd, &tms);
-//  // set speed
-//  cfsetispeed(&tms, B9600);
-//  cfsetospeed(&tms, B9600);
-//  // 8 bits, no parity, no stop bits
-//  tms.c_cflag &= ~PARENB;
-//  tms.c_cflag &= ~CSTOPB;
-//  tms.c_cflag &= ~CSIZE;
-//  tms.c_cflag |= CS8;
-//  tms.c_cflag &= ~CRTSCTS; // no hardware flow control
-//  tms.c_cflag |= CREAD | CLOCAL; // enable receiver, ignore status lines
-//  tms.c_iflag &= ~(IXON | IXOFF | IXANY); // disable io flow control, restart chars
-//  tms.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-//  tms.c_oflag &= ~OPOST; // disable output processing
-//
-//  // wait for 12 characters to come in before read returns
-//  tms.c_cc[VMIN] = 12;
-//  // no minimum time to wait before read returns
-//  tms.c_cc[VTIME] = 0;
-//
-//  // commit the options
-//  tcsetattr(fd, TCSANOW, &tms);
-//
-//  // wait for the arduino to reset
-//  usleep(1000*1000);
-//  tcflush(fd, TCIFLUSH);
-//  int n = read(fd, buf, 128);
-//
-//  printf("buffer : %s", buf);
-//}
-
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
+#include <termios.h>
 
-char serialPortFilename[] = "/dev/ttyACM0";
+#define DEV_NAME    "/dev/ttyACM0"
+#define BAUD_RATE    B9600
 
-int main()
+// シリアルポートの初期化
+void serial_init(int fd)
 {
-  char readBuffer[1024];
-  int numBytesRead;
-
-  FILE *serPort = fopen(serialPortFilename, "r");
-
-  if (serPort == NULL)
-  {
-    printf("ERROR");
-    return 0;
-  }
-
-  printf(serialPortFilename);
-  printf(":\n");
-  while(1)
-  {
-    memset(readBuffer, 0, 1024);
-    fread(readBuffer, sizeof(char),1024,serPort);
-    if(sizeof(readBuffer) != 0)
-    {
-      printf(readBuffer);
-    }
-  }
-  return 0;
+  struct termios tio;
+  memset(&tio, 0, sizeof(tio));
+  tio.c_cflag = CS8 | CLOCAL | CREAD;
+  tio.c_cc[VTIME] = 0;
+  // speed
+  cfsetispeed(&tio, BAUD_RATE);
+  cfsetospeed(&tio, BAUD_RATE);
+  // commit
+  tcsetattr(fd, TCSANOW, &tio);
 }
+
+
+/* --------------------------------------------------------------------- */
+/* メイン                                                                */
+/* --------------------------------------------------------------------- */
+
+int main(int argc,char *argv[]){
+  int fd;
+
+  // open the serial port
+  fd = open(DEV_NAME, O_RDWR);
+  if (fd < 0){
+    perror(argv[1]);
+    exit(1);
+  }
+
+  serial_init(fd);
+
+  while(1){
+    int i;
+    int len; // receiving data size (in byte)
+    unsigned char buffer[64];
+
+    len=read(fd, buffer, 64);
+    if(len==0){
+      continue;
+    }
+    if(len<0){
+      printf("ERROR\n");
+      perror("");
+      exit(2);
+    }
+
+    printf("len = %d\n", len);
+    printf("%s ", buffer);
+    printf("\n");
+  }
+}
+
+//void setup() {
+//  Serial.begin(9600);
+//}
+//
+//void loop() {
+//  int value;
+//  value = analogRead(A0);
+//  Serial.println(value);
+//
+//  delay(500);
+//}
