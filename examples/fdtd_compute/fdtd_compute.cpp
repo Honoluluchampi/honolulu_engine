@@ -14,7 +14,7 @@
 #include <imgui/imgui.h>
 
 #define AUDIO_FRAME_RATE 128000
-#define DEFAULT_UPDATE_PER_FRAME 4268
+#define DEFAULT_UPDATE_PER_FRAME 5130
 
 #define ARDUINO "/dev/ttyACM0"
 
@@ -73,7 +73,7 @@ DEFINE_ENGINE(fdtd_compute)
 
       ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
-      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, 4268);
+      ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
 
@@ -81,7 +81,7 @@ DEFINE_ENGINE(fdtd_compute)
       auto data = serial_.read_data('/');
       if (data[0] == '/' && data[4] == '/') {
         int raw = atoi(data.substr(1, 3).c_str());
-        float a = 0.7f;
+        float a = 0.2f;
         mouth_pressure_ = a * std::max((raw - 70) * 500, 0) + (1 - a) * mouth_pressure_;
       }
 
