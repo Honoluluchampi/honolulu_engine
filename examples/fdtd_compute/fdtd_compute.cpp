@@ -5,6 +5,7 @@
 #include <physics/shading_system/fdtd2_shading_system.hpp>
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
+#include "serial.hpp"
 
 // std
 #include <thread>
@@ -15,6 +16,8 @@
 #define AUDIO_FRAME_RATE 128000
 #define DEFAULT_UPDATE_PER_FRAME 4268
 
+#define ARDUINO "/dev/ttyACM0"
+
 namespace hnll {
 
 SELECT_SHADING_SYSTEM(physics::fdtd2_shading_system);
@@ -24,7 +27,7 @@ SELECT_ACTOR(physics::fdtd2_field);
 DEFINE_ENGINE(fdtd_compute)
 {
   public:
-    fdtd_compute()
+    fdtd_compute() : serial_(ARDUINO)
     {
       set_max_fps(30.f);
       auto game_fps = get_max_fps();
@@ -73,6 +76,14 @@ DEFINE_ENGINE(fdtd_compute)
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, 4268);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
+
+      // get input from arduino
+      auto data = serial_.read_data('/');
+      if (data[0] == '/' && data[4] == '/') {
+        int raw = atoi(data.substr(1, 3).c_str());
+        float a = 0.7f;
+        mouth_pressure_ = a * std::max((raw - 70) * 500, 0) + (1 - a) * mouth_pressure_;
+      }
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -191,6 +202,9 @@ DEFINE_ENGINE(fdtd_compute)
     int seg_frame_index = 0; // mod 3
     bool started_ = false;
     int queue_capacity_ = 3;
+
+    // arduino
+    serial_com serial_;
 };
 
 bool fdtd_compute::button_pressed_ = false;
