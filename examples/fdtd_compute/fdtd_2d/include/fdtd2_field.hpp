@@ -9,7 +9,7 @@
 // std
 #include <set>
 
-namespace hnll::physics {
+namespace hnll {
 
 struct fdtd_info {
   float x_len;
@@ -112,4 +112,4 @@ DEFINE_PURE_ACTOR(fdtd2_field)
 
     bool tone_hole_open_ = false;
 };
-} // namespace hnll::physics
+} // namespace hnll

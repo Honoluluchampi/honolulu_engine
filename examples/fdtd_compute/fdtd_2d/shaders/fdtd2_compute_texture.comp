@@ -2,8 +2,8 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../../common/fdtd2_config.h"
-#include "../../common/fdtd_struct.h"
+#include "../common/fdtd2_config.h"
+#include "../common/fdtd_struct.h"
 
 layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
 

@@ -4,7 +4,7 @@
 #include <game/shading_system.hpp>
 #include <game/renderable_component.hpp>
 
-namespace hnll::physics {
+namespace hnll {
 
 class fdtd2_field;
 
@@ -25,4 +25,4 @@ DEFINE_SHADING_SYSTEM(fdtd2_shading_system, game::dummy_renderable_comp<utils::s
     static uint32_t target_id_;
 };
 
-} // namespace hnll::physics
+} // namespace hnll

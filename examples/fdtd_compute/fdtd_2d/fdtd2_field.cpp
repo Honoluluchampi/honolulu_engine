@@ -1,13 +1,13 @@
 // hnll
 #include <game/modules/graphics_engine.hpp>
-#include <physics/fdtd2_field.hpp>
-#include <physics/compute_shader/fdtd2_compute_shader.hpp>
-#include <physics/shading_system/fdtd2_shading_system.hpp>
+#include "include/fdtd2_field.hpp"
+#include "include/fdtd2_compute_shader.hpp"
+#include "include/fdtd2_shading_system.hpp"
 
 // std
 #include <thread>
 
-namespace hnll::physics {
+namespace hnll {
 
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
@@ -280,4 +280,4 @@ void fdtd2_field::set_as_target(fdtd2_field* target) const
   fdtd2_shading_system::set_target(target);
 }
 
-} // namespace hnll::physics
+} // namespace hnll

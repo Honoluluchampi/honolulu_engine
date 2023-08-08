@@ -1,9 +1,9 @@
 // hnll
-#include <physics/shading_system/fdtd2_shading_system.hpp>
-#include <physics/fdtd2_field.hpp>
+#include "include/fdtd2_shading_system.hpp"
+#include "include/fdtd2_field.hpp"
 #include <game/modules/graphics_engine.hpp>
 
-namespace hnll::physics {
+namespace hnll {
 
 fdtd2_field* fdtd2_shading_system::target_ = nullptr;
 uint32_t fdtd2_shading_system::target_id_ = -1;
@@ -36,7 +36,7 @@ void fdtd2_shading_system::setup()
   pipeline_ = create_pipeline(
     pipeline_layout_,
     game::graphics_engine_core::get_default_render_pass(),
-    "/modules/physics/shaders/spv/",
+    "/examples/fdtd_compute/fdtd_2d/shaders/spv/",
     { "fdtd2_field.vert.spv", "fdtd2_field.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
     pipeline_config_info
@@ -87,4 +87,4 @@ void fdtd2_shading_system::set_target(fdtd2_field* target)
 void fdtd2_shading_system::remove_target(uint32_t target_id)
 { if (target_id_ == target_id) target_ = nullptr; }
 
-} // namespace hnll::physics
+} // namespace hnll

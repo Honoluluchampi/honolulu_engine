@@ -4,7 +4,7 @@
 #include <game/compute_shader.hpp>
 #include <graphics/timeline_semaphore.hpp>
 
-namespace hnll::physics {
+namespace hnll {
 
 class fdtd2_field;
 
@@ -24,4 +24,4 @@ DEFINE_COMPUTE_SHADER(fdtd2_compute_shader)
     static fdtd2_field* target_;
     static uint32_t target_id_;
 };
-} // namespace hnll::physics
+} // namespace hnll
