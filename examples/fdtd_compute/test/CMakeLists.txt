@@ -1,5 +1,9 @@
 #test
-set(TEST_SRC fdtd3d_field_test.cpp)
+set(TEST_SRC
+        # src
+        ../fdtd_3d/fdtd3d_field.cpp
+        # test
+        fdtd3d_field_test.cpp)
 project(fdtd_test)
 add_executable(fdtd_test ${TEST_SRC})
 enable_testing()

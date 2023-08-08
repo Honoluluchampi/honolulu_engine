@@ -23,6 +23,13 @@ DEFINE_PURE_ACTOR(fdtd3_field)
 
     void update_frame() { }
 
+    // getter
+    const vec3& get_length() const { return length_; }
+    float get_sound_speed() const { return c_; }
+    float get_rho() const { return rho_; }
+    int get_pml_count() const { return pml_count_; }
+    int get_update_per_frame() const { return update_per_frame_; }
+
   private:
     graphics::device& device_; // as singleton
     s_ptr<graphics::desc_pool> desc_pool_;

@@ -17,7 +17,10 @@ target_include_directories(fdtd_2d PUBLIC $ENV{HNLL_ENGN}/include)
 target_link_libraries(fdtd_2d PUBLIC hnll_engine)
 
 # 3D
-set(SOURCES fdtd_3d/fdtd_3d.cpp)
+set(SOURCES
+        fdtd_3d/fdtd_3d.cpp
+        fdtd_3d/fdtd3d_field.cpp
+        )
 add_executable(fdtd_3d ${SOURCES})
 target_include_directories(fdtd_3d PUBLIC
         $ENV{HNLL_ENGN}/include
