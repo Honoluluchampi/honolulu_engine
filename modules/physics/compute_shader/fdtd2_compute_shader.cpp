@@ -13,14 +13,14 @@ namespace hnll::physics {
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
 uint32_t fdtd2_compute_shader::target_id_ = -1;
 
-fdtd2_compute_shader::fdtd2_compute_shader(graphics::device &device) : game::compute_shader<fdtd2_compute_shader>(device)
+fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_compute_shader>()
 {
   desc_layout_ = graphics::desc_layout::create_from_bindings(device_, fdtd2_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute.comp.spv",
-    { vk_layout, vk_layout });
+    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_active_grids.comp.spv",
+    { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
 void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
@@ -37,11 +37,13 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
     push.y_len = target_->get_y_len();
     push.v_fac = local_dt * target_->get_v_fac();
     push.p_fac = local_dt * target_->get_p_fac();
+    push.listener_index = target_->get_listener_index();
+    push.input_pressure = target_->get_mouth_pressure();
+    push.active_grid_count = target_->get_active_ids_count();
+    push.hole_open = target_->get_tone_hole_is_open();
 
-    auto reputation = std::min(100, static_cast<int>(info.dt / local_dt));
-
-    target_->add_duration(local_dt * reputation);
-    target_->set_update_per_frame(reputation);
+    static float dynamic_b = 0.f;
+    float each = 1.f / 1280.f;
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -51,34 +53,44 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
       .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
     };
 
-    // update velocity and pressure
-    for (int i = 0; i < reputation; i++) {
-      // record pressure update
+    {
+      utils::scope_timer timer {"task dispatch"};
+      // update velocity and pressure
       bind_pipeline(command);
 
-      bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
+      auto upf = target_->get_update_per_frame();
+      for (int i = 0; i < upf; i++) {
+        // record pressure update
+        push.buffer_index = i;
+        bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
+        // dynamic geometry
+        dynamic_b += push.hole_open ? each : -each;
+        dynamic_b = std::clamp(dynamic_b, 0.f, 1.f);
+        push.dyn_b = dynamic_b;
 
-      auto desc_sets = target_->get_frame_desc_sets();
-      bind_desc_sets(command, desc_sets);
+        auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
+        bind_desc_sets(command, desc_sets);
 
-      dispatch_command(
-        command,
-        (target_->get_x_grid() + fdtd2_local_size_x - 1) / fdtd2_local_size_x,
-        (target_->get_y_grid() + fdtd2_local_size_y - 1) / fdtd2_local_size_y,
-        1);
-
-      // if not the last loop, waite for velocity update
-      if (i != reputation - 1) {
-        vkCmdPipelineBarrier(
+        dispatch_command(
           command,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_DEPENDENCY_DEVICE_GROUP_BIT,
-          1, &barrier, 0, nullptr, 0, nullptr
+          (int(target_->get_active_ids_count()) + 63) / 64,
+          1,
+          1
         );
-      }
 
-      target_->update_frame();
+        // if not the last loop, waite for velocity update
+        if (i != upf - 1) {
+          vkCmdPipelineBarrier(
+            command,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_DEVICE_GROUP_BIT,
+            1, &barrier, 0, nullptr, 0, nullptr
+          );
+        }
+
+        target_->update_frame();
+      }
     }
   }
 }

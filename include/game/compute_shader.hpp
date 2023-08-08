@@ -4,14 +4,15 @@
 #include <graphics/device.hpp>
 #include <graphics/compute_pipeline.hpp>
 #include <utils/utils.hpp>
+#include <utils/singleton.hpp>
 #include <utils/frame_info.hpp>
 
 // lib
 #include <vulkan/vulkan.h>
 
 #define DEFINE_COMPUTE_SHADER(new_shader) class new_shader : public game::compute_shader<new_shader>
-#define DEFAULT_COMPUTE_SHADER_CTOR(new_shader) explicit new_shader(graphics::device& device)
-#define DEFAULT_COMPUTE_SHADER_CTOR_IMPL(shader) shader::shader(graphics::device& device) : game::compute_shader<shader>(device) { }
+#define DEFAULT_COMPUTE_SHADER_CTOR(new_shader) explicit new_shader()
+#define DEFAULT_COMPUTE_SHADER_CTOR_IMPL(shader) shader::shader() : game::compute_shader<shader>() { }
 
 namespace hnll{
 
@@ -23,9 +24,9 @@ template <typename Derived>
 class compute_shader
   {
     public:
-      explicit compute_shader(graphics::device& device) : device_(device) { static_cast<Derived*>(this)->setup(); }
-      static u_ptr<Derived> create(graphics::device& device)
-      { return std::make_unique<Derived>(device); }
+      explicit compute_shader() : device_(utils::singleton<graphics::device>::get_instance())
+      { static_cast<Derived*>(this)->setup(); }
+      static u_ptr<Derived> create() { return std::make_unique<Derived>(); }
 
       virtual ~compute_shader(){}
 

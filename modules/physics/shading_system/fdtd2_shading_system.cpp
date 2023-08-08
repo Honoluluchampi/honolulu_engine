@@ -49,10 +49,10 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
     auto command = frame_info.command_buffer;
     pipeline_->bind(command);
 
-    auto window_size = game::graphics_engine_core::get_window_size();
+    auto window_size = game::gui_engine::get_viewport_size();
     fdtd2_frag_push push;
-    push.width = std::get<0>(window_size);
-    push.height = std::get<1>(window_size);
+    push.width = window_size.x;
+    push.height = window_size.y;
     push.x_grid = target_->get_x_grid();
     push.y_grid = target_->get_y_grid();
     vkCmdPushConstants(
@@ -63,7 +63,7 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
       sizeof(fdtd2_frag_push),
       &push);
 
-    auto desc_sets = target_->get_frame_desc_sets()[1];
+    auto desc_sets = target_->get_frame_desc_sets(0)[2];
     vkCmdBindDescriptorSets(
       command,
       VK_PIPELINE_BIND_POINT_GRAPHICS,

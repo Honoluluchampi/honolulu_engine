@@ -46,8 +46,6 @@ class mass_spring_cloth
     std::vector<uint32_t> construct_index_buffer();
     void setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices);
 
-    // ref to graphics_engine_core::device
-    graphics::device& device_;
     uint32_t cloth_id_;
 
     u_ptr<graphics::desc_sets> desc_sets_;

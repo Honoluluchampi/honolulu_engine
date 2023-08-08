@@ -79,7 +79,8 @@ u_ptr<buffer> buffer::create_with_staging(
   );
 
   staging->map();
-  staging->write_to_buffer(writing_data);
+  if (writing_data != nullptr)
+    staging->write_to_buffer(writing_data);
 
   auto ret = std::make_unique<graphics::buffer>(
     device,

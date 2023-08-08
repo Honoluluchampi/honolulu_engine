@@ -9,17 +9,14 @@
 
 namespace hnll::game {
 
-constexpr float MAX_FPS = 60.f;
-constexpr float MIN_DT = 1.f / MAX_FPS;
-
 // static members
-std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> engine_core::glfw_mouse_button_callbacks_;
+std::vector<std::function<void(GLFWwindow *, int, int, int)>> engine_core::glfw_mouse_button_callbacks_;
 utils::viewer_info engine_core::viewer_info_;
 
 engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
  : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
 #ifndef IMGUI_DISABLED
-   gui_engine_(utils::singleton<gui_engine>::get_instance(graphics_engine_core_.get_window_r(), graphics_engine_core_.get_device_r(), rendering_type))
+   gui_engine_(utils::singleton<gui_engine>::get_instance(rendering_type))
 #endif
 {
 #ifndef IMGUI_DISABLED
@@ -29,7 +26,7 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
 
   old_time_ = std::chrono::system_clock::now();;
   // glfw
-  set_glfw_mouse_button_callbacks();
+  set_glfw_callbacks();
 }
 
 engine_core::~engine_core() { cleanup(); }
@@ -49,7 +46,7 @@ void engine_core::cleanup() {  }
 float engine_core::get_dt()
 {
   std::chrono::system_clock::time_point new_time = std::chrono::system_clock::now();
-  while (std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count() < MIN_DT) {
+  while (std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count() < 1.f / max_fps_) {
     new_time = std::chrono::system_clock::now();
   }
   float dt = std::chrono::duration<float, std::chrono::seconds::period>(new_time - old_time_).count();
@@ -58,19 +55,30 @@ float engine_core::get_dt()
 }
 
 // glfw
-void engine_core::set_glfw_mouse_button_callbacks()
-{ glfwSetMouseButtonCallback(graphics_engine_core_.get_glfw_window(), glfw_mouse_button_callback); }
-
-void engine_core::add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow* window, int button, int action, int mods)>>&& func)
+void engine_core::set_glfw_callbacks()
 {
-  glfw_mouse_button_callbacks_.emplace_back(std::move(func));
-  set_glfw_mouse_button_callbacks();
+  auto* window = graphics_engine_core_.get_glfw_window();
+  glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
+//  glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
 }
+
+vec2 engine_core::get_cursor_pos() const
+{
+  double xpos, ypos;
+  glfwGetCursorPos(graphics_engine_core_.get_glfw_window(), &xpos, &ypos);
+  auto left = gui_engine::get_left_window_ratio();
+  auto window_size = graphics_engine_core::get_window_size();
+
+  return { xpos - left * std::get<0>(window_size), ypos };
+}
+
+void engine_core::add_glfw_mouse_button_callback(std::function<void(GLFWwindow* window, int button, int action, int mods)>&& func)
+{ glfw_mouse_button_callbacks_.emplace_back(std::move(func)); }
 
 void engine_core::glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
   for (const auto& func : glfw_mouse_button_callbacks_)
-    func->operator()(window, button, action, mods);
+    func(window, button, action, mods);
 
 #ifndef IMGUI_DISABLED
   ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);

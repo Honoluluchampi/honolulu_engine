@@ -16,27 +16,26 @@ class buffer;
 
 struct binding_info
 {
-  binding_info(VkShaderStageFlags shader_stage, VkDescriptorType type)
-  { shader_stages = shader_stage; desc_type = type; }
-
   VkShaderStageFlags shader_stages;
   VkDescriptorType desc_type;
+  std::string name;
 };
 
 // contains single set, multiple bindings
 struct desc_set_info
 {
   desc_set_info() {}
-  desc_set_info(const std::vector<binding_info>& bindings) { bindings_ = bindings; }
+  desc_set_info(const std::vector<binding_info>& bindings, std::string set_name = "")
+  { bindings_ = bindings; name = set_name; }
 
-  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type)
+  desc_set_info& add_binding(VkShaderStageFlags stage, VkDescriptorType type, std::string binding_name = "")
   {
-    bindings_.emplace_back(stage, type);
+    bindings_.emplace_back(stage, type, binding_name);
     return *this;
   }
 
-  std::vector<binding_info> bindings_;
-  bool is_frame_buffered_ = false;
+  std::vector<binding_info> bindings_{};
+  std::string name;
 };
 
 class desc_layout {
@@ -69,7 +68,7 @@ class desc_layout {
   private:
     device &device_;
     VkDescriptorSetLayout descriptor_set_layout_;
-    std::vector<VkDescriptorSetLayoutBinding> bindings_;
+    std::vector<VkDescriptorSetLayoutBinding> bindings_{};
 
     friend class desc_writer;
 };
@@ -123,7 +122,7 @@ class desc_writer {
   private:
     desc_layout &set_layout_;
     desc_pool &pool_;
-    std::vector<VkWriteDescriptorSet> writes_;
+    std::vector<VkWriteDescriptorSet> writes_{};
 };
 
 // contains multiple sets
@@ -151,6 +150,11 @@ struct desc_sets
     // getter
     std::vector<VkDescriptorSetLayout> get_vk_layouts() const;
     std::vector<VkDescriptorSet> get_vk_desc_sets(int frame);
+    const std::vector<std::string>& get_buffer_debug_names() const { return buffer_debug_names_; }
+    const std::vector<std::string>& get_vk_desc_sets_debug_names() const { return vk_desc_sets_debug_names_; }
+    // for test
+    int get_buffer_id(int frame, int set, int binding);
+    int get_vk_desc_set_id(int frame, int set);
 
     // setter
     void set_buffer(int set, int binding, int frame, u_ptr<buffer>&& desc_buffer);
@@ -169,17 +173,19 @@ struct desc_sets
 
     device& device_;
     s_ptr<desc_pool> pool_;
-    std::vector<VkDescriptorSet> vk_desc_sets_;
-    std::vector<u_ptr<buffer>> buffers_;
-    std::vector<u_ptr<desc_layout>> layouts_;
+    std::vector<VkDescriptorSet> vk_desc_sets_{};
+    std::vector<u_ptr<buffer>> buffers_{};
+    std::vector<std::string> vk_desc_sets_debug_names_;
+    std::vector<std::string> buffer_debug_names_;
+    std::vector<u_ptr<desc_layout>> layouts_{};
     // buffer count offsets for each desc set
-    std::unordered_map<int, int> buffer_offset_dict_;
-    std::unordered_map<int, int> desc_set_offset_dict_;
+    std::unordered_map<int, int> buffer_offset_dict_{};
+    std::unordered_map<int, int> desc_set_offset_dict_{};
 
     int frame_count_ = 1;
 
     // deleted after build
-    std::vector<desc_set_info> set_infos_;
+    std::vector<desc_set_info> set_infos_{};
 };
 
 } // namespace hnll::graphics

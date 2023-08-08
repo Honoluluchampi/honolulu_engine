@@ -51,16 +51,22 @@ class engine_core
     inline const utils::viewer_info& get_viewer_info() const { return viewer_info_; }
     static inline void set_viewer_info(utils::viewer_info&& v) { viewer_info_ = std::move(v); }
 
+    float get_max_fps() const { return max_fps_; }
+    void set_max_fps(float max_fps) { max_fps_ = max_fps; }
+
+    // glfw
+    vec2 get_cursor_pos() const;
+    static void add_glfw_mouse_button_callback(std::function<void(GLFWwindow *, int, int, int)> &&func);
+
   private:
     void update_gui() {}
 
     void cleanup();
 
     // glfw
-    void set_glfw_mouse_button_callbacks();
-    void add_glfw_mouse_button_callback(u_ptr<std::function<void(GLFWwindow *, int, int, int)>> &&func);
+    void set_glfw_callbacks();
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
-    static std::vector<u_ptr<std::function<void(GLFWwindow *, int, int, int)>>> glfw_mouse_button_callbacks_;
+    static std::vector<std::function<void(GLFWwindow *, int, int, int)>> glfw_mouse_button_callbacks_;
 
     graphics_engine_core& graphics_engine_core_;
 #ifndef IMGUI_DISABLED
@@ -68,6 +74,7 @@ class engine_core
 #endif
     std::chrono::system_clock::time_point old_time_;
     static utils::viewer_info viewer_info_;
+    float max_fps_ = 60.f;
 };
 
 // parametric impl
@@ -98,9 +105,14 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     inline void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
+    inline float get_max_fps() const { return core_.get_max_fps(); }
+
   protected:
     // cleaning method of each specific application
     void cleanup() {}
+    inline void set_max_fps(float max_fps) { core_.set_max_fps(max_fps); }
+
+    engine_core& core_;
 
   private:
     void update();
@@ -111,7 +123,6 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
     // common part
     graphics_engine_core& graphics_engine_core_;
-    engine_core& core_;
 
     float dt_;
 
@@ -138,7 +149,6 @@ ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rend
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {
     compute_engine_ = compute_engine<C...>::create(
-      graphics_engine_core_.get_device_r(),
       graphics_engine_core_.get_compute_semaphore_r()
     );
   }

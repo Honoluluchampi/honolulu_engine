@@ -20,7 +20,6 @@ s_ptr<mass_spring_cloth> mass_spring_cloth::create(int x_grid, int y_grid, float
 }
 
 mass_spring_cloth::mass_spring_cloth(int x_grid, int y_grid, float x_len, float y_len)
- : device_(game::graphics_engine_core::get_device_r())
 {
   static uint32_t id = 0;
   cloth_id_ = id++;
@@ -95,12 +94,14 @@ std::vector<uint32_t> mass_spring_cloth::construct_index_buffer()
 
 void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices)
 {
+  auto& device = (utils::singleton<graphics::device>::get_instance());
+
   // for central difference approximation
   int frame_in_flight = 3;
   vertex_buffers_.resize(frame_in_flight);
 
   // pool
-  desc_pool_ = graphics::desc_pool::builder(device_)
+  desc_pool_ = graphics::desc_pool::builder(device)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_in_flight)
     .build();
 
@@ -110,10 +111,9 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
   set_info.add_binding(
     VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  set_info.is_frame_buffered_ = true;
 
   desc_sets_ = graphics::desc_sets::create(
-    device_,
+    device,
     desc_pool_,
     {set_info},
     frame_in_flight);
@@ -122,7 +122,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
   for (int i = 0; i < frame_in_flight; i++) {
     // vertex buffer
     auto vertex_buffer = graphics::buffer::create_with_staging(
-      device_,
+      device,
       sizeof(vertex) * mesh.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -139,7 +139,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
 
   // index buffer
   index_buffer_ = graphics::buffer::create_with_staging(
-    device_,
+    device,
     sizeof(uint32_t) * indices.size(),
     1,
     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -154,7 +154,7 @@ VkDescriptorSetLayout mass_spring_cloth::get_vk_desc_layout()
 void mass_spring_cloth::set_desc_layout()
 {
   if (desc_layout_ == nullptr) {
-    auto& device = game::graphics_engine_core::get_device_r();
+    auto& device = (utils::singleton<graphics::device>::get_instance());
     desc_layout_ = graphics::desc_layout::builder(device)
       // vertex buffer
       .add_binding(

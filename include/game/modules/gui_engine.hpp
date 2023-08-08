@@ -37,10 +37,10 @@ namespace utils {
 namespace game {
 class gui_engine {
   public:
-    gui_engine(graphics::window &window, graphics::device &device, utils::rendering_type type);
+    gui_engine(utils::rendering_type type);
     ~gui_engine();
 
-    static u_ptr<gui_engine> create(graphics::window& window, graphics::device& device, utils::rendering_type type);
+    static u_ptr<gui_engine> create(utils::rendering_type type);
 
     gui_engine(const gui_engine &) = delete;
     gui_engine &operator=(const gui_engine &) = delete;

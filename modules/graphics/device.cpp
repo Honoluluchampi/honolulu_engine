@@ -1,6 +1,7 @@
 // hnll
 #include <graphics/device.hpp>
 #include <utils/rendering_utils.hpp>
+#include <utils/singleton.hpp>
 #include <extensions/extensions_vk.hpp>
 
 // ray tracing
@@ -58,9 +59,10 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-device::device(window &window, utils::rendering_type type)
-  : window_{window}, rendering_type_(type)
+device::device(utils::rendering_type type) : rendering_type_(type)
 {
+  // temp
+  enable_validation_layers = false;
   create_instance();
   // window surface should be created right after the instance creation,
   // because it can actually influence the physical device selection
@@ -225,7 +227,7 @@ void device::create_logical_device()
   queue_family_indices indices = find_queue_families(physical_device_);
 
   // create a set of all unique queue families that are necessary for required queues
-  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+  std::vector<VkDeviceQueueCreateInfo> queue_create_infos{};
   // if queue families are the same, handle for those queues are also same
   std::set<uint32_t> unique_queue_families = {
     indices.graphics_family_.value(),
@@ -248,13 +250,6 @@ void device::create_logical_device()
     queue_create_infos.push_back(queue_create_info);
   }
 
-  // filling in the main VkDeviceCreateInfo structure;
-  VkDeviceCreateInfo create_info = {};
-  create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-  create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
-  create_info.pQueueCreateInfos = queue_create_infos.data();
-
   // common device features
   VkPhysicalDeviceFeatures device_features = {};
   device_features.samplerAnisotropy = VK_TRUE;
@@ -269,6 +264,11 @@ void device::create_logical_device()
   };
   timeline_semaphore_features.timelineSemaphore = VK_TRUE;
   timeline_semaphore_features.pNext = &synchronization_2_features;
+
+  VkPhysicalDeviceFeatures2 features2 {
+    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+    .pNext = nullptr
+  };
 
   // configure device features for rasterize or ray tracing
   // for ray tracing
@@ -303,16 +303,7 @@ void device::create_logical_device()
     enabled_descriptor_indexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     enabled_descriptor_indexing.runtimeDescriptorArray = VK_TRUE;
 
-    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
-    VkPhysicalDeviceFeatures2 features2 {
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
-    };
     features2.pNext = &enabled_descriptor_indexing;
-    features2.features = device_features;
-
-    create_info.pNext = &features2;
-    // device features are already included in features2
-    create_info.pEnabledFeatures = nullptr;
   }
 
   // for mesh shader
@@ -344,31 +335,26 @@ void device::create_logical_device()
     baryFeatures.fragmentShaderBarycentric = VK_TRUE;
     baryFeatures.pNext = &mesh_features;
 
-    vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
-    VkPhysicalDeviceFeatures2 features2 {
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
-    };
     features2.pNext = &baryFeatures;
-    features2.features = device_features;
-
-    create_info.pNext = &features2;
-    create_info.pEnabledFeatures = nullptr;
   }
 
   if (rendering_type_ == utils::rendering_type::VERTEX_SHADING) {
-    VkPhysicalDeviceFeatures2 features2 {
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr
-    };
     features2.pNext = &timeline_semaphore_features;
-    features2.features = device_features;
-
-    create_info.pNext = &features2;
-    create_info.pEnabledFeatures = nullptr;
   }
 
-  // enable device extension
-  create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size());
-  create_info.ppEnabledExtensionNames = device_extensions_.data();
+  vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
+  features2.features = device_features;
+
+  // filling in the main VkDeviceCreateInfo structure;
+  VkDeviceCreateInfo create_info = {
+    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    .pNext = &features2,
+    .flags = 0,
+    .queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size()),
+    .pQueueCreateInfos = queue_create_infos.data(),
+    .enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size()),
+    .ppEnabledExtensionNames = device_extensions_.data(),
+  };
 
   // might not really be necessary anymore because device specific validation layers
   // have been deprecated
@@ -427,7 +413,10 @@ VkCommandPool device::create_command_pool(command_type type)
   return pool;
 }
 
-void device::create_surface() { window_.create_window_surface(instance_, &surface_); }
+void device::create_surface() {
+  auto& window = utils::singleton<graphics::window>::get_instance();
+  window.create_window_surface(instance_, &surface_);
+}
 
 // ensure there is at least one available physical device and
 // the debice can present images to the surface we created
@@ -701,11 +690,16 @@ void device::create_buffer(
   VkDeviceMemory &buffer_memory)
 {
   // buffer creation
-  VkBufferCreateInfo buffer_info{};
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = size;
-  buffer_info.usage = usage;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  VkBufferCreateInfo buffer_info {
+    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .size = size,
+    .usage = usage,
+    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    .queueFamilyIndexCount = 0,
+    .pQueueFamilyIndices = nullptr
+  };
 
   if (vkCreateBuffer(device_, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to create buffer!");
@@ -715,10 +709,12 @@ void device::create_buffer(
   VkMemoryRequirements memory_requirements{};
   vkGetBufferMemoryRequirements(device_, buffer, &memory_requirements);
 
-  VkMemoryAllocateInfo allocate_info{};
-  allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocate_info.allocationSize = memory_requirements.size;
-  allocate_info.memoryTypeIndex = find_memory_type(memory_requirements.memoryTypeBits, properties);
+  VkMemoryAllocateInfo allocate_info {
+    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+    .pNext = nullptr,
+    .allocationSize = memory_requirements.size,
+    .memoryTypeIndex = find_memory_type(memory_requirements.memoryTypeBits, properties)
+  };
 
   // ray tracing (device address for buffer)
   if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {

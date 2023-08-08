@@ -55,8 +55,7 @@ requires(const T a) { a.get_rc_id(); a.get_shading_type(); };
 
 template <typename T>
 concept ShadingSystem =
-requires(T a, const utils::graphics_frame_info& frame_info) { a.render(frame_info); } &&
-requires(T, graphics::device& device) { T::create(device); };
+requires(T a, const utils::graphics_frame_info& frame_info) { a.render(frame_info); };
 
 template <typename T>
 concept ComputeShader = requires (T t, const utils::compute_frame_info& info) {
