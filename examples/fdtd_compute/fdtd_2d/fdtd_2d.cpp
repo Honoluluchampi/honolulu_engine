@@ -1,17 +1,17 @@
 // hnll
 #include <game/engine.hpp>
-#include <physics/fdtd2_field.hpp>
-#include <physics/compute_shader/fdtd2_compute_shader.hpp>
-#include <physics/shading_system/fdtd2_shading_system.hpp>
+#include "include/fdtd2_field.hpp"
+#include "include/fdtd2_compute_shader.hpp"
+#include "include/fdtd2_shading_system.hpp"
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
-#include "serial.hpp"
+#include "../serial.hpp"
 
 // std
 #include <thread>
 
 // lib
-#include <imgui/imgui.h>
+#include "imgui/imgui.h"
 
 #define AUDIO_FRAME_RATE 128000
 #define DEFAULT_UPDATE_PER_FRAME 5130
@@ -20,14 +20,14 @@
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(physics::fdtd2_shading_system);
-SELECT_COMPUTE_SHADER(physics::fdtd2_compute_shader);
-SELECT_ACTOR(physics::fdtd2_field);
+SELECT_SHADING_SYSTEM(fdtd2_shading_system);
+SELECT_COMPUTE_SHADER(fdtd2_compute_shader);
+SELECT_ACTOR(fdtd2_field);
 
-DEFINE_ENGINE(fdtd_compute)
+DEFINE_ENGINE(fdtd_2d)
 {
   public:
-    fdtd_compute() : serial_(ARDUINO)
+    fdtd_2d() : serial_(ARDUINO)
     {
       set_max_fps(30.f);
       auto game_fps = get_max_fps();
@@ -36,7 +36,7 @@ DEFINE_ENGINE(fdtd_compute)
       if (update_per_frame_ % 2 != 0)
         update_per_frame_ += 1;
 
-      physics::fdtd_info info = {
+      fdtd_info info = {
         .x_len = x_len_,
         .y_len = y_len_,
         .sound_speed = sound_speed_,
@@ -45,7 +45,7 @@ DEFINE_ENGINE(fdtd_compute)
         .update_per_frame = update_per_frame_
       };
 
-      field_ = physics::fdtd2_field::create(info);
+      field_ = fdtd2_field::create(info);
       field_->set_as_target(field_.get());
 
       audio::engine::start_hae_context();
@@ -94,7 +94,7 @@ DEFINE_ENGINE(fdtd_compute)
 
       if (ImGui::Button("restart")) {
         std::thread t([this] {
-          this->staging_field_ = physics::fdtd2_field::create(
+          this->staging_field_ = fdtd2_field::create(
             {
               this->x_len_,
               this->y_len_,
@@ -180,8 +180,8 @@ DEFINE_ENGINE(fdtd_compute)
       }
     }
 
-    u_ptr<physics::fdtd2_field> field_;
-    u_ptr<physics::fdtd2_field> staging_field_;
+    u_ptr<fdtd2_field> field_;
+    u_ptr<fdtd2_field> staging_field_;
     bool wait_for_construction_ = false;
 
     float x_len_       = 0.6f;
@@ -207,12 +207,12 @@ DEFINE_ENGINE(fdtd_compute)
     serial_com serial_;
 };
 
-bool fdtd_compute::button_pressed_ = false;
+bool fdtd_2d::button_pressed_ = false;
 
 } // namespace hnll
 
 int main() {
-  hnll::fdtd_compute engine;
+  hnll::fdtd_2d engine;
 
   try { engine.run(); }
   catch (const std::exception& e) {

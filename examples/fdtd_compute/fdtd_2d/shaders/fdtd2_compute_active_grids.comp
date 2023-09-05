@@ -2,17 +2,17 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../../common/fdtd2_config.h"
-#include "../../common/fdtd_struct.h"
+#include "../common/fdtd2_config.h"
+#include "../common/fdtd_struct.h"
 
-layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
+layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = fdtd2_local_size_z) in;
 
 // pressure
 layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
 layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
 layout(std430, set = 2, binding = 0) readonly buffer PreviousP2 { particle prev_p2[]; };
 layout(std430, set = 3, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
-layout(std430, set = 4, binding = 0) readonly buffer ActiveIdx { int is_active[]; };
+layout(std430, set = 4, binding = 0) readonly buffer ActiveIdx { int active_ids[]; };
 
 // push constants
 layout(push_constant) uniform Push { fdtd2_push push; };
@@ -44,19 +44,22 @@ const float ubf_a2 = 0.160863;
 const float ubf_b1 = -0.590436;
 const float ubf_b2 = 0.233886;
 
-void main() {
-  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
-  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
-  uint idx = g_id(i, j);
+const float dt = 7.81e-6;
 
-  if (i < push.x_grid && j < push.y_grid && is_active[idx] == 1.f) // inside domain
+void main() {
+  uint thread_id = gl_LocalInvocationID.x + gl_WorkGroupID.x * 64;
+  uint idx = active_ids[thread_id];
+  uint i = idx % (push.x_grid + 1) - 1;
+  uint j = idx / (push.x_grid + 1) - 1;
+
+  if (thread_id < push.active_grid_count)
   {
     float state = prev_p[idx].values.w;
     if (state >= -1) {
       float pml = max(prev_p[idx].values.w, 0.f);
 
       // update pressure
-      float p = (prev_p[g_id(i, j)].values.z - push.p_fac *
+      float p = (prev_p[idx].values.z - push.p_fac *
       (prev_p[idx].values.x - prev_p[g_id(i - 1, j)].values.x +
       prev_p[idx].values.y - prev_p[g_id(i, j - 1)].values.y)
       ) / (1 + pml);
@@ -108,7 +111,7 @@ void main() {
 
         if (prev_p[g_id(i, j - 1)].values.w == -2) {
           curr_p[g_id(i, j - 1)].values.y = (
-            lwf_a0 * curr_p[idx].values.z
+          lwf_a0 * curr_p[idx].values.z
           + lwf_a1 * prev_p[idx].values.z
           + lwf_a2 * prev_p2[idx].values.z
           - lwf_b0 * prev_p[g_id(i, j - 1)].values.y
@@ -117,7 +120,7 @@ void main() {
         }
         if (prev_p[g_id(i, j + 1)].values.w == -2) {
           curr_p[idx].values.y = -(
-            lwf_a0 * curr_p[idx].values.z
+          lwf_a0 * curr_p[idx].values.z
           + lwf_a1 * prev_p[idx].values.z
           + lwf_a2 * prev_p2[idx].values.z
           - lwf_b0 * prev_p[idx].values.y
@@ -128,6 +131,45 @@ void main() {
 
       if (idx == push.listener_index)
       sound_buffer[push.buffer_index] = p;
+    }
+
+    else if (state == -4) {
+      float b = push.dyn_b;
+      float sigma = 1 - b;
+
+      // update pressure
+      float p = (prev_p[idx].values.z - push.p_fac *
+      (prev_p[idx].values.x - prev_p[g_id(i - 1, j)].values.x +
+      prev_p[idx].values.y - prev_p[g_id(i, j - 1)].values.y)
+      ) / (1 + sigma * dt);
+
+      curr_p[idx].values.z = p;
+
+      // re-calculate the current pressure to reduce the barrier synchronization
+      // update x velo
+      if (i < push.x_grid - 1) {
+        float right_is_not_exc = float(prev_p[g_id(i + 1, j)].values.w != -3);
+
+        float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
+        (prev_p[g_id(i + 1, j)].values.x - prev_p[idx].values.x +
+        prev_p[g_id(i + 1, j)].values.y - prev_p[g_id(i + 1, j - 1)].values.y)
+        ) / (1 + sigma * dt);
+
+        // TODO : introduce v_b
+        curr_p[idx].values.x =
+        (b * prev_p[idx].values.x - b * b * push.v_fac * (p_x1 * right_is_not_exc - p)) / (b + sigma * dt);
+      }
+
+      // update y velo
+      if (j < push.y_grid - 1) {
+        float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
+        (prev_p[g_id(i, j + 1)].values.x - prev_p[g_id(i - 1, j + 1)].values.x +
+        prev_p[g_id(i, j + 1)].values.y - prev_p[idx].values.y)
+        ) / (1 + sigma * dt);
+
+        curr_p[idx].values.y =
+        (b * prev_p[idx].values.y - b * b * push.v_fac * (p_y1 - p)) / (b + sigma * dt);
+      }
     }
 
     else if (state == -3) // exciter
@@ -144,7 +186,7 @@ void main() {
       // input to the filter is contained by .values.y
       curr_p[idx].values.y = u_bore / 0.000367;
       curr_p[idx].values.x =
-        ubf_a0 * curr_p[idx].values.y
+      ubf_a0 * curr_p[idx].values.y
       + ubf_a1 * prev_p[idx].values.y
       + ubf_a2 * prev_p2[idx].values.y
       - ubf_b1 * prev_p[idx].values.x

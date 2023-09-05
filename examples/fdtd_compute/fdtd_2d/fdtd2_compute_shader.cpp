@@ -1,13 +1,13 @@
 // hnll
 #include <graphics/desc_set.hpp>
-#include <physics/fdtd2_field.hpp>
-#include <physics/compute_shader/fdtd2_compute_shader.hpp>
+#include "include/fdtd2_field.hpp"
+#include "include/fdtd2_compute_shader.hpp"
 #include <utils/singleton.hpp>
 
-namespace hnll::physics {
+namespace hnll {
 
 // shared with shaders
-#include "../common/fdtd2_config.h"
+#include "common/fdtd2_config.h"
 
 // static member
 fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
@@ -19,7 +19,7 @@ fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_comput
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/modules/physics/shaders/spv/fdtd2_compute_active_grids.comp.spv",
+    utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_2d/shaders/spv/fdtd2_compute_active_grids.comp.spv",
     { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
@@ -101,4 +101,4 @@ void fdtd2_compute_shader::set_target(fdtd2_field* target)
 void fdtd2_compute_shader::remove_target(uint32_t target_id)
 { if (target_id_ == target_id) target_ = nullptr; }
 
-} // namespace hnll::physics
+} // namespace hnll

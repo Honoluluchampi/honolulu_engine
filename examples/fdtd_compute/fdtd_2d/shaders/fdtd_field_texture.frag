@@ -2,8 +2,8 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../../common/fdtd2_config.h"
-#include "../../common/fdtd_struct.h"
+#include "../common/fdtd2_config.h"
+#include "../common/fdtd_struct.h"
 
 layout (location = 0) out vec4 out_color;
 
