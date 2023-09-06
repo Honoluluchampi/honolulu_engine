@@ -10,6 +10,8 @@
 
 namespace hnll {
 
+// ------------------------ thread-safe queue on a single-linked list
+
 template <typename T>
 class mt_queue
 {
@@ -107,6 +109,8 @@ class mt_queue
     std::condition_variable data_cond_;
 };
 
+// ----------------------------------------------------------------------------
+
 class threads_joiner
 {
   public:
@@ -122,6 +126,56 @@ class threads_joiner
 
   private:
     std::vector<std::thread>& threads_;
+};
+
+// ---------------------------------------------------------------------------
+
+class thread_pool
+{
+  public:
+    thread_pool() : done_(false), joiner_(threads_)
+    {
+      // init worker threads
+      const auto thread_count = std::thread::hardware_concurrency();
+      try {
+        for (int i = 0; i < thread_count; i++) {
+          threads_.emplace_back(std::thread(&thread_pool::worker_thread, this));
+        }
+      }
+      catch (...) {
+        // clean up all the threads before throwing an exception
+        done_ = true;
+        throw;
+      }
+    }
+
+    ~thread_pool()
+    {
+      done_ = true;
+      // joiner_ joins all the worker threads
+    }
+
+    // add task to the queue
+    template <typename FunctionType>
+    void submit(FunctionType f)
+    { task_queue_.push(std::function<void()>(f)); }
+
+  private:
+    void worker_thread()
+    {
+      while (!done_) {
+        auto task = task_queue_.try_pop();
+        if (task != nullptr)
+          (*task)(); // execute task
+        else
+          std::this_thread::yield();
+      }
+    }
+
+    std::atomic_bool done_;
+    mt_queue<std::function<void()>> task_queue_;
+    std::vector<std::thread> threads_;
+    threads_joiner joiner_;
 };
 
 } // namespace hnll
