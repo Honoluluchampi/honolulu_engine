@@ -107,4 +107,21 @@ class mt_queue
     std::condition_variable data_cond_;
 };
 
+class threads_joiner
+{
+  public:
+    explicit threads_joiner(std::vector<std::thread>& threads) : threads_(threads) {}
+
+    ~threads_joiner()
+    {
+      for(auto& thread : threads_) {
+        if (thread.joinable())
+          thread.join();
+      }
+    }
+
+  private:
+    std::vector<std::thread>& threads_;
+};
+
 } // namespace hnll
