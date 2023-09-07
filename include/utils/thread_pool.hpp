@@ -5,6 +5,7 @@
 
 // std
 #include <condition_variable>
+#include <future>
 
 // mt is synonym for "multi thread"
 
@@ -130,6 +131,44 @@ class threads_joiner
 
 // ---------------------------------------------------------------------------
 
+class function_wrapper
+{
+    struct impl_base
+    {
+      virtual void call() = 0;
+      virtual ~impl_base() {}
+    };
+
+  public:
+    template <typename F>
+    explicit function_wrapper(F&& f) : impl_(new impl_type<F>(std::move(f))) {}
+
+    void operator()() { impl_->call(); }
+    function_wrapper() = default;
+    function_wrapper(function_wrapper&& other) : impl_(std::move(other.impl_)) {}
+    function_wrapper& operator=(function_wrapper&& other)
+    {
+      impl_ = std::move(other.impl_);
+      return *this;
+    }
+    function_wrapper(const function_wrapper&) = delete;
+    function_wrapper(function_wrapper&) = delete;
+    function_wrapper& operator=(const function_wrapper&) = delete;
+
+  private:
+    template <typename F>
+    struct impl_type : impl_base
+    {
+      F f;
+      explicit impl_type(F&& f_) : f(std::move(f_)) {}
+      void call() override { f(); }
+    };
+
+    u_ptr<impl_base> impl_;
+};
+
+// ---------------------------------------------------------------------------
+
 class thread_pool
 {
   public:
@@ -157,8 +196,17 @@ class thread_pool
 
     // add task to the queue
     template <typename FunctionType>
-    void submit(FunctionType f)
-    { task_queue_.push(std::function<void()>(f)); }
+    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f)
+    {
+      // infer result type
+      typedef typename std::result_of<FunctionType()>::type result_type;
+      // init task with future
+      std::packaged_task<result_type()> task(std::move(f));
+      // preserve the future before moving this to the queue
+      auto task_future(task.get_future());
+      task_queue_.push(std::move(task));
+      return task_future;
+    }
 
   private:
     void worker_thread()
@@ -173,7 +221,7 @@ class thread_pool
     }
 
     std::atomic_bool done_;
-    mt_queue<std::function<void()>> task_queue_;
+    mt_queue<function_wrapper> task_queue_;
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
 };
