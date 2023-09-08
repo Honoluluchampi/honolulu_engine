@@ -72,11 +72,25 @@ class mt_deque
       return old_head->data; // TODO : move
     }
 
-    // returns nullptr if the queue is empty
-    u_ptr<T> try_pop()
+    u_ptr<T> try_pop_front()
     {
-      auto old_head = try_pop_head();
-      return old_head ? std::move(old_head->data) : nullptr;
+      std::lock_guard<std::mutex> head_lock(head_mutex_);
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      // if empty
+      if (head_.get() == tail_)
+        return nullptr;
+      return pop_head();
+    }
+
+    u_ptr<T> try_pop_tail()
+    {
+      std::lock_guard<std::mutex> head_lock(head_mutex_);
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      if (head_.get() == tail_)
+        return nullptr;
+      return pop_tail();
     }
 
     bool empty()
@@ -94,13 +108,24 @@ class mt_deque
     }
 
     // head_mutex_ should be taken by a caller
-    u_ptr<node> pop_head()
+    u_ptr<T> pop_head()
     {
       auto old_head = std::move(head_);
       head_ = std::move(old_head->next);
       head_->prev = nullptr;
 
-      return old_head;
+      return std::move(old_head->data);
+    }
+
+    // tail_mutex_ should be taken by a caller
+    u_ptr<T> pop_tail()
+    {
+      tail_ = tail_->prev;
+      tail_->next.reset();
+      auto data = std::move(tail_->data);
+      tail_->data = nullptr;
+
+      return std::move(data);
     }
 
     std::unique_lock<std::mutex> wait_for_data()
@@ -114,14 +139,6 @@ class mt_deque
     u_ptr<node> wait_pop_head()
     {
       auto head_lock = wait_for_data();
-      return pop_head();
-    }
-
-    u_ptr<node> try_pop_head()
-    {
-      std::lock_guard<std::mutex> head_lock(head_mutex_);
-      if (head_.get() == get_tail())
-        return nullptr;
       return pop_head();
     }
 
@@ -245,7 +262,7 @@ class thread_pool
         local_queue_->pop();
         task();
       }
-      else if (auto task = global_queue_.try_pop(); task) {
+      else if (auto task = global_queue_.try_pop_front(); task) {
         (*task)();
       }
       else {
