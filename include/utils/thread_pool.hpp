@@ -20,9 +20,9 @@ class mt_deque
     // tail ----- next <- node -> prev ----- head
     struct node
     {
-      u_ptr<T> data;
-      u_ptr<node> next;
-      node* prev;
+      u_ptr<T> data = nullptr;
+      u_ptr<node> next = nullptr;
+      node* prev = nullptr;
     };
 
   public:
@@ -33,7 +33,7 @@ class mt_deque
     mt_deque(const mt_deque&) = delete;
     mt_deque& operator=(const mt_deque&) = delete;
 
-    void push_back(T&& new_value)
+    void push_tail(T&& new_value)
     {
       auto new_data = std::make_unique<T>(std::move(new_value));
       auto new_node = std::make_unique<node>();
@@ -53,17 +53,17 @@ class mt_deque
 
     void push_front(T&& new_value)
     {
-      if (empty()) {
-        push_back(std::move(new_value));
-        return;
-      }
-
-      // there is at least one node
-      auto new_data = std::make_unique<T>(std::move(new_value));
+      // create new node with data
       auto new_node = std::make_unique<node>();
+      new_node->data = std::make_unique<T>(std::move(new_value));
+
       {
         std::lock_guard<std::mutex> head_lock(head_mutex_);
+        head_->prev = new_node.get();
+        new_node->next = std::move(head_);
+        head_ = std::move(new_node);
       }
+      data_cond_.notify_one();
     }
 
     u_ptr<T> wait_and_pop()
@@ -93,10 +93,12 @@ class mt_deque
       return tail_;
     }
 
+    // head_mutex_ should be taken by a caller
     u_ptr<node> pop_head()
     {
       auto old_head = std::move(head_);
       head_ = std::move(old_head->next);
+      head_->prev = nullptr;
 
       return old_head;
     }
@@ -230,7 +232,7 @@ class thread_pool
       }
       // main thread doesn't have local queue
       else {
-        global_queue_.push_back(std::move(task));
+        global_queue_.push_tail(std::move(task));
       }
       return task_future;
     }
