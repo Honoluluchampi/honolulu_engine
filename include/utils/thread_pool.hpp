@@ -6,6 +6,7 @@
 // std
 #include <condition_variable>
 #include <future>
+#include <queue>
 
 // mt is synonym for "multi thread"
 
@@ -203,25 +204,54 @@ class thread_pool
       // init task with future
       std::packaged_task<result_type()> task(std::move(f));
       // preserve the future before moving this to the queue
-      auto task_future(task.get_future());
-      task_queue_.push(std::move(task));
+      auto task_future = task.get_future();
+
+      if (local_queue_) {
+        local_queue_->push(std::move(task));
+      }
+      // main thread doesn't have local queue
+      else {
+        global_queue_.push(std::move(task));
+      }
       return task_future;
+    }
+
+    void run_pending_task()
+    {
+      // if this thread has local queue and it is not empty
+      if (local_queue_ && !local_queue_->empty()) {
+        auto task = std::move(local_queue_->front());
+        local_queue_->pop();
+        task();
+      }
+      else if (auto task = global_queue_.try_pop(); task) {
+        (*task)();
+      }
+      else {
+        std::this_thread::yield();
+      }
     }
 
   private:
     void worker_thread()
     {
+      // init local queue
+      local_queue_ = std::make_unique<local_queue>();
+
       while (!done_) {
-        auto task = task_queue_.try_pop();
-        if (task != nullptr)
-          (*task)(); // execute task
-        else
-          std::this_thread::yield();
+        run_pending_task();
       }
     }
 
     std::atomic_bool done_;
-    mt_queue<function_wrapper> task_queue_;
+
+    // each thread takes a task only if it's local queue is empty
+    mt_queue<function_wrapper> global_queue_;
+    // local thread is initialized in worker_thread()
+    // this queue is destructed when the thread exits
+    using local_queue = std::queue<function_wrapper>;
+    static thread_local u_ptr<local_queue> local_queue_;
+
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
 };
