@@ -15,7 +15,7 @@ TEST(thread_pool, mt_queue)
 {
   std::vector<int> input = { 1, 7, 2, 3, 7, 5, 0, 4 };
 
-  mt_queue<int> queue;
+  mt_deque<int> queue;
 
   for (auto& val : input) {
     queue.push(std::move(val));

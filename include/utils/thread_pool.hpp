@@ -12,26 +12,28 @@
 
 namespace hnll {
 
-// ------------------------ thread-safe queue on a single-linked list
+// ------------------------ thread-safe queue on a double-linked list
 
 template <typename T>
-class mt_queue
+class mt_deque
 {
+    // tail ----- next <- node -> prev ----- head
     struct node
     {
       u_ptr<T> data;
       u_ptr<node> next;
+      node* prev;
     };
 
   public:
     // assign a dummy node for fine-grained mutex lock
-    mt_queue() : head_(std::make_unique<node>()), tail_(head_.get())
+    mt_deque() : head_(std::make_unique<node>()), tail_(head_.get())
     {}
 
-    mt_queue(const mt_queue&) = delete;
-    mt_queue& operator=(const mt_queue&) = delete;
+    mt_deque(const mt_deque&) = delete;
+    mt_deque& operator=(const mt_deque&) = delete;
 
-    void push(T&& new_value)
+    void push_back(T&& new_value)
     {
       auto new_data = std::make_unique<T>(std::move(new_value));
       auto new_node = std::make_unique<node>();
@@ -40,11 +42,28 @@ class mt_queue
         std::lock_guard<std::mutex> tail_lock(tail_mutex_);
         tail_->data = std::move(new_data);
 
-        auto *const new_tail = new_node.get();
+        // set next-prev ptr
         tail_->next = std::move(new_node);
-        tail_ = new_tail;
+        new_node->prev = tail_;
+
+        tail_ = new_node.get();
       }
       data_cond_.notify_one();
+    }
+
+    void push_front(T&& new_value)
+    {
+      if (empty()) {
+        push_back(std::move(new_value));
+        return;
+      }
+
+      // there is at least one node
+      auto new_data = std::make_unique<T>(std::move(new_value));
+      auto new_node = std::make_unique<node>();
+      {
+        std::lock_guard<std::mutex> head_lock(head_mutex_);
+      }
     }
 
     u_ptr<T> wait_and_pop()
@@ -211,7 +230,7 @@ class thread_pool
       }
       // main thread doesn't have local queue
       else {
-        global_queue_.push(std::move(task));
+        global_queue_.push_back(std::move(task));
       }
       return task_future;
     }
@@ -246,7 +265,7 @@ class thread_pool
     std::atomic_bool done_;
 
     // each thread takes a task only if it's local queue is empty
-    mt_queue<function_wrapper> global_queue_;
+    mt_deque<function_wrapper> global_queue_;
     // local thread is initialized in worker_thread()
     // this queue is destructed when the thread exits
     using local_queue = std::queue<function_wrapper>;
