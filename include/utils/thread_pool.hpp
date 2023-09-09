@@ -66,10 +66,23 @@ class mt_deque
       data_cond_.notify_one();
     }
 
-    u_ptr<T> wait_and_pop()
+    // in all pop functions, get head mutex first then get tail mutex
+    // to avoid deadlock
+    u_ptr<T> wait_pop_front()
     {
-      auto old_head = wait_pop_head();
-      return old_head->data; // TODO : move
+      // wait for data and lock head
+      auto head_lock = wait_for_data();
+      // lock tail
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      return pop_head();
+    }
+
+    u_ptr<T> wait_pop_back()
+    {
+      auto head_lock = wait_for_data();
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+      return pop_tail();
     }
 
     u_ptr<T> try_pop_front()
@@ -83,7 +96,7 @@ class mt_deque
       return pop_head();
     }
 
-    u_ptr<T> try_pop_tail()
+    u_ptr<T> try_pop_back()
     {
       std::lock_guard<std::mutex> head_lock(head_mutex_);
       std::lock_guard<std::mutex> tail_lock(tail_mutex_);
@@ -107,7 +120,15 @@ class mt_deque
       return tail_;
     }
 
-    // head_mutex_ should be taken by a caller
+    std::unique_lock<std::mutex> wait_for_data()
+    {
+      std::unique_lock<std::mutex> head_lock(head_mutex_);
+      // wait for at least one data is pushed to the queue
+      data_cond_.wait(head_lock, [&]{ return head_.get() != get_tail(); });
+      return std::move(head_lock);
+    }
+
+    // the 2 mutexes should be taken by a caller
     u_ptr<T> pop_head()
     {
       auto old_head = std::move(head_);
@@ -117,7 +138,7 @@ class mt_deque
       return std::move(old_head->data);
     }
 
-    // tail_mutex_ should be taken by a caller
+    // the 2 mutexes should be taken by a caller
     u_ptr<T> pop_tail()
     {
       tail_ = tail_->prev;
@@ -126,20 +147,6 @@ class mt_deque
       tail_->data = nullptr;
 
       return std::move(data);
-    }
-
-    std::unique_lock<std::mutex> wait_for_data()
-    {
-      std::unique_lock<std::mutex> head_lock(head_mutex_);
-      // wait for at least one data is pushed to the queue
-      data_cond_.wait(head_lock, [&]{ return head_.get() != get_tail(); });
-      return std::move(head_lock);
-    }
-
-    u_ptr<node> wait_pop_head()
-    {
-      auto head_lock = wait_for_data();
-      return pop_head();
     }
 
     std::mutex head_mutex_;
