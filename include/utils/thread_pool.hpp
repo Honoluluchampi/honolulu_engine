@@ -224,7 +224,9 @@ class thread_pool
       const auto thread_count = std::thread::hardware_concurrency();
       try {
         for (int i = 0; i < thread_count; i++) {
-          threads_.emplace_back(std::thread(&thread_pool::worker_thread, this));
+          // create local queues and threads
+          local_queues_.emplace_back(std::make_unique<mt_deque<function_wrapper>>());
+          threads_.emplace_back(std::thread(&thread_pool::worker_thread, this, i));
         }
       }
       catch (...) {
@@ -252,7 +254,7 @@ class thread_pool
       auto task_future = task.get_future();
 
       if (local_queue_) {
-        local_queue_->push(std::move(task));
+        local_queue_->push_front(std::move(task));
       }
       // main thread doesn't have local queue
       else {
@@ -263,42 +265,66 @@ class thread_pool
 
     void run_pending_task()
     {
-      // if this thread has local queue and it is not empty
-      if (local_queue_ && !local_queue_->empty()) {
-        auto task = std::move(local_queue_->front());
-        local_queue_->pop();
-        task();
-      }
-      else if (auto task = global_queue_.try_pop_front(); task) {
+      if (auto task = pop_task_from_local_queue(); task)
         (*task)();
-      }
-      else {
+      else if (task = pop_task_from_global_queue(); task)
+        (*task)();
+      else if (task = steal_task(); task)
+        (*task)();
+      else
         std::this_thread::yield();
-      }
     }
 
   private:
-    void worker_thread()
+    void worker_thread(unsigned queue_index)
     {
-      // init local queue
-      local_queue_ = std::make_unique<local_queue>();
+      queue_index_ = queue_index;
+      // take local queue ptr
+      assert(queue_index <= local_queues_.size() - 1);
+      local_queue_ = local_queues_[queue_index_].get();
 
       while (!done_) {
         run_pending_task();
       }
     }
 
+    u_ptr<function_wrapper> pop_task_from_local_queue()
+    {
+      return local_queue_ ? local_queue_->try_pop_front() : nullptr;
+    }
+
+    u_ptr<function_wrapper> pop_task_from_global_queue()
+    {
+      return global_queue_.try_pop_front();
+    }
+
+    u_ptr<function_wrapper> steal_task()
+    {
+      u_ptr<function_wrapper> ret;
+
+      for (unsigned i = 0; i < local_queues_.size(); i++) {
+        // myself
+        if (local_queues_[i].get() == local_queue_)
+          continue;
+
+        if (ret = local_queues_[i]->try_pop_back(); ret)
+          return std::move(ret);
+      }
+
+      return nullptr;
+    }
+
     std::atomic_bool done_;
 
     // each thread takes a task only if it's local queue is empty
     mt_deque<function_wrapper> global_queue_;
-    // local thread is initialized in worker_thread()
-    // this queue is destructed when the thread exits
-    using local_queue = std::queue<function_wrapper>;
-    static thread_local u_ptr<local_queue> local_queue_;
-
+    // local queues and threads is initialized in worker_thread()
+    std::vector<u_ptr<mt_deque<function_wrapper>>> local_queues_;
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
+
+    static thread_local mt_deque<function_wrapper>* local_queue_;
+    static thread_local unsigned queue_index_;
 };
 
 } // namespace hnll
