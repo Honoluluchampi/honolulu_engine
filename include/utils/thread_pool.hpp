@@ -265,11 +265,11 @@ class thread_pool
 
     void run_pending_task()
     {
-      if (auto task = pop_task_from_local_queue(); task)
+      if (auto task = try_pop_from_local_queue(); task)
         (*task)();
-      else if (task = pop_task_from_global_queue(); task)
+      else if (task = try_pop_from_global_queue(); task)
         (*task)();
-      else if (task = steal_task(); task)
+      else if (task = try_steal_task(); task)
         (*task)();
       else
         std::this_thread::yield();
@@ -288,26 +288,25 @@ class thread_pool
       }
     }
 
-    u_ptr<function_wrapper> pop_task_from_local_queue()
+    u_ptr<function_wrapper> try_pop_from_local_queue()
     {
       return local_queue_ ? local_queue_->try_pop_front() : nullptr;
     }
 
-    u_ptr<function_wrapper> pop_task_from_global_queue()
+    u_ptr<function_wrapper> try_pop_from_global_queue()
     {
       return global_queue_.try_pop_front();
     }
 
-    u_ptr<function_wrapper> steal_task()
+    u_ptr<function_wrapper> try_steal_task()
     {
       u_ptr<function_wrapper> ret;
 
-      for (unsigned i = 0; i < local_queues_.size(); i++) {
-        // myself
-        if (local_queues_[i].get() == local_queue_)
-          continue;
+      for (unsigned i = 0; i < local_queues_.size() - 1; i++) {
+        // not to look the first queue every time
+        auto idx = (queue_index_ + i + 1) % local_queues_.size();
 
-        if (ret = local_queues_[i]->try_pop_back(); ret)
+        if (ret = local_queues_[idx]->try_pop_back(); ret)
           return std::move(ret);
       }
 
