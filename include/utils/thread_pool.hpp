@@ -12,26 +12,28 @@
 
 namespace hnll {
 
-// ------------------------ thread-safe queue on a single-linked list
+// ------------------------ thread-safe queue on a double-linked list
 
 template <typename T>
-class mt_queue
+class mt_deque
 {
+    // tail ----- next <- node -> prev ----- head
     struct node
     {
-      u_ptr<T> data;
-      u_ptr<node> next;
+      u_ptr<T> data = nullptr;
+      u_ptr<node> next = nullptr;
+      node* prev = nullptr;
     };
 
   public:
     // assign a dummy node for fine-grained mutex lock
-    mt_queue() : head_(std::make_unique<node>()), tail_(head_.get())
+    mt_deque() : head_(std::make_unique<node>()), tail_(head_.get())
     {}
 
-    mt_queue(const mt_queue&) = delete;
-    mt_queue& operator=(const mt_queue&) = delete;
+    mt_deque(const mt_deque&) = delete;
+    mt_deque& operator=(const mt_deque&) = delete;
 
-    void push(T&& new_value)
+    void push_tail(T&& new_value)
     {
       auto new_data = std::make_unique<T>(std::move(new_value));
       auto new_node = std::make_unique<node>();
@@ -40,24 +42,68 @@ class mt_queue
         std::lock_guard<std::mutex> tail_lock(tail_mutex_);
         tail_->data = std::move(new_data);
 
-        auto *const new_tail = new_node.get();
+        // set next-prev ptr
         tail_->next = std::move(new_node);
-        tail_ = new_tail;
+        new_node->prev = tail_;
+
+        tail_ = new_node.get();
       }
       data_cond_.notify_one();
     }
 
-    u_ptr<T> wait_and_pop()
+    void push_front(T&& new_value)
     {
-      auto old_head = wait_pop_head();
-      return old_head->data; // TODO : move
+      // create new node with data
+      auto new_node = std::make_unique<node>();
+      new_node->data = std::make_unique<T>(std::move(new_value));
+
+      {
+        std::lock_guard<std::mutex> head_lock(head_mutex_);
+        head_->prev = new_node.get();
+        new_node->next = std::move(head_);
+        head_ = std::move(new_node);
+      }
+      data_cond_.notify_one();
     }
 
-    // returns nullptr if the queue is empty
-    u_ptr<T> try_pop()
+    // in all pop functions, get head mutex first then get tail mutex
+    // to avoid deadlock
+    u_ptr<T> wait_pop_front()
     {
-      auto old_head = try_pop_head();
-      return old_head ? std::move(old_head->data) : nullptr;
+      // wait for data and lock head
+      auto head_lock = wait_for_data();
+      // lock tail
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      return pop_head();
+    }
+
+    u_ptr<T> wait_pop_back()
+    {
+      auto head_lock = wait_for_data();
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+      return pop_tail();
+    }
+
+    u_ptr<T> try_pop_front()
+    {
+      std::lock_guard<std::mutex> head_lock(head_mutex_);
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      // if empty
+      if (head_.get() == tail_)
+        return nullptr;
+      return pop_head();
+    }
+
+    u_ptr<T> try_pop_back()
+    {
+      std::lock_guard<std::mutex> head_lock(head_mutex_);
+      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
+
+      if (head_.get() == tail_)
+        return nullptr;
+      return pop_tail();
     }
 
     bool empty()
@@ -74,14 +120,6 @@ class mt_queue
       return tail_;
     }
 
-    u_ptr<node> pop_head()
-    {
-      auto old_head = std::move(head_);
-      head_ = std::move(old_head->next);
-
-      return old_head;
-    }
-
     std::unique_lock<std::mutex> wait_for_data()
     {
       std::unique_lock<std::mutex> head_lock(head_mutex_);
@@ -90,18 +128,25 @@ class mt_queue
       return std::move(head_lock);
     }
 
-    u_ptr<node> wait_pop_head()
+    // the 2 mutexes should be taken by a caller
+    u_ptr<T> pop_head()
     {
-      auto head_lock = wait_for_data();
-      return pop_head();
+      auto old_head = std::move(head_);
+      head_ = std::move(old_head->next);
+      head_->prev = nullptr;
+
+      return std::move(old_head->data);
     }
 
-    u_ptr<node> try_pop_head()
+    // the 2 mutexes should be taken by a caller
+    u_ptr<T> pop_tail()
     {
-      std::lock_guard<std::mutex> head_lock(head_mutex_);
-      if (head_.get() == get_tail())
-        return nullptr;
-      return pop_head();
+      tail_ = tail_->prev;
+      tail_->next.reset();
+      auto data = std::move(tail_->data);
+      tail_->data = nullptr;
+
+      return std::move(data);
     }
 
     std::mutex head_mutex_;
@@ -179,7 +224,9 @@ class thread_pool
       const auto thread_count = std::thread::hardware_concurrency();
       try {
         for (int i = 0; i < thread_count; i++) {
-          threads_.emplace_back(std::thread(&thread_pool::worker_thread, this));
+          // create local queues and threads
+          local_queues_.emplace_back(std::make_unique<mt_deque<function_wrapper>>());
+          threads_.emplace_back(std::thread(&thread_pool::worker_thread, this, i));
         }
       }
       catch (...) {
@@ -207,53 +254,76 @@ class thread_pool
       auto task_future = task.get_future();
 
       if (local_queue_) {
-        local_queue_->push(std::move(task));
+        local_queue_->push_front(std::move(task));
       }
       // main thread doesn't have local queue
       else {
-        global_queue_.push(std::move(task));
+        global_queue_.push_tail(std::move(task));
       }
       return task_future;
     }
 
     void run_pending_task()
     {
-      // if this thread has local queue and it is not empty
-      if (local_queue_ && !local_queue_->empty()) {
-        auto task = std::move(local_queue_->front());
-        local_queue_->pop();
-        task();
-      }
-      else if (auto task = global_queue_.try_pop(); task) {
+      if (auto task = try_pop_from_local_queue(); task)
         (*task)();
-      }
-      else {
+      else if (task = try_pop_from_global_queue(); task)
+        (*task)();
+      else if (task = try_steal_task(); task)
+        (*task)();
+      else
         std::this_thread::yield();
-      }
     }
 
   private:
-    void worker_thread()
+    void worker_thread(unsigned queue_index)
     {
-      // init local queue
-      local_queue_ = std::make_unique<local_queue>();
+      queue_index_ = queue_index;
+      // take local queue ptr
+      assert(queue_index <= local_queues_.size() - 1);
+      local_queue_ = local_queues_[queue_index_].get();
 
       while (!done_) {
         run_pending_task();
       }
     }
 
+    u_ptr<function_wrapper> try_pop_from_local_queue()
+    {
+      return local_queue_ ? local_queue_->try_pop_front() : nullptr;
+    }
+
+    u_ptr<function_wrapper> try_pop_from_global_queue()
+    {
+      return global_queue_.try_pop_front();
+    }
+
+    u_ptr<function_wrapper> try_steal_task()
+    {
+      u_ptr<function_wrapper> ret;
+
+      for (unsigned i = 0; i < local_queues_.size() - 1; i++) {
+        // not to look the first queue every time
+        auto idx = (queue_index_ + i + 1) % local_queues_.size();
+
+        if (ret = local_queues_[idx]->try_pop_back(); ret)
+          return std::move(ret);
+      }
+
+      return nullptr;
+    }
+
     std::atomic_bool done_;
 
     // each thread takes a task only if it's local queue is empty
-    mt_queue<function_wrapper> global_queue_;
-    // local thread is initialized in worker_thread()
-    // this queue is destructed when the thread exits
-    using local_queue = std::queue<function_wrapper>;
-    static thread_local u_ptr<local_queue> local_queue_;
-
+    mt_deque<function_wrapper> global_queue_;
+    // local queues and threads is initialized in worker_thread()
+    std::vector<u_ptr<mt_deque<function_wrapper>>> local_queues_;
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
+
+    static thread_local mt_deque<function_wrapper>* local_queue_;
+    static thread_local unsigned queue_index_;
 };
 
 } // namespace hnll
