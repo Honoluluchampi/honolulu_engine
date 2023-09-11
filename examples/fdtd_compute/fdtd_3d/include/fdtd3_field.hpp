@@ -34,11 +34,12 @@ DEFINE_PURE_ACTOR(fdtd3_field)
     inline float get_v_fac() const { return v_fac_; }
     inline float get_p_fac() const { return p_fac_; }
     inline ivec3 get_grid_count() const { return grid_count_; }
+    inline bool  get_is_ready() const { return is_ready_; }
 
   private:
     // init functions
     void compute_constants();
-    void setup_desc_sets();
+    void setup_desc_sets(const fdtd_info& info);
 
     graphics::device& device_; // as singleton
     s_ptr<graphics::desc_pool> desc_pool_;
@@ -70,6 +71,8 @@ DEFINE_PURE_ACTOR(fdtd3_field)
     int listener_index_ = 0;
     // pointer for sound buffer
     float* sound_buffers_[3];
+
+    static const std::vector<graphics::binding_info> field_bindings;
 };
 
 } // namespace hnll
