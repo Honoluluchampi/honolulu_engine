@@ -24,13 +24,22 @@ DEFINE_PURE_ACTOR(fdtd3_field)
     void update_frame() { }
 
     // getter
-    const vec3& get_length() const { return length_; }
-    float get_sound_speed() const { return c_; }
-    float get_rho() const { return rho_; }
-    int get_pml_count() const { return pml_count_; }
-    int get_update_per_frame() const { return update_per_frame_; }
+    inline const vec3& get_length()     const { return length_; }
+    inline float get_sound_speed()      const { return c_; }
+    inline float get_rho()              const { return rho_; }
+    inline int   get_pml_count()        const { return pml_count_; }
+    inline int   get_update_per_frame() const { return update_per_frame_; }
+    inline float get_dx() const { return dx_; }
+    inline float get_dt() const { return dt_; }
+    inline float get_v_fac() const { return v_fac_; }
+    inline float get_p_fac() const { return p_fac_; }
+    inline ivec3 get_grid_count() const { return grid_count_; }
 
   private:
+    // init functions
+    void compute_constants();
+    void setup_desc_sets();
+
     graphics::device& device_; // as singleton
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
