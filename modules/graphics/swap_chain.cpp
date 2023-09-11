@@ -2,6 +2,7 @@
 #include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
 #include <utils/vulkan_config.hpp>
+#include <utils/singleton.hpp>
 
 // std
 #include <array>
@@ -577,6 +578,8 @@ VkSurfaceFormatKHR swap_chain::choose_swap_surface_format(const std::vector<VkSu
 
 VkPresentModeKHR swap_chain::choose_swap_present_mode(const std::vector<VkPresentModeKHR> &available_present_modes)
 {
+  auto present_mode = utils::singleton<utils::vulkan_config>::get_single_ptr()->present;
+
   // animation becomes storange if use present mode : mailbox
 
   for (const auto &available_present_mode : available_present_modes) {
@@ -589,8 +592,16 @@ VkPresentModeKHR swap_chain::choose_swap_present_mode(const std::vector<VkPresen
   }
 
   for (const auto &available_present_mode : available_present_modes) {
-    if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+    if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR &&
+      present_mode == utils::present_mode::IMMEDIATE)
+    {
       std::cout << "Present mode: Immediate" << std::endl;
+      return available_present_mode;
+    }
+    else if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR &&
+      present_mode == utils::present_mode::V_SYNC)
+    {
+      std::cout << "Present mode: V-Sync" << std::endl;
       return available_present_mode;
     }
   }

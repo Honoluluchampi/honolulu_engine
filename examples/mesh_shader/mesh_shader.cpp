@@ -49,7 +49,7 @@ DEFINE_ENGINE(my_engine)
 } // namespace hnll
 
 int main() {
-  hnll::my_engine engine("mesh shader", hnll::utils::rendering_type::MESH_SHADING);
+  hnll::my_engine engine("mesh shader");
 
   try { engine.run(); }
   catch (const std::exception &e) {
