@@ -22,16 +22,15 @@ namespace gui {
         renderer(
           graphics::window& window,
           graphics::device& device,
-          utils::rendering_type type,
           bool recreate_from_scratch);
 
         renderer(const renderer&) = delete;
+
         renderer& operator= (const renderer&) = delete;
 
         static u_ptr<renderer> create(
           graphics::window& window,
           graphics::device& device,
-          utils::rendering_type type,
           bool recreate_from_scratch);
 
         void recreate_swap_chain() override;

@@ -23,9 +23,9 @@ VkRenderPass          graphics_engine_core::default_render_pass_;
 
 u_ptr<graphics::graphics_model_pool> graphics_engine_core::model_pool_;
 
-graphics_engine_core::graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type)
+graphics_engine_core::graphics_engine_core(const std::string& window_name)
  : window_(utils::singleton<graphics::window>::build_instance(WIDTH, HEIGHT, window_name)),
-   device_(utils::singleton<graphics::device>::build_instance(rendering_type))
+   device_(utils::singleton<graphics::device>::build_instance())
 {
   renderer_ = graphics::renderer::create(*window_, *device_);
   model_pool_ = graphics::graphics_model_pool::create(*device_);

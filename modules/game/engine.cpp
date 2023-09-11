@@ -12,10 +12,10 @@ namespace hnll::game {
 std::vector<std::function<void(GLFWwindow *, int, int, int)>> engine_core::glfw_mouse_button_callbacks_;
 utils::viewer_info engine_core::viewer_info_;
 
-engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name, rendering_type)),
+engine_core::engine_core(const std::string &application_name)
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name)),
 #ifndef IMGUI_DISABLED
-   gui_engine_(utils::singleton<gui_engine>::build_instance(rendering_type))
+   gui_engine_(utils::singleton<gui_engine>::build_instance())
 #endif
 {
 #ifndef IMGUI_DISABLED

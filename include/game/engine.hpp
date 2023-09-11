@@ -37,7 +37,7 @@ using graphics_model_map = std::unordered_map<std::string, u_ptr<M>>;
 class engine_core
 {
   public:
-    engine_core(const std::string &application_name, utils::rendering_type rendering_type);
+    engine_core(const std::string &application_name);
     ~engine_core();
 
     void render_gui();
@@ -107,13 +107,6 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
     inline float get_max_fps() { return core_->get_max_fps(); }
 
-  protected:
-    // cleaning method of each specific application
-    void cleanup() {}
-    inline void set_max_fps(float max_fps) { core_->set_max_fps(max_fps); }
-
-    utils::single_ptr<engine_core> core_;
-
   private:
     void update();
     void render();
@@ -122,6 +115,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void update_this(const float& dt) {}
 
     // common part
+    utils::single_ptr<utils::vulkan_config> vulkan_config_;
     utils::single_ptr<graphics_engine_core> graphics_engine_core_;
 
     float dt_;
@@ -131,6 +125,13 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     u_ptr<compute_engine<C...>> compute_engine_;
 
     static actor_map update_target_actors_;
+
+  protected:
+    // cleaning method of each specific application
+    void cleanup() {}
+    inline void set_max_fps(float max_fps) { core_->set_max_fps(max_fps); }
+
+    utils::single_ptr<engine_core> core_;
 };
 
 // impl
@@ -141,10 +142,11 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 ENGN_API typename ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::vulkan_config vk_config)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name, vk_config.rendering)),
-   core_(utils::singleton<engine_core>::build_instance(application_name, vk_config.rendering))
+ : vulkan_config_(utils::singleton<utils::vulkan_config>::build_instance(vk_config)),
+   graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name)),
+   core_(utils::singleton<engine_core>::build_instance(application_name))
 {
-  graphics_engine_ = graphics_engine<S...>::create(application_name, vk_config.rendering);
+  graphics_engine_ = graphics_engine<S...>::create(application_name);
 
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {

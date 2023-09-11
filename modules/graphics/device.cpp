@@ -59,8 +59,10 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-device::device(utils::rendering_type type) : rendering_type_(type)
+device::device()
 {
+  rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
+
   // temp
   enable_validation_layers = false;
   create_instance();

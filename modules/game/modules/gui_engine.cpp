@@ -14,16 +14,16 @@ namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
 
-u_ptr<gui_engine> create(utils::rendering_type type)
-{ return std::make_unique<gui_engine>(type); }
+u_ptr<gui_engine> create()
+{ return std::make_unique<gui_engine>(); }
 
 // take s_ptr<swap_chain> from get_renderer
-gui_engine::gui_engine(utils::rendering_type type)
+gui_engine::gui_engine()
   : device_(utils::singleton<graphics::device>::get_single_ptr())
 {
   auto window = utils::singleton<graphics::window>::get_single_ptr();
   setup_specific_vulkan_objects();
-  renderer_up_ = gui::renderer::create(*window, *device_, type, false);
+  renderer_up_ = gui::renderer::create(*window, *device_, false);
 
   setup_imgui(*device_, window->get_glfw_window());
   upload_font();

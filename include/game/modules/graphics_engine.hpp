@@ -45,7 +45,7 @@ class graphics_engine_core
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type);
+    graphics_engine_core(const std::string& window_name);
     ~graphics_engine_core();
 
     void wait_idle();
@@ -102,11 +102,11 @@ class graphics_engine
 {
     using shading_system_map = std::unordered_map<uint32_t, std::variant<u_ptr<S>...>>;
   public:
-    graphics_engine(const std::string &application_name, utils::rendering_type rendering_type);
+    graphics_engine(const std::string &application_name);
     ~graphics_engine() { cleanup(); }
 
-    static u_ptr<graphics_engine<S...>> create(const std::string &application_name, utils::rendering_type rendering_type)
-    { return std::make_unique<graphics_engine<S...>>(application_name, rendering_type); }
+    static u_ptr<graphics_engine<S...>> create(const std::string &application_name)
+    { return std::make_unique<graphics_engine<S...>>(application_name); }
 
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
@@ -129,6 +129,7 @@ class graphics_engine
     utils::single_ptr<graphics::window> window_; // singleton
 
     utils::single_ptr<graphics_engine_core> core_;
+
     utils::rendering_type rendering_type_;
     static shading_system_map shading_systems_;
 };
@@ -139,13 +140,13 @@ class graphics_engine
 
 GRPH_ENGN_API typename graphics_engine<S...>::shading_system_map GRPH_ENGN_TYPE::shading_systems_;
 
-GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name, utils::rendering_type rendering_type)
- : core_(utils::singleton<graphics_engine_core>::build_instance(application_name, rendering_type)),
+GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name)
+ : core_(utils::singleton<graphics_engine_core>::build_instance(application_name)),
    window_(utils::singleton<graphics::window>::build_instance())
 {
   // construct all selected shading systems
   add_shading_system<S...>();
-  rendering_type_ = rendering_type;
+  rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
 }
 
 GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_info)

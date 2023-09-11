@@ -3,6 +3,7 @@
 #include <graphics/image_resource.hpp>
 #include <graphics/desc_set.hpp>
 #include <utils/vulkan_config.hpp>
+#include <utils/singleton.hpp>
 
 namespace hnll::gui {
 
@@ -12,18 +13,16 @@ float renderer::bottom_window_ratio_ = 0.25f;
 u_ptr<renderer> renderer::create(
   graphics::window& window,
   graphics::device& device,
-  utils::rendering_type type,
   bool recreate_from_scratch)
-{ return std::make_unique<renderer>(window, device, type, recreate_from_scratch); }
+{ return std::make_unique<renderer>(window, device, recreate_from_scratch); }
 
 renderer::renderer(
   graphics::window& window,
   graphics::device& device,
-  utils::rendering_type type,
   bool recreate_from_scratch) :
   hnll::graphics::renderer(window, device, recreate_from_scratch)
 {
-  rendering_type_ = type;
+  rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
   recreate_swap_chain();
 }
 
