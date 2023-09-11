@@ -53,8 +53,6 @@ class device
 // #endif
 
     explicit device(utils::rendering_type type);
-    // for singleton
-    device(){}
     ~device();
 
     // Not copyable or movable

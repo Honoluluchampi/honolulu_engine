@@ -94,14 +94,14 @@ std::vector<uint32_t> mass_spring_cloth::construct_index_buffer()
 
 void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<uint32_t>&& indices)
 {
-  auto& device = (utils::singleton<graphics::device>::get_instance());
+  auto device = (utils::singleton<graphics::device>::get_single_ptr());
 
   // for central difference approximation
   int frame_in_flight = 3;
   vertex_buffers_.resize(frame_in_flight);
 
   // pool
-  desc_pool_ = graphics::desc_pool::builder(device)
+  desc_pool_ = graphics::desc_pool::builder(*device)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_in_flight)
     .build();
 
@@ -113,7 +113,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
   desc_sets_ = graphics::desc_sets::create(
-    device,
+    *device,
     desc_pool_,
     {set_info},
     frame_in_flight);
@@ -122,7 +122,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
   for (int i = 0; i < frame_in_flight; i++) {
     // vertex buffer
     auto vertex_buffer = graphics::buffer::create_with_staging(
-      device,
+      *device,
       sizeof(vertex) * mesh.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -139,7 +139,7 @@ void mass_spring_cloth::setup_desc_sets(std::vector<vertex>&& mesh, std::vector<
 
   // index buffer
   index_buffer_ = graphics::buffer::create_with_staging(
-    device,
+    *device,
     sizeof(uint32_t) * indices.size(),
     1,
     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -154,8 +154,8 @@ VkDescriptorSetLayout mass_spring_cloth::get_vk_desc_layout()
 void mass_spring_cloth::set_desc_layout()
 {
   if (desc_layout_ == nullptr) {
-    auto& device = (utils::singleton<graphics::device>::get_instance());
-    desc_layout_ = graphics::desc_layout::builder(device)
+    auto device = (utils::singleton<graphics::device>::get_single_ptr());
+    desc_layout_ = graphics::desc_layout::builder(*device)
       // vertex buffer
       .add_binding(
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,

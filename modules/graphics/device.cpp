@@ -414,8 +414,8 @@ VkCommandPool device::create_command_pool(command_type type)
 }
 
 void device::create_surface() {
-  auto& window = utils::singleton<graphics::window>::get_instance();
-  window.create_window_surface(instance_, &surface_);
+  auto window = utils::singleton<graphics::window>::get_single_ptr();
+  window->create_window_surface(instance_, &surface_);
 }
 
 // ensure there is at least one available physical device and

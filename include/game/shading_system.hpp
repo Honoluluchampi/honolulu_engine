@@ -25,8 +25,8 @@ class shading_system {
     using target_map = std::unordered_map<rc_id, RC&>;
 
   public:
-    explicit shading_system() : device_(utils::singleton<graphics::device>::get_instance()) {}
-    ~shading_system() { vkDestroyPipelineLayout(device_.get_device(), pipeline_layout_, nullptr); }
+    explicit shading_system() : device_(utils::singleton<graphics::device>::get_single_ptr()) {}
+    ~shading_system() { vkDestroyPipelineLayout(device_->get_device(), pipeline_layout_, nullptr); }
 
     static u_ptr<Derived> create() { return std::make_unique<Derived>(); }
 
@@ -90,7 +90,7 @@ class shading_system {
     void bind_push(const PushConstants& push, VkShaderStageFlags stages);
 
     // vulkan objects
-    graphics::device &device_;
+    utils::single_ptr<graphics::device> device_;
     u_ptr<graphics::pipeline> pipeline_;
     VkPipelineLayout pipeline_layout_;
     u_ptr<graphics::desc_layout> desc_layout_;
@@ -127,7 +127,7 @@ SS_API template<typename PushConstant> VkPipelineLayout SS_TYPE::create_pipeline
 
   // create
   VkPipelineLayout ret;
-  if (vkCreatePipelineLayout(device_.get_device(), &create_info, nullptr, &ret) != VK_SUCCESS)
+  if (vkCreatePipelineLayout(device_->get_device(), &create_info, nullptr, &ret) != VK_SUCCESS)
     throw std::runtime_error("failed to create pipeline layout.");
 
   return ret;
@@ -147,7 +147,7 @@ SS_API VkPipelineLayout SS_TYPE::create_pipeline_layout_without_push(
 
   // create
   VkPipelineLayout ret;
-  if (vkCreatePipelineLayout(device_.get_device(), &create_info, nullptr, &ret) != VK_SUCCESS)
+  if (vkCreatePipelineLayout(device_->get_device(), &create_info, nullptr, &ret) != VK_SUCCESS)
     throw std::runtime_error("failed to create pipeline layout.");
 
   return ret;
@@ -173,7 +173,7 @@ SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
   config_info.render_pass     = render_pass;
 
   return graphics::pipeline::create(
-    device_,
+    *device_,
     shader_paths,
     shader_stage_flags,
     config_info
@@ -199,7 +199,7 @@ SS_API u_ptr<graphics::pipeline> SS_TYPE::create_pipeline(
   config_info.render_pass     = render_pass;
 
   return graphics::pipeline::create(
-    device_,
+    *device_,
     shader_paths,
     shader_stage_flags,
     config_info

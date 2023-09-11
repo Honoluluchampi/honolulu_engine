@@ -2,6 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/singleton.hpp>
 
 // lib
 #include <GLFW/glfw3.h>
@@ -32,6 +33,7 @@ namespace gui {
 
 namespace utils {
   enum class rendering_type;
+  template <typename T> struct single_ptr;
 }
 
 namespace game {
@@ -83,7 +85,7 @@ class gui_engine {
       fprintf(stderr, "Glfw Error %d: %s\n", error, description);
     }
 
-    graphics::device& device_;
+    utils::single_ptr<graphics::device> device_;
     VkDescriptorPool descriptor_pool_;
     VkQueue graphics_queue_;
 

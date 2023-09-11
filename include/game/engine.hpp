@@ -68,9 +68,9 @@ class engine_core
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
     static std::vector<std::function<void(GLFWwindow *, int, int, int)>> glfw_mouse_button_callbacks_;
 
-    graphics_engine_core& graphics_engine_core_;
+    utils::single_ptr<graphics_engine_core> graphics_engine_core_;
 #ifndef IMGUI_DISABLED
-    gui_engine& gui_engine_;
+    utils::single_ptr<gui_engine> gui_engine_;
 #endif
     std::chrono::system_clock::time_point old_time_;
     static utils::viewer_info viewer_info_;
@@ -105,14 +105,14 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     inline void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
-    inline float get_max_fps() const { return core_.get_max_fps(); }
+    inline float get_max_fps() { return core_->get_max_fps(); }
 
   protected:
     // cleaning method of each specific application
     void cleanup() {}
-    inline void set_max_fps(float max_fps) { core_.set_max_fps(max_fps); }
+    inline void set_max_fps(float max_fps) { core_->set_max_fps(max_fps); }
 
-    engine_core& core_;
+    utils::single_ptr<engine_core> core_;
 
   private:
     void update();
@@ -122,7 +122,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void update_this(const float& dt) {}
 
     // common part
-    graphics_engine_core& graphics_engine_core_;
+    utils::single_ptr<graphics_engine_core> graphics_engine_core_;
 
     float dt_;
 
@@ -141,15 +141,15 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 ENGN_API typename ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
 ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::vulkan_config vk_config)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, vk_config.rendering)),
-   core_(utils::singleton<engine_core>::get_instance(application_name, vk_config.rendering))
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name, vk_config.rendering)),
+   core_(utils::singleton<engine_core>::build_instance(application_name, vk_config.rendering))
 {
   graphics_engine_ = graphics_engine<S...>::create(application_name, vk_config.rendering);
 
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {
     compute_engine_ = compute_engine<C...>::create(
-      graphics_engine_core_.get_compute_semaphore_r()
+      graphics_engine_core_->get_compute_semaphore_r()
     );
   }
 }
@@ -164,20 +164,20 @@ ENGN_API ENGN_TYPE::~engine_base()
 
 ENGN_API void ENGN_TYPE::run()
 {
-  while (!graphics_engine_core_.should_close_window()) {
+  while (!graphics_engine_core_->should_close_window()) {
     glfwPollEvents();
     update();
     render();
   }
-  graphics_engine_core_.wait_idle();
+  graphics_engine_core_->wait_idle();
 }
 
 ENGN_API void ENGN_TYPE::update()
 {
   // calc delta time
-  dt_ = core_.get_dt();
+  dt_ = core_->get_dt();
 
-  core_.begin_imgui();
+  core_->begin_imgui();
 
   static_cast<Derived*>(this)->update_this(dt_);
   if constexpr (sizeof...(A) >= 1) {
@@ -191,9 +191,9 @@ ENGN_API void ENGN_TYPE::render()
   if constexpr (sizeof...(C) >= 1)
     compute_engine_->render(dt_);
 
-  utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
+  utils::game_frame_info game_frame_info = { 0, core_->get_viewer_info() };
   graphics_engine_->render(game_frame_info);
-  core_.render_gui();
+  core_->render_gui();
 }
 
 ENGN_API template <Actor Act> void ENGN_TYPE::add_update_target(u_ptr<Act>&& target)

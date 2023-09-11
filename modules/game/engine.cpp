@@ -13,14 +13,14 @@ std::vector<std::function<void(GLFWwindow *, int, int, int)>> engine_core::glfw_
 utils::viewer_info engine_core::viewer_info_;
 
 engine_core::engine_core(const std::string &application_name, utils::rendering_type rendering_type)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name, rendering_type)),
 #ifndef IMGUI_DISABLED
-   gui_engine_(utils::singleton<gui_engine>::get_instance(rendering_type))
+   gui_engine_(utils::singleton<gui_engine>::build_instance(rendering_type))
 #endif
 {
 #ifndef IMGUI_DISABLED
   // configure dependency between renderers
-  graphics_engine_core_.get_renderer_r().set_next_renderer(gui_engine_.renderer_p());
+  graphics_engine_core_->get_renderer_r().set_next_renderer(gui_engine_->renderer_p());
 #endif
 
   old_time_ = std::chrono::system_clock::now();;
@@ -31,12 +31,12 @@ engine_core::engine_core(const std::string &application_name, utils::rendering_t
 engine_core::~engine_core() { cleanup(); }
 
 void engine_core::begin_imgui()
-{ gui_engine_.begin_imgui(); }
+{ gui_engine_->begin_imgui(); }
 
 void engine_core::render_gui()
 {
   if (!hnll::graphics::renderer::swap_chain_recreated_) {
-    gui_engine_.render();
+    gui_engine_->render();
   }
 }
 
@@ -56,7 +56,7 @@ float engine_core::get_dt()
 // glfw
 void engine_core::set_glfw_callbacks()
 {
-  auto* window = graphics_engine_core_.get_glfw_window();
+  auto* window = graphics_engine_core_->get_glfw_window();
   glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
 //  glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
 }
@@ -64,7 +64,7 @@ void engine_core::set_glfw_callbacks()
 vec2 engine_core::get_cursor_pos() const
 {
   double xpos, ypos;
-  glfwGetCursorPos(graphics_engine_core_.get_glfw_window(), &xpos, &ypos);
+  glfwGetCursorPos(graphics_engine_core_->get_glfw_window(), &xpos, &ypos);
   auto left = gui_engine::get_left_window_ratio();
   auto window_size = graphics_engine_core::get_window_size();
 
