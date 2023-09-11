@@ -2,7 +2,6 @@
 #include <game/engine.hpp>
 #include <game/modules/gui_engine.hpp>
 #include <graphics/renderer.hpp>
-#include <utils/rendering_utils.hpp>
 
 // std
 #include <iostream>

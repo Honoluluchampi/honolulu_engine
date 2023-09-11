@@ -6,7 +6,7 @@
 #include <graphics/renderer.hpp>
 #include <graphics/swap_chain.hpp>
 #include <graphics/desc_set.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 
 namespace hnll::game {

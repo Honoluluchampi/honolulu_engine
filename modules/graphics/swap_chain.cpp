@@ -1,7 +1,7 @@
 //hnll
 #include <graphics/swap_chain.hpp>
 #include <graphics/timeline_semaphore.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 
 // std
 #include <array>

@@ -2,7 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>

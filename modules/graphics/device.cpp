@@ -1,6 +1,6 @@
 // hnll
 #include <graphics/device.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 #include <extensions/extensions_vk.hpp>
 

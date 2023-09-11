@@ -10,7 +10,6 @@
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
 #include <audio/convolver.hpp>
-#include <utils/rendering_utils.hpp>
 #include <utils/utils.hpp>
 
 #include "impulse_response.hpp"

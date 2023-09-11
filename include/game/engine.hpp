@@ -5,7 +5,7 @@
 #include <game/modules/compute_engine.hpp>
 #include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 
 // std
@@ -19,8 +19,8 @@
 #define SELECT_SHADING_SYSTEM(...) using selected_shading_systems = game::shading_system_list<__VA_ARGS__>
 #define SELECT_ACTOR(...)          using selected_actors          = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
-#define ENGINE_CTOR(name) name(const std::string& app_name = "app", hnll::utils::rendering_type type = hnll::utils::rendering_type::VERTEX_SHADING) \
-                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
+#define ENGINE_CTOR(name) name(const std::string& app_name = "app") \
+                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name)
 
 namespace hnll {
 
@@ -90,7 +90,7 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 {
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
-    engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
+    engine_base(const std::string& application_name = "honolulu engine", utils::vulkan_config vk_config = {});
     virtual ~engine_base();
 
     void run();
@@ -140,11 +140,11 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 // static members
 ENGN_API typename ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
-ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
-   core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type))
+ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::vulkan_config vk_config)
+ : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, vk_config.rendering)),
+   core_(utils::singleton<engine_core>::get_instance(application_name, vk_config.rendering))
 {
-  graphics_engine_ = graphics_engine<S...>::create(application_name, rendering_type);
+  graphics_engine_ = graphics_engine<S...>::create(application_name, vk_config.rendering);
 
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {

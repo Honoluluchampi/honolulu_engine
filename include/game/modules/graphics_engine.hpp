@@ -7,6 +7,7 @@
 #include <utils/common_alias.hpp>
 #include <utils/singleton.hpp>
 #include <utils/frame_info.hpp>
+#include <utils/vulkan_config.hpp>
 
 #ifndef IMGUI_DISABLED
 #include <game/modules/gui_engine.hpp>
@@ -32,10 +33,6 @@ namespace graphics {
   class desc_sets;
   class buffer;
   class timeline_semaphore;
-}
-
-namespace utils {
-  enum class rendering_type;
 }
 
 namespace game {

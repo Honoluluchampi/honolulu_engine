@@ -10,15 +10,6 @@
 
 namespace hnll::utils {
 
-constexpr int FRAMES_IN_FLIGHT = 2;
-
-enum class rendering_type
-{
-  VERTEX_SHADING,
-  RAY_TRACING,
-  MESH_SHADING
-};
-
 // rendering order matters for alpha blending
 // solid object should be drawn first, then transparent object should be drawn after that
 enum class shading_type : uint32_t

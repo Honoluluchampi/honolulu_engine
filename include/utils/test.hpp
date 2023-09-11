@@ -4,7 +4,7 @@
 #include <graphics/window.hpp>
 #include <graphics/device.hpp>
 #include <utils/singleton.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 
 // lib
 #include <gtest/gtest.h>
