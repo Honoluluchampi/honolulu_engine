@@ -4,9 +4,29 @@
 
 namespace hnll::physics {
 
+struct particle_init
+{
+  double inv_mass = 1.f;
+  double damping  = 0.95f;
+  double radius   = 1.f;
+  vec3d pos   = { 0.f, 0.f, 0.f };
+  vec3d vel   = { 0.f, 0.f, 0.f };
+  vec3d force = { 0.f, 0.f, 0.f };
+};
+
 class particle
 {
   public:
+    explicit particle(const particle_init &init)
+    {
+      inv_mass_ = init.inv_mass;
+      damping_  = init.damping;
+      radius_   = init.radius;
+      pos_      = init.pos;
+      vel_      = init.vel;
+      force_    = init.force;
+    }
+
     void update(double dt)
     {
       // update linear position
@@ -21,15 +41,19 @@ class particle
       force_ = { 0.f, 0.f, 0.f };
     }
 
+    // getter
+    vec3d get_pos() const { return pos_; }
+
     // setter
     void add_force(const vec3d& force) { force_ += force; }
 
   private:
-    double inv_mass_; // 1 / mass
-    double damping_;
-    vec3d pos_;
-    vec3d vel_;
-    vec3d force_; // zeroed in each frame update
+    double inv_mass_ = 1.f; // 1 / mass
+    double damping_ = 0.95f;
+    double radius_ = 1.f;
+    vec3d pos_ = { 0.f, 0.f, 0.f };
+    vec3d vel_ = { 0.f, 0.f, 0.f };
+    vec3d force_ = { 0.f, 0.f, 0.f }; // zeroed in each frame update
     static const vec3d const_acc_; // mainly for gravity
 };
 

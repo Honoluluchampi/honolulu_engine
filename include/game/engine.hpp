@@ -95,11 +95,15 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 
     void run();
 
+    // memorize returned id for deleting the target
+    // TODO : automatically add render target to the graphics engine if it has
     template <Actor Act>
-    static void add_update_target(u_ptr<Act>&& target);
+    static actor_id add_update_target(u_ptr<Act>&& target);
 
     template <Actor Act, typename... Args>
-    static void add_update_target_directly(Args&&... args);
+    static actor_id add_update_target_directly(Args&&... args);
+
+    static void remove_update_target(actor_id id);
 
     template <ShadingSystem SS, RenderableComponent RC>
     inline void add_render_target(RC& rc)
@@ -198,14 +202,22 @@ ENGN_API void ENGN_TYPE::render()
   core_->render_gui();
 }
 
-ENGN_API template <Actor Act> void ENGN_TYPE::add_update_target(u_ptr<Act>&& target)
-{ update_target_actors_[target->get_actor_id()] = std::move(target); }
-
-ENGN_API template <Actor Act, typename... Args> void ENGN_TYPE::add_update_target_directly(Args &&...args)
+ENGN_API template <Actor Act> actor_id ENGN_TYPE::add_update_target(u_ptr<Act>&& target)
 {
-  auto target = Act::create(std::forward<Args>(args)...);
-  update_target_actors_[target->get_actor_id()] = std::move(target);
+  auto id = target->get_actor_id();
+  update_target_actors_[id] = std::move(target);
+  return id;
 }
 
+ENGN_API template <Actor Act, typename... Args> actor_id ENGN_TYPE::add_update_target_directly(Args &&...args)
+{
+  auto target = Act::create(std::forward<Args>(args)...);
+  auto id = target->get_actor_id();
+  update_target_actors_[id] = std::move(target);
+  return id;
+}
+
+ENGN_API void ENGN_TYPE::remove_update_target(actor_id id)
+{ update_target_actors_.erase(id); }
 
 }} // namespace hnll::game
