@@ -64,7 +64,7 @@ device::device()
   rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
 
   // temp
-  enable_validation_layers = false;
+  enable_validation_layers = utils::singleton<utils::vulkan_config>::get_single_ptr()->enable_validation_layers;
   create_instance();
   // window surface should be created right after the instance creation,
   // because it can actually influence the physical device selection

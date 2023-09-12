@@ -113,9 +113,10 @@ DEFINE_PURE_ACTOR(object)
 DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 {
   public:
-    model_ray_tracer(graphics::device& device)
-      : game::ray_tracing_system<model_ray_tracer, utils::shading_type::RAY1>(device),
-        gui_engine_(utils::singleton<game::gui_engine>::get_instance()){}
+    model_ray_tracer()
+      : game::ray_tracing_system<model_ray_tracer, utils::shading_type::RAY1>(),
+        device_(utils::singleton<graphics::device>::get_single_ptr()),
+        gui_engine_(utils::singleton<game::gui_engine>::get_single_ptr()){}
     ~model_ray_tracer()
     { audio::engine::kill_hae_context(); }
 
@@ -125,7 +126,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
       set_current_command(frame_info.command_buffer);
 
-      gui_engine_.transition_vp_image_layout(
+      gui_engine_->transition_vp_image_layout(
         frame_info.frame_index,
         VK_IMAGE_LAYOUT_GENERAL,
         frame_info.command_buffer
@@ -143,7 +144,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
         1
       );
 
-      gui_engine_.transition_vp_image_layout(
+      gui_engine_->transition_vp_image_layout(
         frame_info.frame_index,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         frame_info.command_buffer
@@ -180,7 +181,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // copy the result
       auto index = frame_info.frame_index;
       ir_images_[index]->transition_image_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, current_command_);
-      device_.copy_image_to_buffer(
+      device_->copy_image_to_buffer(
         ir_images_[index]->get_image(),
         ir_back_buffers_[index]->get_buffer(),
         IR_X,
@@ -196,7 +197,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     {
       // acceleration structure ----------------------------------------------------------
       // create blas
-      mesh_model_ = object::create(device_, MODEL_NAME);
+      mesh_model_ = object::create(*device_, MODEL_NAME);
 
       setup_tlas();
 
@@ -204,17 +205,17 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       // setup layout
       // tlas and vertex, index buffer layout
       // get desc image layout by gui::renderer
-      auto scene_desc_layout = graphics::desc_layout::builder(device_)
+      auto scene_desc_layout = graphics::desc_layout::builder(*device_)
         .add_binding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // tlas
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // vertex buffer
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) // index buffer
         .build();
-      auto vp_desc_layout = gui_engine_.get_vp_image_desc_layout();
-      vp_desc_sets_ = gui_engine_.get_vp_image_desc_sets();
+      auto vp_desc_layout = gui_engine_->get_vp_image_desc_layout();
+      vp_desc_sets_ = gui_engine_->get_vp_image_desc_sets();
 
       // setup desc sets
       // also assign ir image desc set
-      scene_desc_pool_ = graphics::desc_pool::builder(device_)
+      scene_desc_pool_ = graphics::desc_pool::builder(*device_)
         .set_max_sets(10)
         .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
         .add_pool_size(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100)
@@ -243,7 +244,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
         // actual image
         ir_images_[i] = graphics::image_resource::create(
-          device_,
+          *device_,
           { IR_X, IR_Y, 1},
           VK_FORMAT_R32G32B32A32_SFLOAT,
           VK_IMAGE_TILING_OPTIMAL,
@@ -255,7 +256,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
         // copy acoustic ray tracing result to this buffer
         ir_back_buffers_[i] = graphics::buffer::create(
-          device_,
+          *device_,
           IR_X * IR_Y * sizeof(vec4),
           1,
           VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -266,7 +267,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       }
 
       // ir image desc
-      auto ir_desc_layout = graphics::desc_layout::builder(device_)
+      auto ir_desc_layout = graphics::desc_layout::builder(*device_)
         .add_binding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR) // vertex buffer
         .build();
 
@@ -282,7 +283,6 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
       // shader binding table ------------------------------------------------------
       sbt_ = graphics::shader_binding_table::create(
-        device_,
         {
           scene_desc_layout->get_descriptor_set_layout(),
           vp_desc_layout,
@@ -303,7 +303,6 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       );
 
       sound_sbt_ = graphics::shader_binding_table::create(
-        device_,
         {
           scene_desc_layout->get_descriptor_set_layout(),
           vp_desc_layout,
@@ -350,7 +349,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
       // create instances buffer
       instances_buffer_ = std::make_unique<graphics::buffer>(
-        device_,
+        *device_,
         buffer_size,
         1,
         usage,
@@ -363,7 +362,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
 
       // compute required memory size
       VkDeviceOrHostAddressConstKHR instance_data_device_address {
-        .deviceAddress = graphics::get_device_address(device_.get_device(), instances_buffer_->get_buffer())
+        .deviceAddress = graphics::get_device_address(device_->get_device(), instances_buffer_->get_buffer())
       };
 
       VkAccelerationStructureGeometryKHR as_geometry {};
@@ -387,7 +386,7 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
       tlas_input.geometry = { as_geometry };
       tlas_input.build_range_info = { as_build_range_info };
 
-      tlas_ = graphics::acceleration_structure::create(device_);
+      tlas_ = graphics::acceleration_structure::create(*device_);
       tlas_->build_as(
         VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
         tlas_input,
@@ -482,7 +481,8 @@ DEFINE_RAY_TRACER(model_ray_tracer, utils::shading_type::RAY1)
     }
 
   private:
-    game::gui_engine& gui_engine_;
+    utils::single_ptr<graphics::device> device_;
+    utils::single_ptr<game::gui_engine> gui_engine_;
     u_ptr<object> mesh_model_;
     u_ptr<graphics::acceleration_structure> tlas_;
     u_ptr<graphics::buffer> instances_buffer_;
@@ -510,14 +510,18 @@ SELECT_ACTOR(object, game::default_camera);
 
 DEFINE_ENGINE(audio_ray_tracing) {
   public:
-    ENGINE_CTOR(audio_ray_tracing)
+    explicit ENGINE_CTOR(audio_ray_tracing)
     { add_update_target_directly<game::default_camera>(); }
 };
 
 } // namespace hnll
 
 int main() {
-  hnll::audio_ray_tracing app {"acoustic_ray_tracing", hnll::utils::rendering_type::RAY_TRACING};
+  hnll::utils::vulkan_config config = {
+    .rendering = hnll::utils::rendering_type::RAY_TRACING,
+    .present = hnll::utils::present_mode::V_SYNC
+  };
+  hnll::audio_ray_tracing app {"acoustic_ray_tracing", config};
 
   try { app.run(); }
   catch (const std::exception& e) {

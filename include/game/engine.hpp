@@ -19,8 +19,8 @@
 #define SELECT_SHADING_SYSTEM(...) using selected_shading_systems = game::shading_system_list<__VA_ARGS__>
 #define SELECT_ACTOR(...)          using selected_actors          = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
-#define ENGINE_CTOR(name) name(const std::string& app_name = "app") \
-                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name)
+#define ENGINE_CTOR(name) name(const std::string& app_name = "app", const hnll::utils::vulkan_config& config = {}) \
+                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, config)
 
 namespace hnll {
 

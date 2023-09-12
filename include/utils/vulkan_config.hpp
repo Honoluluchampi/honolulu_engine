@@ -21,6 +21,7 @@ struct vulkan_config
 {
   rendering_type rendering = rendering_type::VERTEX_SHADING;
   present_mode present = present_mode::V_SYNC;
+  bool enable_validation_layers = true; // for debug build
 };
 
 }
