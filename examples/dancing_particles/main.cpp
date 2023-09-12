@@ -10,7 +10,11 @@ namespace hnll {
 DEFINE_PURE_ACTOR(mesh_particle)
 {
   public:
-    mesh_particle() { sphere_mesh_ = game::static_mesh_comp::create(*this, "smooth_sphere.obj"); }
+    mesh_particle()
+    {
+      sphere_mesh_ = game::static_mesh_comp::create(*this, "smooth_sphere.obj");
+      set_translation({0.f, -1.f, 0.f});
+    }
 
     game::static_mesh_comp& get_mesh_comp() { return *sphere_mesh_; }
 
@@ -35,6 +39,14 @@ DEFINE_ENGINE(dancing_particles)
       add_render_target<game::static_mesh_shading_system>(particle_->get_mesh_comp());
     }
 
+    void update_this(const float& dt)
+    {
+      ImGui::Begin("stats");
+      ImGui::Text("fps : %d", int(1.f / dt));
+      ImGui::End();
+    }
+
+  private:
     u_ptr<mesh_particle> particle_;
 };
 
