@@ -24,7 +24,7 @@ template <typename Derived>
 class compute_shader
   {
     public:
-      explicit compute_shader() : device_(utils::singleton<graphics::device>::get_instance())
+      explicit compute_shader() : device_(utils::singleton<graphics::device>::get_single_ptr())
       { static_cast<Derived*>(this)->setup(); }
       static u_ptr<Derived> create() { return std::make_unique<Derived>(); }
 
@@ -60,7 +60,7 @@ class compute_shader
       // default objects
       u_ptr<graphics::compute_pipeline> pipeline_;
 
-      graphics::device& device_;
+      utils::single_ptr<graphics::device> device_;
       u_ptr<graphics::desc_layout> desc_layout_ = nullptr;
   };
 
@@ -70,5 +70,5 @@ class compute_shader
 CS_API template <typename PushConstant> u_ptr<graphics::compute_pipeline> CS_TYPE::create_pipeline(
   const std::string &filepath,
   const std::vector<VkDescriptorSetLayout> &desc_set_layouts)
-{ return graphics::compute_pipeline::create(device_, desc_set_layouts, filepath, sizeof(PushConstant)); }
+{ return graphics::compute_pipeline::create(*device_, desc_set_layouts, filepath, sizeof(PushConstant)); }
 }} // namespace hnll::game

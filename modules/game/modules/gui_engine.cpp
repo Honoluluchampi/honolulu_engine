@@ -4,8 +4,7 @@
 #include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/desc_set.hpp>
-#include <utils/rendering_utils.hpp>
-#include <utils/singleton.hpp>
+#include <utils/vulkan_config.hpp>
 
 // embedded fonts
 // download by yourself
@@ -16,18 +15,18 @@ namespace hnll::game {
 
 ImVec2 gui_engine::viewport_size_;
 
-u_ptr<gui_engine> create(utils::rendering_type type)
-{ return std::make_unique<gui_engine>(type); }
+u_ptr<gui_engine> create()
+{ return std::make_unique<gui_engine>(); }
 
 // take s_ptr<swap_chain> from get_renderer
-gui_engine::gui_engine(utils::rendering_type type)
-  : device_(utils::singleton<graphics::device>::get_instance())
+gui_engine::gui_engine()
+  : device_(utils::singleton<graphics::device>::get_single_ptr())
 {
-  auto& window = utils::singleton<graphics::window>::get_instance();
+  auto window = utils::singleton<graphics::window>::get_single_ptr();
   setup_specific_vulkan_objects();
-  renderer_up_ = gui::renderer::create(window, device_, type, false);
+  renderer_up_ = gui::renderer::create(*window, *device_, false);
 
-  setup_imgui(device_, window.get_glfw_window());
+  setup_imgui(*device_, window->get_glfw_window());
   upload_font();
 
   setup_viewport();
@@ -77,7 +76,7 @@ void gui_engine::setup_viewport()
   sampler_info.minLod = 0.0f;
   sampler_info.maxLod = 0.0f;
 
-  if (vkCreateSampler(device_.get_device(), &sampler_info, nullptr, &viewport_sampler_) != VK_SUCCESS)
+  if (vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &viewport_sampler_) != VK_SUCCESS)
     throw std::runtime_error("failed to create sampler!");
 
   // set up viewport images
@@ -107,7 +106,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   ImGui_ImplVulkan_InitInfo info = {};
   info.Instance = device.get_instance();
   info.PhysicalDevice = device.get_physical_device();
-  info.Device = device_.get_device();
+  info.Device = device_->get_device();
   // graphicsFamily's indice is needed (see device::create_command_pool)
   // but these are never used...
   info.QueueFamily = device.get_queue_family_indices().graphics_family_.value();
@@ -116,8 +115,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   info.PipelineCache = VK_NULL_HANDLE;
   info.DescriptorPool = descriptor_pool_;
   info.Allocator = nullptr;
-  // TODO : make minImageCount consistent with hve
-  info.MinImageCount = 2;
+  info.MinImageCount = utils::FRAMES_IN_FLIGHT;
   info.ImageCount = renderer_up_->get_swap_chain_r().get_image_count();
   info.CheckVkResultFn = nullptr;
 
@@ -127,8 +125,8 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
 
 void gui_engine::cleanup_vulkan()
 {
-  vkDestroySampler(device_.get_device(), viewport_sampler_, nullptr);
-  vkDestroyDescriptorPool(device_.get_device(), descriptor_pool_, nullptr);
+  vkDestroySampler(device_->get_device(), viewport_sampler_, nullptr);
+  vkDestroyDescriptorPool(device_->get_device(), descriptor_pool_, nullptr);
 }
 
 void gui_engine::begin_imgui()
@@ -218,7 +216,7 @@ void gui_engine::create_descriptor_pool()
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
-  if (vkCreateDescriptorPool(device_.get_device(), &pool_info, nullptr, &descriptor_pool_) != VK_SUCCESS)
+  if (vkCreateDescriptorPool(device_->get_device(), &pool_info, nullptr, &descriptor_pool_) != VK_SUCCESS)
     throw std::runtime_error("failed to create descriptor pool.");
 }
 
@@ -235,7 +233,7 @@ void gui_engine::upload_font()
   // Use any command queue
   VkCommandPool command_pool = renderer_up_->get_command_pool();
   VkCommandBuffer command_buffer = renderer_up_->get_current_command_buffer();
-  if (vkResetCommandPool(device_.get_device(), command_pool, 0) != VK_SUCCESS)
+  if (vkResetCommandPool(device_->get_device(), command_pool, 0) != VK_SUCCESS)
     throw std::runtime_error("failed to reset command pool");
 
   VkCommandBufferBeginInfo begin_info = {};
@@ -256,7 +254,7 @@ void gui_engine::upload_font()
   if (vkQueueSubmit(graphics_queue_, 1, &end_info, VK_NULL_HANDLE) != VK_SUCCESS)
     throw std::runtime_error("failed to submit font upload queue.");
 
-  vkDeviceWaitIdle(device_.get_device());
+  vkDeviceWaitIdle(device_->get_device());
   ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 

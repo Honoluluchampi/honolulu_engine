@@ -2,6 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/singleton.hpp>
 
 // lib
 #include <GLFW/glfw3.h>
@@ -32,15 +33,16 @@ namespace gui {
 
 namespace utils {
   enum class rendering_type;
+  template <typename T> struct single_ptr;
 }
 
 namespace game {
 class gui_engine {
   public:
-    gui_engine(utils::rendering_type type);
+    gui_engine();
     ~gui_engine();
 
-    static u_ptr<gui_engine> create(utils::rendering_type type);
+    static u_ptr<gui_engine> create();
 
     gui_engine(const gui_engine &) = delete;
     gui_engine &operator=(const gui_engine &) = delete;
@@ -83,7 +85,7 @@ class gui_engine {
       fprintf(stderr, "Glfw Error %d: %s\n", error, description);
     }
 
-    graphics::device& device_;
+    utils::single_ptr<graphics::device> device_;
     VkDescriptorPool descriptor_pool_;
     VkQueue graphics_queue_;
 
@@ -96,7 +98,6 @@ class gui_engine {
     std::vector<VkDescriptorSet> viewport_image_ids_;
 
     // TODO : make it consistent with hve
-    int min_image_count_ = 2;
     bool swap_chain_rebuild_ = false;
     bool is_gui_engine_running_ = false;
 

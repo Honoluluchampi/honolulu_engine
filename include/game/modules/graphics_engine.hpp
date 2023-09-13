@@ -7,6 +7,7 @@
 #include <utils/common_alias.hpp>
 #include <utils/singleton.hpp>
 #include <utils/frame_info.hpp>
+#include <utils/vulkan_config.hpp>
 
 #ifndef IMGUI_DISABLED
 #include <game/modules/gui_engine.hpp>
@@ -34,10 +35,6 @@ namespace graphics {
   class timeline_semaphore;
 }
 
-namespace utils {
-  enum class rendering_type;
-}
-
 namespace game {
 
 // should be wrapped by utils::singleton
@@ -48,7 +45,7 @@ class graphics_engine_core
     static constexpr int HEIGHT = 820;
     static constexpr float MAX_FRAME_TIME = 0.05;
 
-    graphics_engine_core(const std::string& window_name, utils::rendering_type rendering_type);
+    graphics_engine_core(const std::string& window_name);
     ~graphics_engine_core();
 
     void wait_idle();
@@ -86,8 +83,8 @@ class graphics_engine_core
     void cleanup();
 
     // construct as singleton in impl
-    graphics::window& window_;
-    graphics::device& device_;
+    utils::single_ptr<graphics::window> window_;
+    utils::single_ptr<graphics::device> device_;
 
     static u_ptr<graphics::renderer> renderer_;
 
@@ -105,11 +102,11 @@ class graphics_engine
 {
     using shading_system_map = std::unordered_map<uint32_t, std::variant<u_ptr<S>...>>;
   public:
-    graphics_engine(const std::string &application_name, utils::rendering_type rendering_type);
+    graphics_engine(const std::string &application_name);
     ~graphics_engine() { cleanup(); }
 
-    static u_ptr<graphics_engine<S...>> create(const std::string &application_name, utils::rendering_type rendering_type)
-    { return std::make_unique<graphics_engine<S...>>(application_name, rendering_type); }
+    static u_ptr<graphics_engine<S...>> create(const std::string &application_name)
+    { return std::make_unique<graphics_engine<S...>>(application_name); }
 
     graphics_engine(const graphics_engine &) = delete;
     graphics_engine &operator= (const graphics_engine &) = delete;
@@ -129,9 +126,10 @@ class graphics_engine
   private:
     void cleanup();
 
-    graphics::window& window_; // singleton
+    utils::single_ptr<graphics::window> window_; // singleton
 
-    graphics_engine_core& core_;
+    utils::single_ptr<graphics_engine_core> core_;
+
     utils::rendering_type rendering_type_;
     static shading_system_map shading_systems_;
 };
@@ -142,19 +140,19 @@ class graphics_engine
 
 GRPH_ENGN_API typename graphics_engine<S...>::shading_system_map GRPH_ENGN_TYPE::shading_systems_;
 
-GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name, utils::rendering_type rendering_type)
- : core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
-   window_(utils::singleton<graphics::window>::get_instance())
+GRPH_ENGN_API GRPH_ENGN_TYPE::graphics_engine(const std::string &application_name)
+ : core_(utils::singleton<graphics_engine_core>::build_instance(application_name)),
+   window_(utils::singleton<graphics::window>::build_instance())
 {
   // construct all selected shading systems
   add_shading_system<S...>();
-  rendering_type_ = rendering_type;
+  rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
 }
 
 GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_info)
 {
-  if (core_.begin_frame()) {
-    int frame_index = core_.get_frame_index();
+  if (core_->begin_frame()) {
+    int frame_index = core_->get_frame_index();
 
     // update
     utils::global_ubo ubo;
@@ -169,16 +167,16 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
     VkCommandBuffer command_buffer;
     // setup command buffer which associated with proper render pass
     // draw whole window
-    core_.record_default_render_command();
+    core_->record_default_render_command();
 
     // draw viewport
-    command_buffer = core_.begin_command_buffer(1);
-    auto window_extent = window_.get_extent();
+    command_buffer = core_->begin_command_buffer(1);
+    auto window_extent = window_->get_extent();
     auto left   = gui_engine::get_left_window_ratio();
     auto bottom = gui_engine::get_bottom_window_ratio();
 
     if (rendering_type_ != utils::rendering_type::RAY_TRACING)  {
-      core_.begin_render_pass(
+      core_->begin_render_pass(
         command_buffer,
         1,
         {static_cast<uint32_t>(window_extent.width * (1.f - left)),
@@ -187,22 +185,22 @@ GRPH_ENGN_API void GRPH_ENGN_TYPE::render(const utils::game_frame_info& frame_in
 
     // TODO : no gui version
 
-    utils::graphics_frame_info frame_info{
+    utils::graphics_frame_info graphics_frame_info{
       frame_index,
       command_buffer,
-      core_.update_ubo(ubo, frame_index),
+      core_->update_ubo(ubo, frame_index),
       {}
     };
 
     for (auto& system_kv : shading_systems_) {
-      std::visit([&frame_info](auto& system) { system->render(frame_info); }, system_kv.second);
+      std::visit([&graphics_frame_info](auto& system) { system->render(graphics_frame_info); }, system_kv.second);
     }
 
     if (rendering_type_ != utils::rendering_type::RAY_TRACING) {
-      core_.end_render_pass_and_frame(command_buffer);
+      core_->end_render_pass_and_frame(command_buffer);
     }
     else
-      core_.end_frame(command_buffer);
+      core_->end_frame(command_buffer);
   }
 }
 

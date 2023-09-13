@@ -23,21 +23,30 @@ class singleton_deleter
 };
 
 template <typename T>
+struct single_ptr
+{
+  single_ptr(T* p) { ptr = p; }
+  T* ptr;
+  T* operator->() const { return ptr; }
+  T& operator*() { return *ptr; }
+};
+
+template <typename T>
 class singleton
 {
   public:
     template <typename... Args>
-    static T& get_instance(Args&&... args)
+    static single_ptr<T> build_instance(Args&&... args)
     {
       std::call_once(init_flag_, create<Args...>, std::forward<Args>(args)...);
       assert(instance_);
-      return *instance_;
+      return single_ptr(instance_.get());
     }
 
-    static T& get_instance()
+    static single_ptr<T> get_single_ptr()
     {
-      assert(instance_ && "instance is not initialized");
-      return *instance_;
+      assert(instance_ && "instance is not built.");
+      return single_ptr(instance_.get());
     }
 
   private:

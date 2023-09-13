@@ -30,7 +30,7 @@ void static_meshlet_shading_system::setup()
   // task desc
   desc_set_layouts.emplace_back(desc_layout_->get_descriptor_set_layout());
   // meshlet
-  auto mesh_descs = graphics::static_meshlet::default_desc_layouts(device_);
+  auto mesh_descs = graphics::static_meshlet::default_desc_layouts(*device_);
 
   for (auto&& layout : mesh_descs) {
     desc_set_layouts.emplace_back(std::move(layout->get_descriptor_set_layout()));
@@ -59,7 +59,7 @@ void static_meshlet_shading_system::setup()
 void static_meshlet_shading_system::setup_task_desc()
 {
   // pool
-  task_desc_pool_ = graphics::desc_pool::builder(device_)
+  task_desc_pool_ = graphics::desc_pool::builder(*device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, utils::FRAMES_IN_FLIGHT)
     .build();
 
@@ -70,13 +70,13 @@ void static_meshlet_shading_system::setup_task_desc()
 
   graphics::desc_set_info set_info { bindings };
 
-  desc_layout_ = graphics::desc_layout::create_from_bindings(device_, bindings);
+  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, bindings);
 
   // buffer
   for (int i = 0; i < utils::FRAMES_IN_FLIGHT; i++) {
     // buffer has no actual data at this point
     auto new_buffer = graphics::buffer::create(
-      device_,
+      *device_,
       sizeof(utils::frustum_info),
       1,
       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,

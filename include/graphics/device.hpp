@@ -52,9 +52,7 @@ class device
     bool enable_validation_layers = true;
 // #endif
 
-    explicit device(utils::rendering_type type);
-    // for singleton
-    device(){}
+    explicit device();
     ~device();
 
     // Not copyable or movable

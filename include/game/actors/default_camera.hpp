@@ -10,9 +10,6 @@
 namespace hnll {
 namespace game {
 
-// forward declaration
-class graphics_engine_core;
-
 DEFINE_PURE_ACTOR(default_camera)
 {
   public:
@@ -40,7 +37,6 @@ DEFINE_PURE_ACTOR(default_camera)
     template<class V> void set_rotation(V&& vec) { transform_.rotation = std::forward<V>(vec); }
 
   private:
-    graphics_engine_core& graphics_engine_core_;
     u_ptr<viewer_comp>   viewer_comp_;
     u_ptr<key_move_comp> key_comp_;
 };

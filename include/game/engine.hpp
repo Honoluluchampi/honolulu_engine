@@ -5,7 +5,7 @@
 #include <game/modules/compute_engine.hpp>
 #include <graphics/graphics_model.hpp>
 #include <utils/common_alias.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 
 // std
@@ -19,8 +19,8 @@
 #define SELECT_SHADING_SYSTEM(...) using selected_shading_systems = game::shading_system_list<__VA_ARGS__>
 #define SELECT_ACTOR(...)          using selected_actors          = game::actor_list<__VA_ARGS__>
 #define SELECT_COMPUTE_SHADER(...) using selected_compute_shaders = game::compute_shader_list<__VA_ARGS__>
-#define ENGINE_CTOR(name) name(const std::string& app_name = "app", hnll::utils::rendering_type type = hnll::utils::rendering_type::VERTEX_SHADING) \
-                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, type)
+#define ENGINE_CTOR(name) name(const std::string& app_name = "app", const hnll::utils::vulkan_config& config = {}) \
+                          : game::engine_base<name, selected_shading_systems, selected_actors, selected_compute_shaders>(app_name, config)
 
 namespace hnll {
 
@@ -37,7 +37,7 @@ using graphics_model_map = std::unordered_map<std::string, u_ptr<M>>;
 class engine_core
 {
   public:
-    engine_core(const std::string &application_name, utils::rendering_type rendering_type);
+    engine_core(const std::string &application_name);
     ~engine_core();
 
     void render_gui();
@@ -68,9 +68,9 @@ class engine_core
     static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
     static std::vector<std::function<void(GLFWwindow *, int, int, int)>> glfw_mouse_button_callbacks_;
 
-    graphics_engine_core& graphics_engine_core_;
+    utils::single_ptr<graphics_engine_core> graphics_engine_core_;
 #ifndef IMGUI_DISABLED
-    gui_engine& gui_engine_;
+    utils::single_ptr<gui_engine> gui_engine_;
 #endif
     std::chrono::system_clock::time_point old_time_;
     static utils::viewer_info viewer_info_;
@@ -90,29 +90,26 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 {
     using actor_map = std::unordered_map<uint32_t, std::variant<u_ptr<A>...>>;
   public:
-    engine_base(const std::string& application_name = "honolulu engine", utils::rendering_type rendering_type = utils::rendering_type::VERTEX_SHADING);
+    engine_base(const std::string& application_name = "honolulu engine", utils::vulkan_config vk_config = {});
     virtual ~engine_base();
 
     void run();
 
+    // memorize returned id for deleting the target
+    // TODO : automatically add render target to the graphics engine if it has
     template <Actor Act>
-    static void add_update_target(u_ptr<Act>&& target);
+    static actor_id add_update_target(u_ptr<Act>&& target);
 
     template <Actor Act, typename... Args>
-    static void add_update_target_directly(Args&&... args);
+    static actor_id add_update_target_directly(Args&&... args);
+
+    static void remove_update_target(actor_id id);
 
     template <ShadingSystem SS, RenderableComponent RC>
     inline void add_render_target(RC& rc)
     { graphics_engine_->template add_render_target<SS>(rc); }
 
-    inline float get_max_fps() const { return core_.get_max_fps(); }
-
-  protected:
-    // cleaning method of each specific application
-    void cleanup() {}
-    inline void set_max_fps(float max_fps) { core_.set_max_fps(max_fps); }
-
-    engine_core& core_;
+    inline float get_max_fps() { return core_->get_max_fps(); }
 
   private:
     void update();
@@ -122,7 +119,8 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     void update_this(const float& dt) {}
 
     // common part
-    graphics_engine_core& graphics_engine_core_;
+    utils::single_ptr<utils::vulkan_config> vulkan_config_;
+    utils::single_ptr<graphics_engine_core> graphics_engine_core_;
 
     float dt_;
 
@@ -131,6 +129,13 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
     u_ptr<compute_engine<C...>> compute_engine_;
 
     static actor_map update_target_actors_;
+
+  protected:
+    // cleaning method of each specific application
+    void cleanup() {}
+    inline void set_max_fps(float max_fps) { core_->set_max_fps(max_fps); }
+
+    utils::single_ptr<engine_core> core_;
 };
 
 // impl
@@ -140,16 +145,17 @@ class engine_base<Derived, shading_system_list<S...>, actor_list<A...>, compute_
 // static members
 ENGN_API typename ENGN_TYPE::actor_map ENGN_TYPE::update_target_actors_;
 
-ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::rendering_type rendering_type)
- : graphics_engine_core_(utils::singleton<graphics_engine_core>::get_instance(application_name, rendering_type)),
-   core_(utils::singleton<engine_core>::get_instance(application_name, rendering_type))
+ENGN_API ENGN_TYPE::engine_base(const std::string &application_name, utils::vulkan_config vk_config)
+ : vulkan_config_(utils::singleton<utils::vulkan_config>::build_instance(vk_config)),
+   graphics_engine_core_(utils::singleton<graphics_engine_core>::build_instance(application_name)),
+   core_(utils::singleton<engine_core>::build_instance(application_name))
 {
-  graphics_engine_ = graphics_engine<S...>::create(application_name, rendering_type);
+  graphics_engine_ = graphics_engine<S...>::create(application_name);
 
   // only if any compute shader is defined
   if constexpr (sizeof...(C) >= 1) {
     compute_engine_ = compute_engine<C...>::create(
-      graphics_engine_core_.get_compute_semaphore_r()
+      graphics_engine_core_->get_compute_semaphore_r()
     );
   }
 }
@@ -164,20 +170,20 @@ ENGN_API ENGN_TYPE::~engine_base()
 
 ENGN_API void ENGN_TYPE::run()
 {
-  while (!graphics_engine_core_.should_close_window()) {
+  while (!graphics_engine_core_->should_close_window()) {
     glfwPollEvents();
     update();
     render();
   }
-  graphics_engine_core_.wait_idle();
+  graphics_engine_core_->wait_idle();
 }
 
 ENGN_API void ENGN_TYPE::update()
 {
   // calc delta time
-  dt_ = core_.get_dt();
+  dt_ = core_->get_dt();
 
-  core_.begin_imgui();
+  core_->begin_imgui();
 
   static_cast<Derived*>(this)->update_this(dt_);
   if constexpr (sizeof...(A) >= 1) {
@@ -191,19 +197,27 @@ ENGN_API void ENGN_TYPE::render()
   if constexpr (sizeof...(C) >= 1)
     compute_engine_->render(dt_);
 
-  utils::game_frame_info game_frame_info = { 0, core_.get_viewer_info() };
+  utils::game_frame_info game_frame_info = { 0, core_->get_viewer_info() };
   graphics_engine_->render(game_frame_info);
-  core_.render_gui();
+  core_->render_gui();
 }
 
-ENGN_API template <Actor Act> void ENGN_TYPE::add_update_target(u_ptr<Act>&& target)
-{ update_target_actors_[target->get_actor_id()] = std::move(target); }
+ENGN_API template <Actor Act> actor_id ENGN_TYPE::add_update_target(u_ptr<Act>&& target)
+{
+  auto id = target->get_actor_id();
+  update_target_actors_[id] = std::move(target);
+  return id;
+}
 
-ENGN_API template <Actor Act, typename... Args> void ENGN_TYPE::add_update_target_directly(Args &&...args)
+ENGN_API template <Actor Act, typename... Args> actor_id ENGN_TYPE::add_update_target_directly(Args &&...args)
 {
   auto target = Act::create(std::forward<Args>(args)...);
-  update_target_actors_[target->get_actor_id()] = std::move(target);
+  auto id = target->get_actor_id();
+  update_target_actors_[id] = std::move(target);
+  return id;
 }
 
+ENGN_API void ENGN_TYPE::remove_update_target(actor_id id)
+{ update_target_actors_.erase(id); }
 
 }} // namespace hnll::game

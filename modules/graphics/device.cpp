@@ -1,6 +1,6 @@
 // hnll
 #include <graphics/device.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 #include <extensions/extensions_vk.hpp>
 
@@ -59,10 +59,12 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-device::device(utils::rendering_type type) : rendering_type_(type)
+device::device()
 {
+  rendering_type_ = utils::singleton<utils::vulkan_config>::get_single_ptr()->rendering;
+
   // temp
-  enable_validation_layers = false;
+  enable_validation_layers = utils::singleton<utils::vulkan_config>::get_single_ptr()->enable_validation_layers;
   create_instance();
   // window surface should be created right after the instance creation,
   // because it can actually influence the physical device selection
@@ -414,8 +416,8 @@ VkCommandPool device::create_command_pool(command_type type)
 }
 
 void device::create_surface() {
-  auto& window = utils::singleton<graphics::window>::get_instance();
-  window.create_window_surface(instance_, &surface_);
+  auto window = utils::singleton<graphics::window>::get_single_ptr();
+  window->create_window_surface(instance_, &surface_);
 }
 
 // ensure there is at least one available physical device and

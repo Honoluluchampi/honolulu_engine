@@ -1,7 +1,7 @@
 // hnll
 #include <graphics/renderer.hpp>
 #include <graphics/swap_chain.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 
 namespace hnll::graphics {
 

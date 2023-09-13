@@ -15,7 +15,7 @@ template<typename Derived, utils::shading_type type>
 class ray_tracing_system
 {
   public:
-    static u_ptr<Derived> create(graphics::device &device) { return std::make_unique<Derived>(device); }
+    static u_ptr<Derived> create() { return std::make_unique<Derived>(); }
 
     virtual ~ray_tracing_system() = default;
 
@@ -28,14 +28,13 @@ class ray_tracing_system
     static void set_tlas_desc_set(VkDescriptorSet tlas_desc_set) { tlas_desc_set_ = tlas_desc_set; }
 
   private:
-    ray_tracing_system(graphics::device& device) : device_(device)
-    { shading_type_ = type; }
+    ray_tracing_system() { shading_type_ = type; }
 
     void create_sbt(
       const std::vector<VkDescriptorSetLayout> &vk_desc_layouts,
       const std::vector<std::string> &shader_paths,
       const std::vector<VkShaderStageFlagBits> &shader_stages)
-    { sbt_ = graphics::shader_binding_table::create(device_, vk_desc_layouts, shader_paths, shader_stages); }
+    { sbt_ = graphics::shader_binding_table::create(vk_desc_layouts, shader_paths, shader_stages); }
 
     void set_current_command(VkCommandBuffer command) { current_command_ = command; }
 
@@ -64,7 +63,6 @@ class ray_tracing_system
       );
     }
 
-    graphics::device& device_;
     u_ptr<graphics::shader_binding_table> sbt_;
     VkCommandBuffer current_command_ = nullptr;
     utils::shading_type shading_type_;

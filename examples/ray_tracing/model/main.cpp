@@ -7,7 +7,7 @@
 #include <graphics/shader_binding_table.hpp>
 #include <graphics/graphics_models/static_mesh.hpp>
 #include <graphics/utils.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/utils.hpp>
 
 // std
@@ -31,7 +31,6 @@ class hello_model {
     {
       window_ = std::make_unique<graphics::window>(960, 820, "hello ray tracing model");
       device_ = std::make_unique<graphics::device>(
-        *window_,
         utils::rendering_type::RAY_TRACING
       );
 

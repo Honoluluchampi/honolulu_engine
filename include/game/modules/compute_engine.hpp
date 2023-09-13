@@ -2,7 +2,7 @@
 
 // hnll
 #include <utils/common_alias.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 #include <game/concepts.hpp>
 #include <graphics/device.hpp>
@@ -43,7 +43,7 @@ class compute_engine
     template <ComputeShader Head, ComputeShader... Rest> void add_shader();
     void add_shader(){}
 
-    graphics::device& device_;
+    utils::single_ptr<graphics::device> device_;
 
     VkQueue compute_queue_;
 
@@ -65,19 +65,19 @@ template <> class compute_engine<> {};
 #define CMPT_ENGN_TYPE compute_engine<CS...>
 
 CMPT_ENGN_API CMPT_ENGN_TYPE::compute_engine(graphics::timeline_semaphore& semaphore)
- : device_(utils::singleton<graphics::device>::get_instance()), compute_semaphore_(semaphore)
+ : device_(utils::singleton<graphics::device>::get_single_ptr()), compute_semaphore_(semaphore)
 {
-  command_buffers_ = device_.create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
+  command_buffers_ = device_->create_command_buffers(utils::FRAMES_IN_FLIGHT, graphics::command_type::COMPUTE);
   semaphore_value_cache_.resize(command_buffers_.size(), 0);
 
-  compute_queue_ = device_.get_compute_queue();
+  compute_queue_ = device_->get_compute_queue();
 
   add_shader<CS...>();
 }
 
 CMPT_ENGN_API CMPT_ENGN_TYPE::~compute_engine()
 {
-  device_.free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE);
+  device_->free_command_buffers(std::move(command_buffers_), graphics::command_type::COMPUTE);
   shaders_.clear();
 }
 
@@ -110,7 +110,7 @@ CMPT_ENGN_API void CMPT_ENGN_TYPE::begin_frame()
   wait_info.pSemaphores = compute_semaphore_.get_vk_semaphore_r();
   wait_info.pValues = &semaphore_value_cache_[current_frame_index_];
 
-  vkWaitSemaphores(device_.get_device(), &wait_info, std::numeric_limits<uint64_t>::max());
+  vkWaitSemaphores(device_->get_device(), &wait_info, std::numeric_limits<uint64_t>::max());
 
   // begin command recording
   VkCommandBufferBeginInfo begin_info{};

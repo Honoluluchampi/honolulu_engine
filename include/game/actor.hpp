@@ -46,6 +46,7 @@ class actor_base
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
     void set_translation(const vec3& tra) { transform_.translation = tra; }
+    void set_scale(const vec3& sca) { transform_.scale = sca;}
 
   protected:
     // specialize this function for each actor class
@@ -82,6 +83,7 @@ class pure_actor_base
     void set_rotation(const vec3& rot) { transform_.rotation = rot; }
     void add_rotation(const vec3& rot) { transform_.rotation += rot; }
     void set_translation(const vec3& tra) { transform_.translation = tra; }
+    void set_scale(const vec3& sca) { transform_.scale = sca;}
 
   protected:
     // specialize this function for each actor class

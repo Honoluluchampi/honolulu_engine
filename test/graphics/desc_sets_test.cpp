@@ -2,7 +2,7 @@
 #include <graphics/window.hpp>
 #include <graphics/device.hpp>
 #include <graphics/desc_set.hpp>
-#include <utils/rendering_utils.hpp>
+#include <utils/vulkan_config.hpp>
 #include <utils/singleton.hpp>
 
 // lib
