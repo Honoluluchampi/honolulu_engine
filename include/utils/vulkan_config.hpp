@@ -2,7 +2,7 @@
 
 namespace hnll::utils {
 
-constexpr int FRAMES_IN_FLIGHT = 2;
+constexpr int FRAMES_IN_FLIGHT = 3;
 
 enum class rendering_type
 {

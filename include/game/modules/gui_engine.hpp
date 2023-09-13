@@ -98,7 +98,6 @@ class gui_engine {
     std::vector<VkDescriptorSet> viewport_image_ids_;
 
     // TODO : make it consistent with hve
-    int min_image_count_ = 2;
     bool swap_chain_rebuild_ = false;
     bool is_gui_engine_running_ = false;
 

@@ -30,7 +30,8 @@ class particle
     void update(double dt)
     {
       // update linear position
-      pos_ += dt * vel_;
+//      pos_ += dt * vel_;
+      pos_ += vec3d{ 0.f, 0.1f, 0.f };
       // update velocity
       vel_ += dt * (inv_mass_ * force_ + const_acc_);
       // full form of the dragging force

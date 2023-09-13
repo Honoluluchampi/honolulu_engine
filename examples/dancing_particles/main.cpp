@@ -16,9 +16,8 @@ DEFINE_PURE_ACTOR(mesh_particle)
     mesh_particle()
     {
       sphere_mesh_ = game::static_mesh_comp::create(*this, "smooth_sphere.obj");
-      set_translation({0.f, -1.f, 0.f});
 
-      physics::particle_init init {};
+      physics::particle_init init { .pos = { 0.f, -4.f, 0.f } };
       particle_ = std::make_unique<physics::particle>(init);
     }
 

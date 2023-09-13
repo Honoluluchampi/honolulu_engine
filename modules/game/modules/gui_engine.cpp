@@ -4,6 +4,7 @@
 #include <graphics/swap_chain.hpp>
 #include <graphics/image_resource.hpp>
 #include <graphics/desc_set.hpp>
+#include <utils/vulkan_config.hpp>
 
 // embedded fonts
 // download by yourself
@@ -114,8 +115,7 @@ void gui_engine::setup_imgui(hnll::graphics::device& device, GLFWwindow* window)
   info.PipelineCache = VK_NULL_HANDLE;
   info.DescriptorPool = descriptor_pool_;
   info.Allocator = nullptr;
-  // TODO : make minImageCount consistent with hve
-  info.MinImageCount = 2;
+  info.MinImageCount = utils::FRAMES_IN_FLIGHT;
   info.ImageCount = renderer_up_->get_swap_chain_r().get_image_count();
   info.CheckVkResultFn = nullptr;
 
