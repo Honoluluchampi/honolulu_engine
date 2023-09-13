@@ -10,6 +10,8 @@ namespace hnll {
 
 const vec3d physics::particle::const_acc_ = { 0.f, 1.f, 0.f };
 
+#define RADIUS 0.3f
+
 DEFINE_PURE_ACTOR(mesh_particle)
 {
   public:
@@ -17,7 +19,12 @@ DEFINE_PURE_ACTOR(mesh_particle)
     {
       sphere_mesh_ = game::static_mesh_comp::create(*this, "smooth_sphere.obj");
 
-      physics::particle_init init { .pos = { 0.f, -4.f, 0.f } };
+      physics::particle_init init {
+        .radius = RADIUS,
+        .pos = { 0.f, -2.f, 0.f }
+      };
+      set_scale({RADIUS, RADIUS, RADIUS});
+
       particle_ = std::make_unique<physics::particle>(init);
     }
 

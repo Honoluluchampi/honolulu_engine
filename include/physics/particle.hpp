@@ -7,7 +7,7 @@ namespace hnll::physics {
 struct particle_init
 {
   double inv_mass = 1.f;
-  double damping  = 0.95f;
+  double damping  = 1.f;
   double radius   = 1.f;
   vec3d pos   = { 0.f, 0.f, 0.f };
   vec3d vel   = { 0.f, 0.f, 0.f };
@@ -30,14 +30,24 @@ class particle
     void update(double dt)
     {
       // update linear position
-//      pos_ += dt * vel_;
-      pos_ += vec3d{ 0.f, 0.1f, 0.f };
+      pos_ += dt * vel_;
       // update velocity
       vel_ += dt * (inv_mass_ * force_ + const_acc_);
       // full form of the dragging force
-      vel_ *= std::pow(damping_, dt);
+//      vel_ *= std::pow(damping_, dt);
       // fast but not precise form
-      // vel_ *= damping_;
+       vel_ *= damping_;
+
+       // contact with the ground?
+       const double plane_y = 0.f;
+       if (pos_.y() - plane_y >= -radius_) {
+          pos_.y() = -radius_ + plane_y;
+          vel_ *= -0.6f;
+
+          // bind
+          if (1.f / inv_mass_ * vel_.norm() < const_acc_.norm() * dt)
+            vel_ = vec3d(0.f, 0.f, 0.f);
+       }
 
       force_ = { 0.f, 0.f, 0.f };
     }
@@ -50,7 +60,7 @@ class particle
 
   private:
     double inv_mass_ = 1.f; // 1 / mass
-    double damping_ = 0.95f;
+    double damping_ = 1.f;
     double radius_ = 1.f;
     vec3d pos_ = { 0.f, 0.f, 0.f };
     vec3d vel_ = { 0.f, 0.f, 0.f };
