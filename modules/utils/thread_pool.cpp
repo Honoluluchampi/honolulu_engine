@@ -50,4 +50,25 @@ void thread_pool::worker_thread(unsigned int queue_index)
   }
 }
 
+u_ptr<function_wrapper> thread_pool::try_pop_from_local_queue()
+{ return local_queue_ ? local_queue_->try_pop_front() : nullptr; }
+
+u_ptr<function_wrapper> thread_pool::try_pop_from_global_queue()
+{ return global_queue_.try_pop_front(); }
+
+u_ptr<function_wrapper> thread_pool::try_steal_task()
+{
+  u_ptr<function_wrapper> ret;
+
+  for (unsigned i = 0; i < local_queues_.size() - 1; i++) {
+    // not to look the first queue every time
+    auto idx = (queue_index_ + i + 1) % local_queues_.size();
+
+    if (ret = local_queues_[idx]->try_pop_back(); ret)
+      return std::move(ret);
+  }
+
+  return nullptr;
+}
+
 } // namespace hnll::utils

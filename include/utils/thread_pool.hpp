@@ -2,159 +2,14 @@
 
 // hnll
 #include <utils/common_alias.hpp>
+#include <utils/mt_queue.hpp>
 
 // std
-#include <condition_variable>
 #include <future>
-#include <queue>
 
 // mt is synonym for "multi thread"
 
 namespace hnll::utils {
-
-// ------------------------ thread-safe queue on a double-linked list
-
-template <typename T>
-class mt_deque
-{
-    // tail ----- next <- node -> prev ----- head
-    struct node
-    {
-      u_ptr<T> data = nullptr;
-      u_ptr<node> next = nullptr;
-      node* prev = nullptr;
-    };
-
-  public:
-    // assign a dummy node for fine-grained mutex lock
-    mt_deque() : head_(std::make_unique<node>()), tail_(head_.get())
-    {}
-
-    mt_deque(const mt_deque&) = delete;
-    mt_deque& operator=(const mt_deque&) = delete;
-
-    void push_tail(T&& new_value)
-    {
-      auto new_data = std::make_unique<T>(std::move(new_value));
-      auto new_node = std::make_unique<node>();
-      {
-        // assign data ptr
-        std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-        tail_->data = std::move(new_data);
-
-        // set next-prev ptr
-        tail_->next = std::move(new_node);
-        new_node->prev = tail_;
-
-        tail_ = new_node.get();
-      }
-      data_cond_.notify_one();
-    }
-
-    void push_front(T&& new_value)
-    {
-      // create new node with data
-      auto new_node = std::make_unique<node>();
-      new_node->data = std::make_unique<T>(std::move(new_value));
-
-      {
-        std::lock_guard<std::mutex> head_lock(head_mutex_);
-        head_->prev = new_node.get();
-        new_node->next = std::move(head_);
-        head_ = std::move(new_node);
-      }
-      data_cond_.notify_one();
-    }
-
-    // in all pop functions, get head mutex first then get tail mutex
-    // to avoid deadlock
-    u_ptr<T> wait_pop_front()
-    {
-      // wait for data and lock head
-      auto head_lock = wait_for_data();
-      // lock tail
-      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-
-      return pop_head();
-    }
-
-    u_ptr<T> wait_pop_back()
-    {
-      auto head_lock = wait_for_data();
-      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-      return pop_tail();
-    }
-
-    u_ptr<T> try_pop_front()
-    {
-      std::lock_guard<std::mutex> head_lock(head_mutex_);
-      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-
-      // if empty
-      if (head_.get() == tail_)
-        return nullptr;
-      return pop_head();
-    }
-
-    u_ptr<T> try_pop_back()
-    {
-      std::lock_guard<std::mutex> head_lock(head_mutex_);
-      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-
-      if (head_.get() == tail_)
-        return nullptr;
-      return pop_tail();
-    }
-
-    bool empty()
-    {
-      std::lock_guard<std::mutex> head_lock(head_mutex_);
-      return (head_.get() == get_tail());
-    }
-
-  private:
-    // get tail ptr thread-safely
-    node* get_tail()
-    {
-      std::lock_guard<std::mutex> tail_lock(tail_mutex_);
-      return tail_;
-    }
-
-    std::unique_lock<std::mutex> wait_for_data()
-    {
-      std::unique_lock<std::mutex> head_lock(head_mutex_);
-      // wait for at least one data is pushed to the queue
-      data_cond_.wait(head_lock, [&]{ return head_.get() != get_tail(); });
-      return std::move(head_lock);
-    }
-
-    // the 2 mutexes should be taken by a caller
-    u_ptr<T> pop_head()
-    {
-      auto old_head = std::move(head_);
-      head_ = std::move(old_head->next);
-      head_->prev = nullptr;
-
-      return std::move(old_head->data);
-    }
-
-    // the 2 mutexes should be taken by a caller
-    u_ptr<T> pop_tail()
-    {
-      tail_ = tail_->prev;
-      tail_->next.reset();
-      auto data = std::move(tail_->data);
-      tail_->data = nullptr;
-
-      return std::move(data);
-    }
-
-    std::mutex head_mutex_;
-    u_ptr<node> head_;
-    std::mutex tail_mutex_;
-    node* tail_;
-    std::condition_variable data_cond_;
-};
 
 // ----------------------------------------------------------------------------
 
@@ -224,54 +79,16 @@ class thread_pool
 
     // add task to the queue
     template <typename FunctionType>
-    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f)
-    {
-      // infer result type
-      typedef typename std::result_of<FunctionType()>::type result_type;
-      // init task with future
-      std::packaged_task<result_type()> task(std::move(f));
-      // preserve the future before moving this to the queue
-      auto task_future = task.get_future();
-
-      if (local_queue_) {
-        local_queue_->push_front(std::move(task));
-      }
-      // main thread doesn't have local queue
-      else {
-        global_queue_.push_tail(std::move(task));
-      }
-      return task_future;
-    }
+    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f);
 
     void run_pending_task();
 
   private:
     void worker_thread(unsigned queue_index);
 
-    u_ptr<function_wrapper> try_pop_from_local_queue()
-    {
-      return local_queue_ ? local_queue_->try_pop_front() : nullptr;
-    }
-
-    u_ptr<function_wrapper> try_pop_from_global_queue()
-    {
-      return global_queue_.try_pop_front();
-    }
-
-    u_ptr<function_wrapper> try_steal_task()
-    {
-      u_ptr<function_wrapper> ret;
-
-      for (unsigned i = 0; i < local_queues_.size() - 1; i++) {
-        // not to look the first queue every time
-        auto idx = (queue_index_ + i + 1) % local_queues_.size();
-
-        if (ret = local_queues_[idx]->try_pop_back(); ret)
-          return std::move(ret);
-      }
-
-      return nullptr;
-    }
+    u_ptr<function_wrapper> try_pop_from_local_queue();
+    u_ptr<function_wrapper> try_pop_from_global_queue();
+    u_ptr<function_wrapper> try_steal_task();
 
     std::atomic_bool done_;
 
@@ -285,5 +102,25 @@ class thread_pool
     static thread_local mt_deque<function_wrapper>* local_queue_;
     static thread_local unsigned queue_index_;
 };
+
+template <typename FunctionType>
+std::future<typename std::result_of<FunctionType()>::type> thread_pool::submit(FunctionType f)
+{
+  // infer result type
+  typedef typename std::result_of<FunctionType()>::type result_type;
+  // init task with future
+  std::packaged_task<result_type()> task(std::move(f));
+  // preserve the future before moving this to the queue
+  auto task_future = task.get_future();
+
+  if (local_queue_) {
+    local_queue_->push_front(std::move(task));
+  }
+    // main thread doesn't have local queue
+  else {
+    global_queue_.push_tail(std::move(task));
+  }
+  return task_future;
+}
 
 } // namespace hnll::utils
