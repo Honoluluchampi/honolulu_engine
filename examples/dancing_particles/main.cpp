@@ -69,7 +69,7 @@ DEFINE_ENGINE(dancing_particles)
         particle_.reset();
       }
       if (ImGui::Button("add x force")) {
-        particle_->add_force(vec3d{ -10.f, 0.f, 0.f });
+        particle_->add_force(vec3d{ -100.f, 0.f, 0.f });
       }
       if (ImGui::Button("add y force")) {
         particle_->add_force(vec3d{ 0.f, -1000.f, 0.f });
