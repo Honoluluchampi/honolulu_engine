@@ -42,11 +42,11 @@ class particle
        const double plane_y = 0.f;
        if (pos_.y() - plane_y >= -radius_) {
           pos_.y() = -radius_ + plane_y;
-          vel_ *= -0.6f;
+          vel_.y() *= -0.4f;
 
           // bind
-          if (1.f / inv_mass_ * vel_.norm() < const_acc_.norm() * dt)
-            vel_ = vec3d(0.f, 0.f, 0.f);
+          if (std::abs(vel_.y()) <= 0.5)
+            vel_.y() = 0.f;
        }
 
       force_ = { 0.f, 0.f, 0.f };
