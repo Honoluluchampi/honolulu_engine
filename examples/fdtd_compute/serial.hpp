@@ -1,5 +1,9 @@
 #pragma once
 
+// hnll
+#include <utils/common_alias.hpp>
+
+// std
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,12 +18,22 @@ namespace hnll {
 class serial_com // serial communicator
 {
   public:
-    serial_com(char* dev_name, speed_t baud_rate = B9600) {
+    static u_ptr<serial_com> create(char* dev_name, speed_t baud_rate = B9600)
+    {
+      auto ret = std::make_unique<serial_com>();
+      if (ret->init(dev_name, baud_rate))
+        return ret;
+      else
+        return nullptr;
+    }
+
+    // returns false if failed
+    bool init(char* dev_name, speed_t baud_rate = B9600) {
       // open serial port
       fd_ = open(dev_name, O_RDWR);
       if (fd_ < 0) {
         perror("");
-        exit(1);
+        return false;
       }
 
       // setup termios
@@ -32,6 +46,8 @@ class serial_com // serial communicator
       cfsetospeed(&tio, baud_rate);
       // commit
       tcsetattr(fd_, TCSANOW, &tio);
+
+      return true;
     }
 
     // currently only int is implemented

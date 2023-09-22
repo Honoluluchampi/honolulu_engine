@@ -27,8 +27,10 @@ SELECT_ACTOR(fdtd2_field);
 DEFINE_ENGINE(fdtd_2d)
 {
   public:
-    fdtd_2d() : serial_(ARDUINO)
+    fdtd_2d()
     {
+      serial_ = serial_com::create(ARDUINO);
+
       set_max_fps(30.f);
       auto game_fps = get_max_fps();
 
@@ -78,11 +80,13 @@ DEFINE_ENGINE(fdtd_2d)
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
 
       // get input from arduino
-      auto data = serial_.read_data('/');
-      if (data[0] == '/' && data[4] == '/') {
-        int raw = atoi(data.substr(1, 3).c_str());
-        float a = 0.2f;
-        mouth_pressure_ = a * std::max((raw - 70) * 500, 0) + (1 - a) * mouth_pressure_;
+      if (serial_) {
+        auto data = serial_->read_data('/');
+        if (data[0] == '/' && data[4] == '/') {
+          int raw = atoi(data.substr(1, 3).c_str());
+          float a = 0.2f;
+          mouth_pressure_ = a * std::max((raw - 70) * 500, 0) + (1 - a) * mouth_pressure_;
+        }
       }
 
       field_->add_duration();
@@ -204,7 +208,7 @@ DEFINE_ENGINE(fdtd_2d)
     int queue_capacity_ = 3;
 
     // arduino
-    serial_com serial_;
+    u_ptr<serial_com> serial_;
 };
 
 bool fdtd_2d::button_pressed_ = false;
