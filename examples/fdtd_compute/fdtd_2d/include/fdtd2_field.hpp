@@ -5,6 +5,7 @@
 #include <graphics/image_resource.hpp>
 #include <game/actor.hpp>
 #include <utils/common_alias.hpp>
+#include <utils/singleton.hpp>
 
 // std
 #include <set>
@@ -72,7 +73,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
       std::set<int>&  active_ids,
       int x_min, int x_max, int y_min, int y_max);
 
-    graphics::device& device_;
+    utils::single_ptr<graphics::device> device_;
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
 

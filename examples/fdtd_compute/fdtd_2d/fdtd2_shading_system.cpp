@@ -22,7 +22,7 @@ fdtd2_shading_system::~fdtd2_shading_system()
 void fdtd2_shading_system::setup()
 {
   shading_type_ = utils::shading_type::MESH;
-  desc_layout_ = graphics::desc_layout::create_from_bindings(device_, fdtd2_field::field_bindings);
+  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd2_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_layout_ = create_pipeline_layout<fdtd2_frag_push>(

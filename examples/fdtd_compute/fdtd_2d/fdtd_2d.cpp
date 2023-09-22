@@ -16,7 +16,7 @@
 #define AUDIO_FRAME_RATE 128000
 #define DEFAULT_UPDATE_PER_FRAME 5130
 
-#define ARDUINO "/dev/ttyACM0"
+constexpr char* ARDUINO = "/dev/ttyACM0";
 
 namespace hnll {
 
@@ -27,7 +27,7 @@ SELECT_ACTOR(fdtd2_field);
 DEFINE_ENGINE(fdtd_2d)
 {
   public:
-    fdtd_2d()
+    ENGINE_CTOR(fdtd_2d)
     {
       serial_ = serial_com::create(ARDUINO);
 
@@ -143,7 +143,7 @@ DEFINE_ENGINE(fdtd_2d)
     void update_gui()
     {
       if (button_pressed_) {
-        cursor_pos_ = core_.get_cursor_pos();
+        cursor_pos_ = core_->get_cursor_pos();
         cursor_pos_.x() = std::max(0.f, cursor_pos_.x());
       }
     }
@@ -216,7 +216,11 @@ bool fdtd_2d::button_pressed_ = false;
 } // namespace hnll
 
 int main() {
-  hnll::fdtd_2d engine;
+
+  hnll::utils::vulkan_config config;
+  config.enable_validation_layers = false;
+
+  hnll::fdtd_2d engine("fdtd2d", config);
 
   try { engine.run(); }
   catch (const std::exception& e) {

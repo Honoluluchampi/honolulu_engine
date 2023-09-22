@@ -22,7 +22,7 @@ u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
 { return std::make_unique<fdtd2_field>(info); }
 
 fdtd2_field::fdtd2_field(const fdtd_info& info)
-  : device_(utils::singleton<graphics::device>::get_instance())
+  : device_(utils::singleton<graphics::device>::get_single_ptr())
 {
   static uint32_t id = 0;
   field_id_ = id++;
@@ -83,14 +83,14 @@ void fdtd2_field::set_pml(
 
 void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 {
-  desc_pool_ = graphics::desc_pool::builder(device_)
+  desc_pool_ = graphics::desc_pool::builder(*device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 12)
     .build();
 
   graphics::desc_set_info set_info { field_bindings };
 
   desc_sets_ = graphics::desc_sets::create(
-    device_,
+    *device_,
     desc_pool_,
     {set_info, set_info, set_info}, // field and sound buffer
     frame_count_);
@@ -147,7 +147,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   for (int i = 0; i < frame_count_; i++) {
 
     auto press_buffer = graphics::buffer::create_with_staging(
-      device_,
+      *device_,
       sizeof(vec4) * initial_grid.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -155,7 +155,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
       initial_grid.data());
 
     auto active_buffer = graphics::buffer::create(
-      device_,
+      *device_,
       sizeof(int) * active_ids_buffer.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -171,7 +171,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   initial_sound_buffer.resize(update_per_frame_, 0.f);
   for (int i = 0; i < frame_count_; i++) {
     auto sound_buffer = graphics::buffer::create(
-      device_,
+      *device_,
       sizeof(float) * initial_sound_buffer.size(),
       1,
       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -190,11 +190,11 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
 void fdtd2_field::setup_textures(const fdtd_info& info)
 {
   // create desc sets
-  desc_pool_ = graphics::desc_pool::builder(device_)
+  desc_pool_ = graphics::desc_pool::builder(*device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, frame_count_)
     .build();
 
-  auto desc_layout = graphics::desc_layout::builder(device_)
+  auto desc_layout = graphics::desc_layout::builder(*device_)
     .add_binding(
       VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
       VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -207,7 +207,7 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
     auto initial_buffer = graphics::buffer::create(
-      device_,
+      *device_,
       4 * initial_grid.size(),
       1,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -217,7 +217,7 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
     // prepare image resource
     VkExtent3D extent = { static_cast<uint32_t>(x_grid_ + 1), static_cast<uint32_t>(y_grid_ + 1), 1 };
     auto image = graphics::image_resource::create(
-      device_,
+      *device_,
       extent,
       VK_FORMAT_R32G32B32A32_SFLOAT,
       VK_IMAGE_TILING_OPTIMAL,

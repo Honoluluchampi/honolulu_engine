@@ -32,7 +32,6 @@ class serial_com // serial communicator
       // open serial port
       fd_ = open(dev_name, O_RDWR);
       if (fd_ < 0) {
-        perror("");
         return false;
       }
 
