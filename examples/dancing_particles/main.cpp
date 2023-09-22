@@ -8,7 +8,7 @@
 
 namespace hnll {
 
-const vec3d physics::particle::const_acc_ = { 0.f, 1.f, 0.f };
+const vec3d physics::particle::const_acc_ = { 0.f, 9.f, 0.f };
 
 #define RADIUS 0.3f
 
@@ -20,8 +20,10 @@ DEFINE_PURE_ACTOR(mesh_particle)
       sphere_mesh_ = game::static_mesh_comp::create(*this, "smooth_sphere.obj");
 
       physics::particle_init init {
+        .damping = 0.99f,
         .radius = RADIUS,
-        .pos = { 0.f, -2.f, 0.f }
+        .pos = { 0.f, -2.f, 0.f },
+        .vel = { 1.f, 0.f, -1.f },
       };
       set_scale({RADIUS, RADIUS, RADIUS});
 
@@ -35,6 +37,8 @@ DEFINE_PURE_ACTOR(mesh_particle)
     }
 
     game::static_mesh_comp& get_mesh_comp() { return *sphere_mesh_; }
+
+    void add_force(const vec3d& force) { particle_->add_force(force); }
 
   private:
     u_ptr<game::static_mesh_comp> sphere_mesh_;
@@ -54,23 +58,30 @@ DEFINE_ENGINE(dancing_particles)
     explicit ENGINE_CTOR(dancing_particles)
     {
       add_update_target_directly<game::default_camera>();
-      auto particle = std::make_unique<mesh_particle>();
-      add_render_target<game::static_mesh_shading_system>(particle->get_mesh_comp());
-      particle_id_ = add_update_target(std::move(particle));
+      particle_ = std::make_unique<mesh_particle>();
+      add_render_target<game::static_mesh_shading_system>(particle_->get_mesh_comp());
     }
 
     void update_this(const float& dt)
     {
       ImGui::Begin("stats");
       if (ImGui::Button("remove particle")) {
-        remove_update_target(particle_id_);
+        particle_.reset();
+      }
+      if (ImGui::Button("add x force")) {
+        particle_->add_force(vec3d{ -100.f, 0.f, 0.f });
+      }
+      if (ImGui::Button("add y force")) {
+        particle_->add_force(vec3d{ 0.f, -1000.f, 0.f });
       }
       ImGui::Text("fps : %d", int(1.f / dt));
       ImGui::End();
+
+      particle_->update(dt);
     }
 
   private:
-    game::actor_id particle_id_;
+    u_ptr<mesh_particle> particle_;
 };
 
 } // namespace hnll
