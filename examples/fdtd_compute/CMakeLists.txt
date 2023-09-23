@@ -6,6 +6,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "-g3 -O0")
 
+# 1D
+set(SOURCES
+        fdtd_1d/fdtd_1d.cpp)
+add_executable(fdtd_1d ${SOURCES})
+target_include_directories(fdtd_1d PUBLIC $ENV{HNLL_ENGN}/include)
+target_link_libraries(fdtd_1d PUBLIC hnll_engine)
+
 # 2D
 set(SOURCES
         fdtd_2d/fdtd_2d.cpp
