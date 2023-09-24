@@ -1,4 +1,6 @@
 // hnll
+#include <game/engine.hpp>
+#include <game/actor.hpp>
 #include <game/shading_system.hpp>
 
 namespace hnll {
@@ -32,11 +34,28 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
     {
 
     }
+
+    void render(const utils::graphics_frame_info&)
+    {}
+};
+
+SELECT_ACTOR(game::no_actor);
+SELECT_SHADING_SYSTEM(fdtd_1d_shader);
+SELECT_COMPUTE_SHADER();
+
+DEFINE_ENGINE(curved_fdtd_1d)
+{
+  public:
+    ENGINE_CTOR(curved_fdtd_1d)
+    {}
 };
 
 } // namespace hnll
 
 int main()
 {
+  hnll::curved_fdtd_1d app;
 
+  try { app.run(); }
+  catch(const std::exception& e) { std::cerr << e.what() << std::endl; }
 }

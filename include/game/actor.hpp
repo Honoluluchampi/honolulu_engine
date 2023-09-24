@@ -94,9 +94,7 @@ class pure_actor_base
     utils::transform transform_ {};
 };
 
-DEFINE_PURE_ACTOR(dummy_actor)
-{
-
-};
+DEFINE_PURE_ACTOR(dummy_actor) {};
+DEFINE_PURE_ACTOR(no_actor) {};
 
 } // namespace hnll::game
