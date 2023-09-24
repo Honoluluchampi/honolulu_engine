@@ -25,18 +25,37 @@ class fdtd_1d_field
 
 };
 
+
+#include "common.h"
+
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
 {
   public:
-    DEFAULT_SHADING_SYSTEM_CTOR(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>);
+    DEFAULT_SHADING_SYSTEM_CTOR_DECL(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
+    : field_(utils::singleton<fdtd_1d_field>::build_instance()){}
 
     void setup()
     {
-
+      pipeline_layout_ = create_pipeline_layout<fdtd_push>(
+        static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+        {}
+      );
+      pipeline_ = create_pipeline(
+        pipeline_layout_,
+        game::graphics_engine_core::get_default_render_pass(),
+        "/examples/fdtd_compute/fdtd_1d/shaders/spv/",
+        { "fdtd_1d.vert.spv", "fdtd_1d.frag.spv" },
+        { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
+        graphics::pipeline::default_pipeline_config_info()
+      );
     }
 
     void render(const utils::graphics_frame_info&)
-    {}
+    {
+    }
+
+  private:
+    utils::single_ptr<fdtd_1d_field> field_;
 };
 
 SELECT_ACTOR(game::no_actor);
