@@ -53,10 +53,7 @@ class fdtd_1d_field
       }
 
       // initial pressure
-      std::vector<float> pressures(grid_count_);
-      for (int i = 0; i < grid_count_; i++) {
-        pressures[i] = std::sin(0.03f * i);
-      }
+      std::vector<float> pressures(grid_count_, 0.f);
 
       auto y_offset_buffer = graphics::buffer::create(
         *device_,
@@ -76,24 +73,36 @@ class fdtd_1d_field
         pressures.data()
       );
 
+      // mapped memory
+      pressure_ = reinterpret_cast<float*>(pressure_buffer->get_mapped_memory());
+
       desc_sets_->set_buffer(0, 0, 0, std::move(y_offset_buffer));
       desc_sets_->set_buffer(1, 0, 0, std::move(pressure_buffer));
       desc_sets_->build();
+    }
+
+    void update()
+    {
+      static float phi = 0.f;
+      for (int i = 0; i < grid_count_; i++) {
+        pressure_[i] = std::sin(0.0003f * i + phi);
+      }
+      phi += 0.0003f * grid_count_;
+      phi = fmod(phi, 2.f * M_PI);
     }
 
     float get_length()     const { return length_; }
     int   get_grid_count() const { return grid_count_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
-    {
-      return desc_sets_->get_vk_desc_sets(0) ;
-    }
+    { return desc_sets_->get_vk_desc_sets(0); }
 
   private:
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
     float length_ = 0.5f;
+    float* pressure_; // directly mapped to the desc sets
     int grid_count_;
 };
 
@@ -145,6 +154,8 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       bind_desc_sets(field_->get_frame_desc_sets());
 
       vkCmdDraw(current_command_, 6, 1, 0, 0);
+
+      field_->update();
     }
 
   private:
@@ -158,8 +169,14 @@ SELECT_COMPUTE_SHADER();
 DEFINE_ENGINE(curved_fdtd_1d)
 {
   public:
-    ENGINE_CTOR(curved_fdtd_1d)
-    {}
+    ENGINE_CTOR(curved_fdtd_1d) {}
+
+    void update_this(float dt)
+    {
+      ImGui::Begin("stats");
+      ImGui::Text("fps : %f", 1.f / dt);
+      ImGui::End();
+    }
 };
 
 } // namespace hnll
