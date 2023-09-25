@@ -5,7 +5,7 @@
 
 namespace hnll {
 
-constexpr float DX  = 0.01;
+constexpr float DX  = 0.003;
 constexpr float DT  = 0.01;
 constexpr float RHO = 0.01;
 constexpr float SOUND_SPEED = 340.f;
