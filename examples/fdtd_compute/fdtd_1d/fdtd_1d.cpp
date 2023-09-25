@@ -30,7 +30,7 @@ class fdtd_1d_field
     fdtd_1d_field() : device_(utils::singleton<graphics::device>::get_single_ptr())
     {
       // calc constants
-      x_grid_count_ = static_cast<uint32_t>(length_ / DX);
+      grid_count_ = static_cast<int>(length_ / DX);
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(*device_)
@@ -47,14 +47,14 @@ class fdtd_1d_field
       );
 
       // calc initial y offsets
-      std::vector<float> y_offsets(x_grid_count_);
-      for (int i = 0; i < x_grid_count_; i++) {
+      std::vector<float> y_offsets(grid_count_);
+      for (int i = 0; i < grid_count_; i++) {
         y_offsets[i] = calc_y(DX * i);
       }
 
-      auto y_offset_buffer = graphics::buffer::create_with_staging(
+      auto y_offset_buffer = graphics::buffer::create(
         *device_,
-        sizeof(float) * x_grid_count_,
+        sizeof(float) * grid_count_,
         1,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -65,11 +65,12 @@ class fdtd_1d_field
       desc_sets_->build();
     }
 
-    float get_length() const { return length_; }
+    float get_length()     const { return length_; }
+    int   get_grid_count() const { return grid_count_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
-      return desc_sets_->get_vk_desc_sets(0);
+      return { desc_sets_->get_vk_desc_sets(0)[0] };
     }
 
   private:
@@ -77,7 +78,7 @@ class fdtd_1d_field
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
     float length_ = 0.5f;
-    uint32_t x_grid_count_;
+    int grid_count_;
 };
 
 // push constant
@@ -120,6 +121,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
+      push.grid_count = field_->get_grid_count();
       bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
       // desc sets
