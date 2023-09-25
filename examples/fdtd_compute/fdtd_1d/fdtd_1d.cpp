@@ -17,6 +17,10 @@ struct fdtd_info {
   int update_per_frame;
 };
 
+std::vector<graphics::binding_info> desc_bindings = {
+  { VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
+};
+
 float calc_y(float x)
 { return 0.015f + 0.001f * std::exp(7.5f * x); }
 
@@ -33,12 +37,7 @@ class fdtd_1d_field
         .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10)
         .build();
 
-      graphics::binding_info y_offset_binding {
-        .shader_stages = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .desc_type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .name = "y offset binding",
-      };
-      graphics::desc_set_info set_info { { y_offset_binding } };
+      graphics::desc_set_info set_info { desc_bindings };
 
       desc_sets_ = graphics::desc_sets::create(
         *device_,
@@ -68,6 +67,11 @@ class fdtd_1d_field
 
     float get_length() const { return length_; }
 
+    std::vector<VkDescriptorSet> get_frame_desc_sets()
+    {
+      return desc_sets_->get_vk_desc_sets(0);
+    }
+
   private:
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
@@ -87,10 +91,14 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
 
     void setup()
     {
+      auto device = utils::singleton<graphics::device>::get_single_ptr();
+      desc_layout_ = graphics::desc_layout::create_from_bindings(*device, desc_bindings);
+
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-        {}
+        { desc_layout_->get_descriptor_set_layout() }
       );
+
       pipeline_ = create_pipeline(
         pipeline_layout_,
         game::graphics_engine_core::get_default_render_pass(),
@@ -106,13 +114,16 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       set_current_command_buffer(frame_info.command_buffer);
       bind_pipeline();
 
+      // push constants
       fdtd_push push;
       auto window_size = game::gui_engine::get_viewport_size();
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
-
       bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+      // desc sets
+      bind_desc_sets(field_->get_frame_desc_sets());
 
       vkCmdDraw(current_command_, 6, 1, 0, 0);
     }
