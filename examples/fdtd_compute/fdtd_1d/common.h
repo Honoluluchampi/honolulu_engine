@@ -1,4 +1,5 @@
 struct fdtd_push
 {
-  float length;
+  ivec2 window_size;
+  float len;
 };

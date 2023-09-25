@@ -25,7 +25,7 @@ class fdtd_1d_field
 
 };
 
-
+// push constant
 #include "common.h"
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -56,7 +56,9 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       bind_pipeline();
 
       fdtd_push push;
-      push.length = 0.5f;
+      auto window_size = game::gui_engine::get_viewport_size();
+      push.window_size = { window_size.x, window_size.y };
+      push.len = 0.5f;
 
       bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
