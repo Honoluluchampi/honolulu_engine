@@ -18,7 +18,7 @@ struct fdtd_info {
 };
 
 std::vector<graphics::binding_info> desc_bindings = {
-  { VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
+  { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
 float calc_y(float x)
@@ -42,7 +42,7 @@ class fdtd_1d_field
       desc_sets_ = graphics::desc_sets::create(
         *device_,
         desc_pool_,
-        { set_info },
+        { set_info, set_info }, // y offset, pressure
         1
       );
 
@@ -50,6 +50,12 @@ class fdtd_1d_field
       std::vector<float> y_offsets(grid_count_);
       for (int i = 0; i < grid_count_; i++) {
         y_offsets[i] = calc_y(DX * i);
+      }
+
+      // initial pressure
+      std::vector<float> pressures(grid_count_);
+      for (int i = 0; i < grid_count_; i++) {
+        pressures[i] = std::sin(0.03f * i);
       }
 
       auto y_offset_buffer = graphics::buffer::create(
@@ -61,7 +67,17 @@ class fdtd_1d_field
         y_offsets.data()
       );
 
+      auto pressure_buffer = graphics::buffer::create(
+        *device_,
+        sizeof(float) * grid_count_,
+        1,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        pressures.data()
+      );
+
       desc_sets_->set_buffer(0, 0, 0, std::move(y_offset_buffer));
+      desc_sets_->set_buffer(1, 0, 0, std::move(pressure_buffer));
       desc_sets_->build();
     }
 
@@ -70,7 +86,7 @@ class fdtd_1d_field
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
-      return { desc_sets_->get_vk_desc_sets(0)[0] };
+      return desc_sets_->get_vk_desc_sets(0) ;
     }
 
   private:
@@ -94,10 +110,11 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
     {
       auto device = utils::singleton<graphics::device>::get_single_ptr();
       desc_layout_ = graphics::desc_layout::create_from_bindings(*device, desc_bindings);
+      auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-        { desc_layout_->get_descriptor_set_layout() }
+        { vk_layout, vk_layout }
       );
 
       pipeline_ = create_pipeline(
