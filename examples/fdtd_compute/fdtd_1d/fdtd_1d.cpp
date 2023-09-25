@@ -50,8 +50,17 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       );
     }
 
-    void render(const utils::graphics_frame_info&)
+    void render(const utils::graphics_frame_info& frame_info)
     {
+      set_current_command_buffer(frame_info.command_buffer);
+      bind_pipeline();
+
+      fdtd_push push;
+      push.length = 0.5f;
+
+      bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+      vkCmdDraw(current_command_, 6, 1, 0, 0);
     }
 
   private:
