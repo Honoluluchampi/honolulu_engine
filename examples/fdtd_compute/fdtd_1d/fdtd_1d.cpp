@@ -5,10 +5,12 @@
 
 namespace hnll {
 
-constexpr float DX  = 0.003;
-constexpr float DT  = 0.01;
-constexpr float RHO = 0.01;
+constexpr float DX  = 3.83e-3;
+constexpr float DT  = 7.81e-6;
+constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
+constexpr float V_FAC = DT / (RHO * DX);
+constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_COUNT = 3;
 
 struct fdtd_info {
@@ -79,16 +81,25 @@ class fdtd_1d_field
       desc_sets_->set_buffer(0, 0, 0, std::move(y_offset_buffer));
       desc_sets_->set_buffer(1, 0, 0, std::move(pressure_buffer));
       desc_sets_->build();
+
+      // temp
+      velocity_.resize(grid_count_ + 1, 0.f);
     }
 
     void update()
     {
-      static float phi = 0.f;
-      for (int i = 0; i < grid_count_; i++) {
-        pressure_[i] = std::sin(0.0003f * i + phi);
+      // update velocity
+      velocity_[0] = 0.0007f * std::sin(40000.f * time_);
+      time_ += DT;
+
+      for (int i = 1; i < grid_count_; i++) {
+        velocity_[i] = velocity_[i] - V_FAC * (pressure_[i] - pressure_[i - 1]);
       }
-      phi += 0.0003f * grid_count_;
-      phi = fmod(phi, 2.f * M_PI);
+
+      // update pressure
+      for (int i = 0; i < grid_count_; i++) {
+        pressure_[i] = pressure_[i] - P_FAC * (velocity_[i + 1] - velocity_[i]);
+      }
     }
 
     float get_length()     const { return length_; }
@@ -103,7 +114,9 @@ class fdtd_1d_field
     utils::single_ptr<graphics::device> device_;
     float length_ = 0.5f;
     float* pressure_; // directly mapped to the desc sets
+    std::vector<float> velocity_;
     int grid_count_;
+    float time_ = 0.f;
 };
 
 // push constant
