@@ -7,6 +7,7 @@
 layout (location = 0) out vec4 out_color;
 
 layout (push_constant) uniform Push { fdtd_push push; };
+layout (std430, set = 0, binding = 0) readonly buffer Yoffset { float y_offset[]; };
 
 float max_length = 0.6f; // meter
 float mergin = 0.05f;
@@ -14,7 +15,7 @@ float dx_ = 0.001;
 
 float calc_y(float x)
 {
-  return 0.015 + 0.01 * sin(100.f * x);
+  return 0.015 + 0.001 * exp(7.5f * x);
 }
 
 void main()
