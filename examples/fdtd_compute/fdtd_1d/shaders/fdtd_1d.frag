@@ -15,6 +15,9 @@ float max_length = 0.6f; // meter
 float mergin = 0.05f;
 float edge_width = 0.004f;
 
+vec3 positive_color = vec3(1.f, 0.2f, 0.f);
+vec3 negative_color = vec3(0.f, 0.2f, 1.f);
+
 void main()
 {
   float len_to_pixel = push.window_size.x * (1.f - 2.f * mergin) / max_length;
@@ -34,6 +37,8 @@ void main()
   bool on_edge = x_inside_area && y_on_edge;
 
   float p = curr[x_id].p / 500.f;
-  out_color = vec4(vec3(1.f, 1.f, 1.f) * float(on_edge), 1.f);
-  out_color += vec4(p * float(inside_area), 0.f, -p * float(inside_area), 1.f);
+  out_color.w = 1.f;
+  out_color.xyz = float(on_edge) * vec3(1.f, 1.f, 1.f);
+  out_color.xyz += max(p, 0.f) * float(inside_area) * positive_color;
+  out_color.xyz += max(-p, 0.f) * float(inside_area) * negative_color;
 }
