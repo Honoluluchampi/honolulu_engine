@@ -17,16 +17,19 @@ void main()
 
   // update velocity
   if (1 <= id && id < push.whole_grid_count) {
-    curr[id].v = (prev[id].v - push.v_fac * (prev[id].p - prev[id - 1].p)) / (1 + prev[id].pml);
+    curr[id].v = (prev[id + 0].v - push.v_fac * (prev[id].p - prev[id - 1].p)) / (1 + prev[id + 0].pml);
   }
+
+  // compute the next velocity not to add memory barrier
+  float curr_v1 = (prev[id + 1].v - push.v_fac * (prev[id + 1].p - prev[id].p)) / (1 + prev[id + 1].pml);
 
   // update pressure
   if (id < push.whole_grid_count) {
-    curr[id].p = (prev[id].p - push.p_fac * (prev[id + 1].v - prev[id].v)) / (1 + prev[id].pml);
+    curr[id].p = (prev[id].p - push.p_fac * (curr_v1 - curr[id].v)) / (1 + prev[id].pml);
   }
 
   // exciter
   if (id == 0) {
-    curr[id].v = 0.007f * sin(40000.f * push.duration);
+    curr[id].v = 0.0007f * sin(40000.f * push.duration);
   }
 }

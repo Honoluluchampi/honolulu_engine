@@ -62,10 +62,10 @@ class fdtd_1d_field
       }
       // set pml
       for (int i = 0; i < PML_COUNT; i++) {
-        particles[whole_grid_count_ - 2 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
+        particles[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
       }
 
-      auto curr_buffer = graphics::buffer::create_with_staging(
+      auto curr_buffer = graphics::buffer::create(
         *device_,
         sizeof(particle) * particles.size(),
         1,
@@ -74,7 +74,7 @@ class fdtd_1d_field
         particles.data()
       );
 
-      auto prev_buffer = graphics::buffer::create_with_staging(
+      auto prev_buffer = graphics::buffer::create(
         *device_,
         sizeof(particle) * particles.size(),
         1,
@@ -84,8 +84,8 @@ class fdtd_1d_field
       );
 
       // mapped memory
-//      curr_ = reinterpret_cast<particle*>(curr_buffer->get_mapped_memory());
-//      prev_ = reinterpret_cast<particle*>(prev_buffer->get_mapped_memory());
+      buffer0_ = reinterpret_cast<particle*>(curr_buffer->get_mapped_memory());
+      buffer1_ = reinterpret_cast<particle*>(prev_buffer->get_mapped_memory());
 
       desc_sets_->set_buffer(0, 0, 0, std::move(curr_buffer));
       desc_sets_->set_buffer(1, 0, 0, std::move(prev_buffer));
@@ -94,19 +94,29 @@ class fdtd_1d_field
 
     void update()
     {
-//      // update velocity
-//      velocity_[0] = 0.0007f * std::sin(40000.f * duration_);
-//      duration_ += DT;
-//
-//      for (int i = 1; i < whole_grid_count_; i++) {
-//        velocity_[i] = (velocity_[i] - V_FAC * (pressure_[i] - pressure_[i - 1])) / (1 + pml_[i]);
+//      particle *curr, *prev;
+//      if (frame_index == 0) {
+//        curr = buffer0_;
+//        prev = buffer1_;
+//      }
+//      else {
+//        curr = buffer1_;
+//        prev = buffer0_;
 //      }
 //
-//      // update pressure
 //      for (int i = 0; i < whole_grid_count_; i++) {
-//        pressure_[i] = (pressure_[i] - P_FAC * (velocity_[i + 1] - velocity_[i])) / (1 + pml_[i]);
+//        if (i != 0) {
+//          curr[i].v = (prev[i + 0].v - V_FAC * (prev[i].p - prev[i - 1].p)) / (1 + prev[i + 0].pml);
+//        }
+//        float curr_v1 = (prev[i + 1].v - V_FAC * (prev[i + 1].p - prev[i].p)) / (1 + prev[i + 1].pml);
+//
+//        curr[i].p = (prev[i].p - P_FAC * (curr_v1 - curr[i].v)) / (1 + prev[i].pml);
 //      }
+//
+//      // exciter
+//      curr[0].v = 0.0007f * std::sin(40000.f * duration_);
 
+      duration_ += DT;
       frame_index = frame_index == FDTD_FRAME_COUNT - 1 ? 0 : frame_index + 1;
     }
 
@@ -130,8 +140,8 @@ class fdtd_1d_field
     utils::single_ptr<graphics::device> device_;
     float length_ = 0.5f;
 
-    particle* curr_;
-    particle* prev_;
+    particle* buffer0_;
+    particle* buffer1_;
 
     int main_grid_count_;
     int whole_grid_count_;
