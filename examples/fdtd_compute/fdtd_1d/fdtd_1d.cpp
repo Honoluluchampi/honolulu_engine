@@ -12,6 +12,7 @@ constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_COUNT = 3;
+constexpr uint32_t PML_COUNT = 6;
 
 struct fdtd_info {
   float x_len;
@@ -32,7 +33,8 @@ class fdtd_1d_field
     fdtd_1d_field() : device_(utils::singleton<graphics::device>::get_single_ptr())
     {
       // calc constants
-      grid_count_ = static_cast<int>(length_ / DX);
+      main_grid_count_ = static_cast<int>(length_ / DX);
+      whole_grid_count_ = PML_COUNT + main_grid_count_;
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(*device_)
@@ -49,17 +51,17 @@ class fdtd_1d_field
       );
 
       // calc initial y offsets
-      std::vector<float> y_offsets(grid_count_);
-      for (int i = 0; i < grid_count_; i++) {
+      std::vector<float> y_offsets(main_grid_count_);
+      for (int i = 0; i < main_grid_count_; i++) {
         y_offsets[i] = calc_y(DX * i);
       }
 
       // initial pressure
-      std::vector<float> pressures(grid_count_, 0.f);
+      std::vector<float> pressures(whole_grid_count_, 0.f);
 
       auto y_offset_buffer = graphics::buffer::create(
         *device_,
-        sizeof(float) * grid_count_,
+        sizeof(float) * y_offsets.size(),
         1,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -68,7 +70,7 @@ class fdtd_1d_field
 
       auto pressure_buffer = graphics::buffer::create(
         *device_,
-        sizeof(float) * grid_count_,
+        sizeof(float) * pressures.size(),
         1,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -83,7 +85,12 @@ class fdtd_1d_field
       desc_sets_->build();
 
       // temp
-      velocity_.resize(grid_count_ + 1, 0.f);
+      velocity_.resize(whole_grid_count_ + 1, 0.f);
+      pml_.resize(whole_grid_count_, 0.f);
+
+      for (int i = 0; i < PML_COUNT; i++) {
+        pml_[whole_grid_count_ - 1 - i] = float(PML_COUNT - i) / float(PML_COUNT);
+      }
     }
 
     void update()
@@ -92,18 +99,18 @@ class fdtd_1d_field
       velocity_[0] = 0.0007f * std::sin(40000.f * time_);
       time_ += DT;
 
-      for (int i = 1; i < grid_count_; i++) {
-        velocity_[i] = velocity_[i] - V_FAC * (pressure_[i] - pressure_[i - 1]);
+      for (int i = 1; i < whole_grid_count_; i++) {
+        velocity_[i] = (velocity_[i] - V_FAC * (pressure_[i] - pressure_[i - 1])) / (1 + pml_[i]);
       }
 
       // update pressure
-      for (int i = 0; i < grid_count_; i++) {
-        pressure_[i] = pressure_[i] - P_FAC * (velocity_[i + 1] - velocity_[i]);
+      for (int i = 0; i < whole_grid_count_; i++) {
+        pressure_[i] = (pressure_[i] - P_FAC * (velocity_[i + 1] - velocity_[i])) / (1 + pml_[i]);
       }
     }
 
     float get_length()     const { return length_; }
-    int   get_grid_count() const { return grid_count_; }
+    int   get_main_grid_count() const { return main_grid_count_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     { return desc_sets_->get_vk_desc_sets(0); }
@@ -113,9 +120,14 @@ class fdtd_1d_field
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
     float length_ = 0.5f;
+
+    // will be packed into vec3
     float* pressure_; // directly mapped to the desc sets
     std::vector<float> velocity_;
-    int grid_count_;
+    std::vector<float> pml_;
+
+    int main_grid_count_;
+    int whole_grid_count_;
     float time_ = 0.f;
 };
 
@@ -160,7 +172,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
-      push.grid_count = field_->get_grid_count();
+      push.grid_count = field_->get_main_grid_count();
       bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
       // desc sets
