@@ -20,11 +20,10 @@ void main()
     curr[id].v = (prev[id + 0].v - push.v_fac * (prev[id].p - prev[id - 1].p)) / (1 + prev[id + 0].pml);
   }
 
-  // compute the next velocity not to add memory barrier
-  float curr_v1 = (prev[id + 1].v - push.v_fac * (prev[id + 1].p - prev[id].p)) / (1 + prev[id + 1].pml);
-
   // update pressure
   if (id < push.whole_grid_count) {
+    // compute the next velocity not to add memory barrier
+    float curr_v1 = (prev[id + 1].v - push.v_fac * (prev[id + 1].p - prev[id].p)) / (1 + prev[id + 1].pml);
     curr[id].p = (prev[id].p - push.p_fac * (curr_v1 - curr[id].v)) / (1 + prev[id].pml);
   }
 

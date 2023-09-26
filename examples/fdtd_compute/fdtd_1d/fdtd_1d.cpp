@@ -94,28 +94,6 @@ class fdtd_1d_field
 
     void update()
     {
-//      particle *curr, *prev;
-//      if (frame_index == 0) {
-//        curr = buffer0_;
-//        prev = buffer1_;
-//      }
-//      else {
-//        curr = buffer1_;
-//        prev = buffer0_;
-//      }
-//
-//      for (int i = 0; i < whole_grid_count_; i++) {
-//        if (i != 0) {
-//          curr[i].v = (prev[i + 0].v - V_FAC * (prev[i].p - prev[i - 1].p)) / (1 + prev[i + 0].pml);
-//        }
-//        float curr_v1 = (prev[i + 1].v - V_FAC * (prev[i + 1].p - prev[i].p)) / (1 + prev[i + 1].pml);
-//
-//        curr[i].p = (prev[i].p - P_FAC * (curr_v1 - curr[i].v)) / (1 + prev[i].pml);
-//      }
-//
-//      // exciter
-//      curr[0].v = 0.0007f * std::sin(40000.f * duration_);
-
       duration_ += DT;
       frame_index = frame_index == FDTD_FRAME_COUNT - 1 ? 0 : frame_index + 1;
     }
