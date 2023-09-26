@@ -1,0 +1,32 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : require
+
+#include "../common.h"
+
+layout (local_size_x = fdtd1_local_size_x, local_size_y = fdtd1_local_size_y, local_size_z = fdtd1_local_size_z) in;
+
+// field
+layout (std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
+layout (std430, set = 1, binding = 0) buffer Prev { particle prev[]; };
+layout (push_constant) uniform Push { fdtd_push push; };
+
+void main()
+{
+  uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
+
+  // update velocity
+  if (1 <= id && id < push.whole_grid_count) {
+    curr[id].v = (prev[id].v - push.v_fac * (prev[id].p - prev[id - 1].p)) / (1 + prev[id].pml);
+  }
+
+  // update pressure
+  if (id < push.whole_grid_count) {
+    curr[id].p = (prev[id].p - push.p_fac * (prev[id + 1].v - prev[id].v)) / (1 + prev[id].pml);
+  }
+
+  // exciter
+  if (id == 0) {
+    curr[id].v = 0.007f * sin(40000.f * push.duration);
+  }
+}
