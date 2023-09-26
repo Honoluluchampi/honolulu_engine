@@ -11,24 +11,61 @@ layout (std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
 layout (std430, set = 1, binding = 0) buffer Prev { particle prev[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
+#define M_PI 3.14159265359
+
+float calc_v(uint id)
+{
+  float p0 = prev[id - 1].p;
+  float p1 = prev[id + 0].p;
+  float p_inter = (p0 + p1) / 2.f;
+  float p_term = p1 - p0;
+
+  float s0 = M_PI * pow(prev[id - 1].y_offset, 2.f);
+  float s1 = M_PI * pow(prev[id + 0].y_offset, 2.f);
+  float s_inter = (s0 + s1) / 2.f;
+  float s_term = p_inter / s_inter * (s1 - s0);
+
+  return (prev[id].v - push.v_fac * (p_term + s_term)) / (1.f + prev[id].pml);
+}
+
+float calc_p(uint id, float v1)
+{
+  float v0 = curr[id + 0].v;
+  float v_inter = (v0 + v1) / 2.f;
+  float v_term = v1 - v0;
+
+  float s0 = M_PI * pow(curr[id - 1].y_offset, 2.f);
+  float s1 = M_PI * pow(curr[id + 0].y_offset, 2.f);
+  float s2 = M_PI * pow(curr[id + 1].y_offset, 2.f);
+  float s_inter0 = (s0 + s1) / 2.f;
+  float s_inter1 = (s1 + s2) / 2.f;
+  float s_term = v_inter / s1 * (s_inter1 - s_inter0);
+
+  return (prev[id].p - push.p_fac * (v_term + s_term)) / (1.f + prev[id].pml);
+}
+
 void main()
 {
   uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
 
   // update velocity
   if (1 <= id && id < push.whole_grid_count) {
-    curr[id].v = (prev[id + 0].v - push.v_fac * (prev[id].p - prev[id - 1].p)) / (1 + prev[id + 0].pml);
+    curr[id].v = calc_v(id);
   }
 
   // update pressure
   if (id < push.whole_grid_count) {
     // compute the next velocity not to add memory barrier
-    float curr_v1 = (prev[id + 1].v - push.v_fac * (prev[id + 1].p - prev[id].p)) / (1 + prev[id + 1].pml);
-    curr[id].p = (prev[id].p - push.p_fac * (curr_v1 - curr[id].v)) / (1 + prev[id].pml);
+    float curr_v1 = calc_v(id + 1);
+    curr[id].p = calc_p(id, curr_v1);
+
+    if (id >= push.main_grid_count) {
+      curr[id].p = 0.f;
+    }
   }
 
   // exciter
   if (id == 0) {
-    curr[id].v = 0.0007f * sin(40000.f * push.duration);
+    curr[id].v = 0.0007f * sin(4000.f * push.duration);
   }
 }

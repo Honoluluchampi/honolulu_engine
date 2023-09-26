@@ -57,8 +57,11 @@ class fdtd_1d_field
       // initial pressure
       std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
       // calc initial y offsets
-      for (int i = 0; i < main_grid_count_; i++) {
-        particles[i].y_offset = calc_y(DX * i);
+      for (int i = 0; i < whole_grid_count_; i++) {
+//        if (i < main_grid_count_)
+          particles[i].y_offset = calc_y(DX * i);
+//        else
+//          particles[i].y_offset = 10.f;
       }
       // set pml
       for (int i = 0; i < PML_COUNT; i++) {
