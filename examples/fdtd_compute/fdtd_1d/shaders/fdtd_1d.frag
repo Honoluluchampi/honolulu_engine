@@ -33,7 +33,7 @@ void main()
   bool inside_area = x_inside_area && y_inside_area;
   bool on_edge = x_inside_area && y_on_edge;
 
-  float p = curr[x_id].p;
+  float p = curr[x_id].p / 500.f;
   out_color = vec4(vec3(1.f, 1.f, 1.f) * float(on_edge), 1.f);
   out_color += vec4(p * float(inside_area), 0.f, -p * float(inside_area), 1.f);
 }

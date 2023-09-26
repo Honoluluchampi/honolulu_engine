@@ -58,10 +58,7 @@ class fdtd_1d_field
       std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
       // calc initial y offsets
       for (int i = 0; i < whole_grid_count_; i++) {
-//        if (i < main_grid_count_)
-          particles[i].y_offset = calc_y(DX * i);
-//        else
-//          particles[i].y_offset = 10.f;
+        particles[i].y_offset = calc_y(DX * i);
       }
       // set pml
       for (int i = 0; i < PML_COUNT; i++) {
@@ -105,6 +102,7 @@ class fdtd_1d_field
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
+    float get_current_p() const { return buffer0_[0].p; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
@@ -249,21 +247,31 @@ SELECT_COMPUTE_SHADER(fdtd_1d_compute);
 DEFINE_ENGINE(curved_fdtd_1d)
 {
   public:
-    ENGINE_CTOR(curved_fdtd_1d) {}
+    explicit ENGINE_CTOR(curved_fdtd_1d), field_(utils::singleton<fdtd_1d_field>::build_instance())
+    {
+      set_max_fps(1000.f);
+    }
 
     void update_this(float dt)
     {
       ImGui::Begin("stats");
       ImGui::Text("fps : %f", 1.f / dt);
+      ImGui::Text("duration : %f", field_->get_duration());
+      ImGui::Text("p : %f", field_->get_current_p());
       ImGui::End();
     }
+
+  private:
+    utils::single_ptr<fdtd_1d_field> field_;
 };
 
 } // namespace hnll
 
 int main()
 {
-  hnll::curved_fdtd_1d app;
+  hnll::utils::vulkan_config config;
+  config.present = hnll::utils::present_mode::IMMEDIATE;
+  hnll::curved_fdtd_1d app("1d fdtd", config);
 
   try { app.run(); }
   catch(const std::exception& e) { std::cerr << e.what() << std::endl; }

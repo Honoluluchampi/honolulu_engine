@@ -44,6 +44,14 @@ float calc_p(uint id, float v1)
   return (prev[id].p - push.p_fac * (v_term + s_term)) / (1.f + prev[id].pml);
 }
 
+// exciter constants
+const float w = 0.012;
+const float h = 0.0006;
+const float k = 8000000;
+const float rho = 1.1;
+const float dp_max = k * h;
+const float c_area = w * h;
+
 void main()
 {
   uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
@@ -66,6 +74,12 @@ void main()
 
   // exciter
   if (id == 0) {
-    curr[id].v = 0.0007f * sin(4000.f * push.duration);
+    curr[id].v = sin(4000.f * push.duration);
+//    float dp = 4000.f - prev[id].p;
+//    float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
+//    if (dp <= 0.05 * dp_max)
+//      u_bore = 0.f;
+//    float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
+//    curr[id].v = u_bore * shelf / 0.000367;
   }
 }
