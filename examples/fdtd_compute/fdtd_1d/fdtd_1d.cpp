@@ -15,7 +15,8 @@ constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
-constexpr uint32_t FDTD_FRAME_COUNT = 2;
+constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 2;
+constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t PML_COUNT = 6;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float    AUDIO_FPS = 1.f / DT;
@@ -52,7 +53,7 @@ class fdtd_1d_field
         *device_,
         desc_pool_,
         { set_info, set_info, set_info }, // pv, sound, field
-        2
+        FDTD_FRAME_BUFFER_COUNT
       );
 
       // set pv buffer
@@ -60,26 +61,17 @@ class fdtd_1d_field
         // initial pressure
         std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
 
-        auto curr_buffer = graphics::buffer::create_with_staging(
-          *device_,
-          sizeof(particle) * particles.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-          particles.data()
-        );
-
-        auto prev_buffer = graphics::buffer::create_with_staging(
-          *device_,
-          sizeof(particle) * particles.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-          particles.data()
-        );
-
-        desc_sets_->set_buffer(PV_DESC_SET_ID, 0, 0, std::move(curr_buffer));
-        desc_sets_->set_buffer(PV_DESC_SET_ID, 0, 1, std::move(prev_buffer));
+        for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
+          auto buffer = graphics::buffer::create_with_staging(
+            *device_,
+            sizeof(particle) * particles.size(),
+            1,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            particles.data()
+          );
+          desc_sets_->set_buffer(PV_DESC_SET_ID, 0, i, std::move(buffer));
+        }
       }
 
       // set field buffer (y_offset and pml)
@@ -97,73 +89,56 @@ class fdtd_1d_field
           field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
         }
 
-        auto curr_buffer = graphics::buffer::create(
-          *device_,
-          sizeof(field_element) * field_elements.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          field_elements.data()
-        );
+        for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
+          auto buffer = graphics::buffer::create(
+            *device_,
+            sizeof(field_element) * field_elements.size(),
+            1,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            field_elements.data()
+          );
 
-        // dummy buffer
-        auto prev_buffer = graphics::buffer::create(
-          *device_,
-          sizeof(field_element) * field_elements.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          field_elements.data()
-        );
-
-        desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, 0, std::move(curr_buffer));
-        desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, 1, std::move(prev_buffer));
+          desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, i, std::move(buffer));
+        }
       }
 
       // set sound buffer
       {
         std::vector<float> sound(UPDATE_PER_FRAME, 0.f);
 
-        auto curr_buffer = graphics::buffer::create(
-          *device_,
-          sizeof(float) * sound.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          sound.data()
-        );
+        for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
+          auto buffer = graphics::buffer::create(
+            *device_,
+            sizeof(float) * sound.size(),
+            1,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            sound.data()
+          );
 
-        auto prev_buffer = graphics::buffer::create(
-          *device_,
-          sizeof(float) * sound.size(),
-          1,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          sound.data()
-        );
+          // mapped memory
+          if (i < AUDIO_FRAME_BUFFER_COUNT)
+            sound_buffers_[i] = reinterpret_cast<float *>(buffer->get_mapped_memory());
 
-        // mapped memory
-        sound_buffers_[0] = reinterpret_cast<float*>(curr_buffer->get_mapped_memory());
-        sound_buffers_[1] = reinterpret_cast<float*>(prev_buffer->get_mapped_memory());
-
-        desc_sets_->set_buffer(SOUND_DESC_SET_ID, 0, 0, std::move(curr_buffer));
-        desc_sets_->set_buffer(SOUND_DESC_SET_ID, 0, 1, std::move(prev_buffer));
+          desc_sets_->set_buffer(SOUND_DESC_SET_ID, 0, i, std::move(buffer));
+        }
       }
 
       desc_sets_->build();
 
-      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(0)[1];
+      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(0)[SOUND_DESC_SET_ID];
     }
 
     void update_field()
     {
       duration_ += DT;
-      frame_index = frame_index == FDTD_FRAME_COUNT - 1 ? 0 : frame_index + 1;
+      frame_index = frame_index == FDTD_FRAME_BUFFER_COUNT - 1 ? 0 : frame_index + 1;
     }
 
     void update_audio()
     {
-      audio_frame_index = audio_frame_index == 1 ? 0 : 1;
+      audio_frame_index = audio_frame_index == AUDIO_FRAME_BUFFER_COUNT - 1 ? 0 : audio_frame_index + 1;
       current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[SOUND_DESC_SET_ID];
     }
 
@@ -174,13 +149,19 @@ class fdtd_1d_field
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
-      auto sets0 = desc_sets_->get_vk_desc_sets(0);
-      auto sets1 = desc_sets_->get_vk_desc_sets(1);
+      std::array<std::vector<VkDescriptorSet>, FDTD_FRAME_BUFFER_COUNT> desc_sets;
+      for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
+        desc_sets[i] = desc_sets_->get_vk_desc_sets(i);
+      }
 
-      if (frame_index == 0)
-        return { sets0[PV_DESC_SET_ID], sets1[PV_DESC_SET_ID], sets1[FIELD_DESC_SET_ID], current_sound_desc_set_ };
-      else
-        return { sets1[PV_DESC_SET_ID], sets0[PV_DESC_SET_ID], sets1[FIELD_DESC_SET_ID], current_sound_desc_set_ };
+      std::vector<VkDescriptorSet> ret;
+      for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
+        ret.emplace_back(desc_sets[(frame_index - i) % FDTD_FRAME_BUFFER_COUNT][PV_DESC_SET_ID]);
+      }
+      ret.emplace_back(desc_sets[0][FIELD_DESC_SET_ID]);
+      ret.emplace_back(current_sound_desc_set_);
+
+      return ret;
     }
 
     float* get_latest_sound_buffer()
@@ -193,7 +174,7 @@ class fdtd_1d_field
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
 
-    float* sound_buffers_[2];
+    float* sound_buffers_[AUDIO_FRAME_BUFFER_COUNT];
 
     int main_grid_count_;
     int whole_grid_count_;
