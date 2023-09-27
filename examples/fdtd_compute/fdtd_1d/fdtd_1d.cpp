@@ -9,7 +9,7 @@
 namespace hnll {
 
 constexpr float DX  = 3.83e-3;
-constexpr float DT  = 7.81e-6;
+constexpr float DT  = 1.1e-5;
 constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
@@ -26,7 +26,7 @@ std::vector<graphics::binding_info> desc_bindings = {
 };
 
 float calc_y(float x)
-{ return 0.015f; }// + 0.001f * std::exp(7.5f * x); }
+{ return 0.015f;}// + 0.001f * std::exp(7.5f * x); }
 
 // push constant, particle
 #include "common.h"
@@ -221,7 +221,6 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
-      push.duration = field_->get_duration();
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
       push.v_fac = V_FAC;
@@ -278,9 +277,11 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
       };
 
+      static float phase = 0.f;
+
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         // push constants
-        push.duration = field_->get_duration();
+        push.phase = phase;
         push.sound_buffer_id = i;
         bind_push(
           command,
@@ -308,6 +309,8 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         }
 
         field_->update_field();
+        phase += 2.f * M_PI * 400.f * DT;
+        phase = std::fmod(phase, 2.f * M_PI);
       }
 
       field_->update_audio();

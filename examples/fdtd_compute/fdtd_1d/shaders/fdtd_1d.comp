@@ -68,16 +68,14 @@ void main()
     float curr_v1 = calc_v(id + 1);
     curr[id].p = calc_p(id, curr_v1);
 
-//    if (id >= push.main_grid_count) {
-//      curr[id].p = 0.f;
-//    }
+    if (id >= push.main_grid_count) {
+      curr[id].p = 0.f;
+    }
   }
 
   // exciter
   if (id == 0) {
-    curr[id].v = sin(4000.f * push.duration);
-    sound_buffer[push.sound_buffer_id] = curr[id].v;
-
+    curr[id].v = sin(push.phase);
 //    float dp = 4000.f - prev[id].p;
 //    float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
 //    if (dp <= 0.05 * dp_max)
@@ -88,6 +86,7 @@ void main()
 
   // record sound buffer
   if (id == 0) {//push.main_grid_count - 1) {
-//    sound_buffer[push.sound_buffer_id] = curr[id].v;
+    //sound_buffer[push.sound_buffer_id] = curr[id].p;
+    sound_buffer[push.sound_buffer_id] = curr[id].v;
   }
 }
