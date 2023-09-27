@@ -8,6 +8,7 @@
 
 namespace hnll {
 
+constexpr float BORE_LENGTH = 0.5f;
 constexpr float DX  = 3.83e-3;
 constexpr float DT  = 1e-5;
 constexpr float RHO = 1.1f;
@@ -26,7 +27,7 @@ std::vector<graphics::binding_info> desc_bindings = {
 };
 
 float calc_y(float x)
-{ return 0.015f + 0.001f * std::exp(7.5f * x); }
+{ return 0.01f + 0.001f * std::exp(7.5f * x); }
 
 // push constant, particle
 #include "common.h"
@@ -37,7 +38,7 @@ class fdtd_1d_field
     fdtd_1d_field() : device_(utils::singleton<graphics::device>::get_single_ptr())
     {
       // calc constants
-      main_grid_count_ = static_cast<int>(length_ / DX);
+      main_grid_count_ = static_cast<int>(BORE_LENGTH / DX);
       whole_grid_count_ = PML_COUNT + main_grid_count_;
 
       // setup desc sets
@@ -140,7 +141,6 @@ class fdtd_1d_field
       current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[1];
     }
 
-    float get_length()           const { return length_; }
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
@@ -166,7 +166,6 @@ class fdtd_1d_field
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
-    float length_ = 0.5f;
 
     particle* buffer0_;
     particle* buffer1_;
@@ -219,7 +218,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       fdtd_push push;
       auto window_size = game::gui_engine::get_viewport_size();
       push.window_size = { window_size.x, window_size.y };
-      push.len = field_->get_length();
+      push.len = BORE_LENGTH;
       push.dx  = DX;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
@@ -262,7 +261,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       fdtd_push push;
       auto window_size = game::gui_engine::get_viewport_size();
       push.window_size = { window_size.x, window_size.y };
-      push.len = field_->get_length();
+      push.len = BORE_LENGTH;
       push.dx  = DX;
       push.v_fac = V_FAC;
       push.p_fac = P_FAC;
@@ -344,7 +343,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("fps : %f", 1.f / dt);
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::Text("p : %f", field_->get_current_p());
-      ImGui::SliderFloat("amp", &amplify_, 50, 3000);
+      ImGui::SliderFloat("amp", &amplify_, 1, 100);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::End();
 
@@ -401,7 +400,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
     std::vector<ALshort> segment_;
     int seg_frame_index_ = 0; // mod 3
     bool started_ = false;
-    float amplify_ = 100.f;
+    float amplify_ = 10.f;
 };
 
 } // namespace hnll
