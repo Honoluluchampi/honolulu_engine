@@ -3,6 +3,8 @@
 #include <game/actor.hpp>
 #include <game/shading_system.hpp>
 #include <game/compute_shader.hpp>
+#include <audio/engine.hpp>
+#include <audio/audio_data.hpp>
 
 namespace hnll {
 
@@ -14,14 +16,17 @@ constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_COUNT = 2;
 constexpr uint32_t PML_COUNT = 6;
-constexpr uint32_t UPDATE_PER_FRAME = 4268; // 128040 audio fps in 30 graphics fps
+constexpr uint32_t SAMPLING_RATE = 44100;
+constexpr float    AUDIO_FPS = 1.f / DT;
+constexpr float    GRAPHICS_FPS = 30;
+constexpr uint32_t UPDATE_PER_FRAME = static_cast<uint32_t>(AUDIO_FPS / GRAPHICS_FPS);
 
 std::vector<graphics::binding_info> desc_bindings = {
   { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
 float calc_y(float x)
-{ return 0.015f + 0.001f * std::exp(7.5f * x); }
+{ return 0.015f; }// + 0.001f * std::exp(7.5f * x); }
 
 // push constant, particle
 #include "common.h"
@@ -110,6 +115,10 @@ class fdtd_1d_field
           sound.data()
         );
 
+        // mapped memory
+        sound_buffers_[0] = reinterpret_cast<float*>(curr_buffer->get_mapped_memory());
+        sound_buffers_[1] = reinterpret_cast<float*>(prev_buffer->get_mapped_memory());
+
         desc_sets_->set_buffer(1, 0, 0, std::move(curr_buffer));
         desc_sets_->set_buffer(1, 0, 1, std::move(prev_buffer));
       }
@@ -140,6 +149,11 @@ class fdtd_1d_field
         return { sets1[0], sets0[0], sets1[1] };
     }
 
+    float* get_latest_sound_buffer()
+    {
+      return sound_buffers_[frame_index % 2 == 0 ? 1 : 0];
+    }
+
   private:
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
@@ -148,6 +162,8 @@ class fdtd_1d_field
 
     particle* buffer0_;
     particle* buffer1_;
+
+    float* sound_buffers_[2];
 
     int main_grid_count_;
     int whole_grid_count_;
@@ -298,7 +314,13 @@ DEFINE_ENGINE(curved_fdtd_1d)
     explicit ENGINE_CTOR(curved_fdtd_1d), field_(utils::singleton<fdtd_1d_field>::build_instance())
     {
       set_max_fps(30.f);
+
+      // audio setup
+      audio::engine::start_hae_context();
+      source_ = audio::engine::get_available_source_id();
     }
+
+    void cleanup() { audio::engine::kill_hae_context(); }
 
     void update_this(float dt)
     {
@@ -307,10 +329,54 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::Text("p : %f", field_->get_current_p());
       ImGui::End();
+
+      update_sound();
     }
 
   private:
+    void update_sound()
+    {
+      audio::engine::erase_finished_audio_on_queue(source_);
+
+      static const int queue_capacity = 3;
+      if (audio::engine::get_audio_count_on_queue(source_) > queue_capacity)
+        return;
+
+      float* raw_data = field_->get_latest_sound_buffer();
+      float raw_i = 0.f;
+      while (raw_i < float(UPDATE_PER_FRAME)) {
+        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
+        raw_i += AUDIO_FPS / SAMPLING_RATE;
+      }
+
+      seg_frame_index_++;
+
+      // register the data to the audio engine
+      if (seg_frame_index_ == 3) {
+        seg_frame_index_ = 0;
+        audio::audio_data data;
+        data.set_sampling_rate(SAMPLING_RATE)
+          .set_format(AL_FORMAT_MONO16)
+          .set_data(segment_);
+        audio::engine::bind_audio_to_buffer(data);
+        audio::engine::queue_buffer_to_source(source_, data.get_buffer_id());
+        segment_.clear();
+
+        if (!started_ && audio::engine::get_audio_count_on_queue(source_) == 3) {
+          audio::engine::play_audio_from_source(source_);
+          started_ = true;
+        }
+      }
+    }
+
     utils::single_ptr<fdtd_1d_field> field_;
+
+    // audio
+    audio::source_id source_;
+    std::vector<ALshort> segment_;
+    int seg_frame_index_ = 0; // mod 3
+    bool started_ = false;
+    float amplify_ = 200.f;
 };
 
 } // namespace hnll
@@ -319,6 +385,7 @@ int main()
 {
   hnll::utils::vulkan_config config;
   config.present = hnll::utils::present_mode::IMMEDIATE;
+  config.enable_validation_layers = false;
   hnll::curved_fdtd_1d app("1d fdtd", config);
 
   try { app.run(); }

@@ -68,14 +68,14 @@ void main()
     float curr_v1 = calc_v(id + 1);
     curr[id].p = calc_p(id, curr_v1);
 
-    if (id >= push.main_grid_count) {
-      curr[id].p = 0.f;
-    }
+//    if (id >= push.main_grid_count) {
+//      curr[id].p = 0.f;
+//    }
   }
 
   // exciter
   if (id == 0) {
-    curr[id].v = sin(4000.f * push.duration);
+    curr[id].v = sin(400.f * push.duration);
 //    float dp = 4000.f - prev[id].p;
 //    float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
 //    if (dp <= 0.05 * dp_max)
