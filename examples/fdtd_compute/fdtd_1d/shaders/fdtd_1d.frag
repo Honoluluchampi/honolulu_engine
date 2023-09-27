@@ -7,8 +7,8 @@
 layout (location = 0) out vec4 out_color;
 
 // field
-layout (std430, set = 0, binding = 0) readonly buffer Curr { particle curr[]; };
-layout (std430, set = 2, binding = 0) readonly buffer Field { field_element field[]; };
+layout (std430, set = 2, binding = 0) readonly buffer Curr { particle curr[]; };
+layout (std430, set = 3, binding = 0) readonly buffer Field { field_element field[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
 float max_length = 0.6f; // meter

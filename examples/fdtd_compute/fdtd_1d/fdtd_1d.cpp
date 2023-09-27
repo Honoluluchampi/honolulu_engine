@@ -15,7 +15,7 @@ constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
-constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 2;
+constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 3;
 constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t PML_COUNT = 6;
 constexpr uint32_t SAMPLING_RATE = 44100;
@@ -156,7 +156,7 @@ class fdtd_1d_field
 
       std::vector<VkDescriptorSet> ret;
       for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
-        ret.emplace_back(desc_sets[(frame_index - i) % FDTD_FRAME_BUFFER_COUNT][PV_DESC_SET_ID]);
+        ret.emplace_back(desc_sets[(FDTD_FRAME_BUFFER_COUNT - frame_index + i) % FDTD_FRAME_BUFFER_COUNT][PV_DESC_SET_ID]);
       }
       ret.emplace_back(desc_sets[0][FIELD_DESC_SET_ID]);
       ret.emplace_back(current_sound_desc_set_);
@@ -201,7 +201,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
 
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT),
-        { vk_layout, vk_layout, vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout }
       );
 
       pipeline_ = create_pipeline(
@@ -253,7 +253,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
       pipeline_ = create_pipeline<fdtd_push>(
         utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_1d/shaders/spv/fdtd_1d.comp.spv",
-        { vk_layout, vk_layout, vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout }
       );
     }
 
