@@ -267,7 +267,6 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.dx  = DX;
       push.v_fac = V_FAC;
       push.p_fac = P_FAC;
-      push.duration = field_->get_duration();
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
 
@@ -281,6 +280,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         // push constants
+        push.duration = field_->get_duration();
         push.sound_buffer_id = i;
         bind_push(
           command,
@@ -341,6 +341,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("fps : %f", 1.f / dt);
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::Text("p : %f", field_->get_current_p());
+      ImGui::SliderFloat("amp", &amplify_, 50, 3000);
       ImGui::End();
 
       update_sound();
