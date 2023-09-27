@@ -170,6 +170,7 @@ class fdtd_1d_field
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
+    float* get_mouth_pressure_p()      { return &mouth_pressure_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
@@ -197,6 +198,7 @@ class fdtd_1d_field
     int main_grid_count_;
     int whole_grid_count_;
     float duration_ = 0.f;
+    float mouth_pressure_ = 0.f;
 
     int frame_index = 0;
     int audio_frame_index = 0;
@@ -289,6 +291,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.p_fac = P_FAC;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
+      push.mouth_pressure = *(field_->get_mouth_pressure_p());
 
       // barrier for pressure, velocity update synchronization
       VkMemoryBarrier barrier = {
@@ -365,6 +368,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("fps : %f", 1.f / dt);
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::SliderFloat("amp", &amplify_, 1, 100);
+      ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 5000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::End();
 

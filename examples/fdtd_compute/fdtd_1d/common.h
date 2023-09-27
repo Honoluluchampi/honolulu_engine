@@ -9,6 +9,7 @@ struct fdtd_push
   int   main_grid_count;
   int   whole_grid_count;
   int   sound_buffer_id;
+  float mouth_pressure;
 };
 
 struct particle

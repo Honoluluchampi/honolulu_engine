@@ -76,7 +76,7 @@ void main()
 
   // exciter
   if (id == 0) {
-    float dp = 4000.f - prev[id].p;
+    float dp = push.mouth_pressure - prev[id].p;
     float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
     if (dp <= 0.05 * dp_max)
       u_bore = 0.f;
