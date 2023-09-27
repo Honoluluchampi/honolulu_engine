@@ -14,7 +14,13 @@ struct fdtd_push
 struct particle
 {
   float p;
-  float v;
+  float vx;
+  float vy;
+  float dummy;
+};
+
+struct field_element
+{
   float pml;
   float y_offset;
 };
@@ -22,3 +28,7 @@ struct particle
 const int fdtd1_local_size_x = 32;
 const int fdtd1_local_size_y = 1;
 const int fdtd1_local_size_z = 1;
+
+const int PV_DESC_SET_ID = 0;
+const int FIELD_DESC_SET_ID = 1;
+const int SOUND_DESC_SET_ID = 2;

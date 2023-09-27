@@ -8,7 +8,7 @@ layout (location = 0) out vec4 out_color;
 
 // field
 layout (std430, set = 0, binding = 0) readonly buffer Curr { particle curr[]; };
-layout (std430, set = 1, binding = 0) readonly buffer Prev { particle prev[]; };
+layout (std430, set = 2, binding = 0) readonly buffer Field { field_element field[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
 float max_length = 0.6f; // meter
@@ -24,7 +24,7 @@ void main()
   uint x_offset = uint(push.window_size.x * mergin + (max_length - push.len) / 2.f * len_to_pixel);
 
   int x_id = int((gl_FragCoord.x - x_offset) / len_to_pixel / push.dx);
-  float y_offset = curr[x_id].y_offset;
+  float y_offset = field[x_id].y_offset;
 
   float y_offset_this_pixel = abs(gl_FragCoord.y - push.window_size.y / 2.f) / len_to_pixel;
 

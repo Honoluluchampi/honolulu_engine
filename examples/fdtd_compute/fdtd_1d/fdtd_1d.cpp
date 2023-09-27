@@ -51,47 +51,73 @@ class fdtd_1d_field
       desc_sets_ = graphics::desc_sets::create(
         *device_,
         desc_pool_,
-        { set_info, set_info }, // field, sound
+        { set_info, set_info, set_info }, // pv, sound, field
         2
       );
 
-      // set field buffer
+      // set pv buffer
       {
         // initial pressure
         std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
+
+        auto curr_buffer = graphics::buffer::create_with_staging(
+          *device_,
+          sizeof(particle) * particles.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+          particles.data()
+        );
+
+        auto prev_buffer = graphics::buffer::create_with_staging(
+          *device_,
+          sizeof(particle) * particles.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+          particles.data()
+        );
+
+        desc_sets_->set_buffer(PV_DESC_SET_ID, 0, 0, std::move(curr_buffer));
+        desc_sets_->set_buffer(PV_DESC_SET_ID, 0, 1, std::move(prev_buffer));
+      }
+
+      // set field buffer (y_offset and pml)
+      // field doesn't have the prev buffer
+      {
+        // initial pressure
+        std::vector<field_element> field_elements(whole_grid_count_ + 1, field_element(0.f, 0.f));
         // calc initial y offsets
+        // TODO : set open space
         for (int i = 0; i < whole_grid_count_; i++) {
-          particles[i].y_offset = calc_y(DX * i);
+          field_elements[i].y_offset = calc_y(DX * i);
         }
         // set pml
         for (int i = 0; i < PML_COUNT; i++) {
-          particles[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
+          field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
         }
 
         auto curr_buffer = graphics::buffer::create(
           *device_,
-          sizeof(particle) * particles.size(),
+          sizeof(field_element) * field_elements.size(),
           1,
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          particles.data()
+          field_elements.data()
         );
 
+        // dummy buffer
         auto prev_buffer = graphics::buffer::create(
           *device_,
-          sizeof(particle) * particles.size(),
+          sizeof(field_element) * field_elements.size(),
           1,
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-          particles.data()
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+          field_elements.data()
         );
 
-        // mapped memory
-        buffer0_ = reinterpret_cast<particle *>(curr_buffer->get_mapped_memory());
-        buffer1_ = reinterpret_cast<particle *>(prev_buffer->get_mapped_memory());
-
-        desc_sets_->set_buffer(0, 0, 0, std::move(curr_buffer));
-        desc_sets_->set_buffer(0, 0, 1, std::move(prev_buffer));
+        desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, 0, std::move(curr_buffer));
+        desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, 1, std::move(prev_buffer));
       }
 
       // set sound buffer
@@ -120,8 +146,8 @@ class fdtd_1d_field
         sound_buffers_[0] = reinterpret_cast<float*>(curr_buffer->get_mapped_memory());
         sound_buffers_[1] = reinterpret_cast<float*>(prev_buffer->get_mapped_memory());
 
-        desc_sets_->set_buffer(1, 0, 0, std::move(curr_buffer));
-        desc_sets_->set_buffer(1, 0, 1, std::move(prev_buffer));
+        desc_sets_->set_buffer(SOUND_DESC_SET_ID, 0, 0, std::move(curr_buffer));
+        desc_sets_->set_buffer(SOUND_DESC_SET_ID, 0, 1, std::move(prev_buffer));
       }
 
       desc_sets_->build();
@@ -138,13 +164,12 @@ class fdtd_1d_field
     void update_audio()
     {
       audio_frame_index = audio_frame_index == 1 ? 0 : 1;
-      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[1];
+      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[SOUND_DESC_SET_ID];
     }
 
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
-    float get_current_p() const { return buffer0_[0].p; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
@@ -152,9 +177,9 @@ class fdtd_1d_field
       auto sets1 = desc_sets_->get_vk_desc_sets(1);
 
       if (frame_index == 0)
-        return { sets0[0], sets1[0], current_sound_desc_set_ };
+        return { sets0[PV_DESC_SET_ID], sets1[PV_DESC_SET_ID], sets1[FIELD_DESC_SET_ID], current_sound_desc_set_ };
       else
-        return { sets1[0], sets0[0], current_sound_desc_set_ };
+        return { sets1[PV_DESC_SET_ID], sets0[PV_DESC_SET_ID], sets1[FIELD_DESC_SET_ID], current_sound_desc_set_ };
     }
 
     float* get_latest_sound_buffer()
@@ -166,9 +191,6 @@ class fdtd_1d_field
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
-
-    particle* buffer0_;
-    particle* buffer1_;
 
     float* sound_buffers_[2];
 
@@ -196,7 +218,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
 
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT),
-        { vk_layout, vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout, vk_layout }
       );
 
       pipeline_ = create_pipeline(
@@ -248,7 +270,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
       pipeline_ = create_pipeline<fdtd_push>(
         utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_1d/shaders/spv/fdtd_1d.comp.spv",
-        { vk_layout, vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout, vk_layout }
       );
     }
 
@@ -342,7 +364,6 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Begin("stats");
       ImGui::Text("fps : %f", 1.f / dt);
       ImGui::Text("duration : %f", field_->get_duration());
-      ImGui::Text("p : %f", field_->get_current_p());
       ImGui::SliderFloat("amp", &amplify_, 1, 100);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::End();
