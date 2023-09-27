@@ -14,12 +14,7 @@ constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_COUNT = 2;
 constexpr uint32_t PML_COUNT = 6;
-
-struct fdtd_info {
-  float x_len;
-  int pml_count;
-  int update_per_frame;
-};
+constexpr uint32_t UPDATE_PER_FRAME = 4268; // 128040 audio fps in 30 graphics fps
 
 std::vector<graphics::binding_info> desc_bindings = {
   { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
@@ -179,8 +174,6 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       bind_desc_sets(field_->get_frame_desc_sets());
 
       vkCmdDraw(current_command_, 6, 1, 0, 0);
-
-      field_->update();
     }
 
   private:
@@ -226,14 +219,36 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         push
       );
 
-      // desc sets
-      bind_desc_sets(command, field_->get_frame_desc_sets());
-      dispatch_command(
-        command,
-        (int(field_->get_whole_grid_count()) + fdtd1_local_size_x - 1) / fdtd1_local_size_x,
-        1,
-        1
-      );
+      // barrier for pressure, velocity update synchronization
+      VkMemoryBarrier barrier = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+      };
+
+      for (int i = 0; i < UPDATE_PER_FRAME; i++) {
+        // desc sets
+        bind_desc_sets(command, field_->get_frame_desc_sets());
+        dispatch_command(
+          command,
+          (int(field_->get_whole_grid_count()) + fdtd1_local_size_x - 1) / fdtd1_local_size_x,
+          1,
+          1
+        );
+
+        if (i != UPDATE_PER_FRAME - 1) {
+          vkCmdPipelineBarrier(
+            command,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_DEVICE_GROUP_BIT,
+            1, &barrier, 0, nullptr, 0, nullptr
+          );
+        }
+
+        field_->update();
+      }
     }
 
   private:
@@ -249,7 +264,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
   public:
     explicit ENGINE_CTOR(curved_fdtd_1d), field_(utils::singleton<fdtd_1d_field>::build_instance())
     {
-      set_max_fps(1000.f);
+      set_max_fps(30.f);
     }
 
     void update_this(float dt)
