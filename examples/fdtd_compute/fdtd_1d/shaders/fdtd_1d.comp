@@ -68,9 +68,9 @@ void main()
     float curr_v1 = calc_v(id + 1);
     curr[id].p = calc_p(id, curr_v1);
 
-//    if (id >= push.main_grid_count) {
-//      curr[id].p = 0.f;
-//    }
+    if (id >= push.main_grid_count) {
+      curr[id].p = 0.f;
+    }
   }
 
   // exciter

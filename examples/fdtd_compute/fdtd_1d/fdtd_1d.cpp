@@ -124,12 +124,20 @@ class fdtd_1d_field
       }
 
       desc_sets_->build();
+
+      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(0)[1];
     }
 
-    void update()
+    void update_field()
     {
       duration_ += DT;
       frame_index = frame_index == FDTD_FRAME_COUNT - 1 ? 0 : frame_index + 1;
+    }
+
+    void update_audio()
+    {
+      audio_frame_index = audio_frame_index == 1 ? 0 : 1;
+      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[1];
     }
 
     float get_length()           const { return length_; }
@@ -144,14 +152,14 @@ class fdtd_1d_field
       auto sets1 = desc_sets_->get_vk_desc_sets(1);
 
       if (frame_index == 0)
-        return { sets0[0], sets1[0], sets0[1] };
+        return { sets0[0], sets1[0], current_sound_desc_set_ };
       else
-        return { sets1[0], sets0[0], sets1[1] };
+        return { sets1[0], sets0[0], current_sound_desc_set_ };
     }
 
     float* get_latest_sound_buffer()
     {
-      return sound_buffers_[frame_index % 2 == 0 ? 1 : 0];
+      return sound_buffers_[audio_frame_index];
     }
 
   private:
@@ -170,6 +178,9 @@ class fdtd_1d_field
     float duration_ = 0.f;
 
     int frame_index = 0;
+    int audio_frame_index = 0;
+
+    VkDescriptorSet current_sound_desc_set_;
 };
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -296,8 +307,10 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
           );
         }
 
-        field_->update();
+        field_->update_field();
       }
+
+      field_->update_audio();
     }
 
   private:
@@ -343,6 +356,13 @@ DEFINE_ENGINE(curved_fdtd_1d)
         return;
 
       float* raw_data = field_->get_latest_sound_buffer();
+
+      //temp
+      std::vector<float> watch(UPDATE_PER_FRAME);
+      for (int i = 0; i < UPDATE_PER_FRAME; i++) {
+        watch[i] = raw_data[i];
+      }
+
       float raw_i = 0.f;
       while (raw_i < float(UPDATE_PER_FRAME)) {
         segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
@@ -376,7 +396,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
     std::vector<ALshort> segment_;
     int seg_frame_index_ = 0; // mod 3
     bool started_ = false;
-    float amplify_ = 200.f;
+    float amplify_ = 100.f;
 };
 
 } // namespace hnll
