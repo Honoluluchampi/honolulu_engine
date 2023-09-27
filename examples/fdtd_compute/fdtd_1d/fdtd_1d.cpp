@@ -9,7 +9,7 @@
 namespace hnll {
 
 constexpr float DX  = 3.83e-3;
-constexpr float DT  = 1.1e-5;
+constexpr float DT  = 1e-5;
 constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
@@ -19,14 +19,14 @@ constexpr uint32_t PML_COUNT = 6;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float    AUDIO_FPS = 1.f / DT;
 constexpr float    GRAPHICS_FPS = 30;
-constexpr uint32_t UPDATE_PER_FRAME = static_cast<uint32_t>(AUDIO_FPS / GRAPHICS_FPS);
+int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
 
 std::vector<graphics::binding_info> desc_bindings = {
   { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
 float calc_y(float x)
-{ return 0.015f;}// + 0.001f * std::exp(7.5f * x); }
+{ return 0.015f + 0.001f * std::exp(7.5f * x); }
 
 // push constant, particle
 #include "common.h"
@@ -309,7 +309,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         }
 
         field_->update_field();
-        phase += 2.f * M_PI * 400.f * DT;
+        phase += 2.f * M_PI * 440.f * DT;
         phase = std::fmod(phase, 2.f * M_PI);
       }
 
@@ -345,6 +345,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::Text("p : %f", field_->get_current_p());
       ImGui::SliderFloat("amp", &amplify_, 50, 3000);
+      ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::End();
 
       update_sound();
