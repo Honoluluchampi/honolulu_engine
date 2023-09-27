@@ -9,6 +9,7 @@ layout (local_size_x = fdtd1_local_size_x, local_size_y = fdtd1_local_size_y, lo
 // field
 layout (std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
 layout (std430, set = 1, binding = 0) buffer Prev { particle prev[]; };
+layout (std430, set = 2, binding = 0) buffer Sound { float sound_buffer[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
 #define M_PI 3.14159265359
@@ -81,5 +82,10 @@ void main()
 //      u_bore = 0.f;
 //    float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
 //    curr[id].v = u_bore * shelf / 0.000367;
+  }
+
+  // record sound buffer
+  if (id == push.main_grid_count - 1) {
+    sound_buffer[push.sound_buffer_id] = curr[id].p;
   }
 }

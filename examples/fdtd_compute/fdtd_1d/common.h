@@ -3,12 +3,12 @@ struct fdtd_push
   ivec2 window_size;
   float len;
   float dx;
-  float dt;
   float duration;
-  int   main_grid_count;
-  int   whole_grid_count;
   float v_fac;
   float p_fac;
+  int   main_grid_count;
+  int   whole_grid_count;
+  int   sound_buffer_id;
 };
 
 struct particle

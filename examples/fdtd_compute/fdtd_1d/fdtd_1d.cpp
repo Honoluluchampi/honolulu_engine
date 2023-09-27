@@ -45,45 +45,75 @@ class fdtd_1d_field
       desc_sets_ = graphics::desc_sets::create(
         *device_,
         desc_pool_,
-        { set_info, set_info }, // curr, prev
-        1
+        { set_info, set_info }, // field, sound
+        2
       );
 
-      // initial pressure
-      std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
-      // calc initial y offsets
-      for (int i = 0; i < whole_grid_count_; i++) {
-        particles[i].y_offset = calc_y(DX * i);
+      // set field buffer
+      {
+        // initial pressure
+        std::vector<particle> particles(whole_grid_count_ + 1, particle(0.f, 0.f, 0.f, 0.f));
+        // calc initial y offsets
+        for (int i = 0; i < whole_grid_count_; i++) {
+          particles[i].y_offset = calc_y(DX * i);
+        }
+        // set pml
+        for (int i = 0; i < PML_COUNT; i++) {
+          particles[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
+        }
+
+        auto curr_buffer = graphics::buffer::create(
+          *device_,
+          sizeof(particle) * particles.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+          particles.data()
+        );
+
+        auto prev_buffer = graphics::buffer::create(
+          *device_,
+          sizeof(particle) * particles.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+          particles.data()
+        );
+
+        // mapped memory
+        buffer0_ = reinterpret_cast<particle *>(curr_buffer->get_mapped_memory());
+        buffer1_ = reinterpret_cast<particle *>(prev_buffer->get_mapped_memory());
+
+        desc_sets_->set_buffer(0, 0, 0, std::move(curr_buffer));
+        desc_sets_->set_buffer(0, 0, 1, std::move(prev_buffer));
       }
-      // set pml
-      for (int i = 0; i < PML_COUNT; i++) {
-        particles[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
+
+      // set sound buffer
+      {
+        std::vector<float> sound(UPDATE_PER_FRAME, 0.f);
+
+        auto curr_buffer = graphics::buffer::create(
+          *device_,
+          sizeof(float) * sound.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+          sound.data()
+        );
+
+        auto prev_buffer = graphics::buffer::create(
+          *device_,
+          sizeof(float) * sound.size(),
+          1,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+          sound.data()
+        );
+
+        desc_sets_->set_buffer(1, 0, 0, std::move(curr_buffer));
+        desc_sets_->set_buffer(1, 0, 1, std::move(prev_buffer));
       }
 
-      auto curr_buffer = graphics::buffer::create(
-        *device_,
-        sizeof(particle) * particles.size(),
-        1,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        particles.data()
-      );
-
-      auto prev_buffer = graphics::buffer::create(
-        *device_,
-        sizeof(particle) * particles.size(),
-        1,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        particles.data()
-      );
-
-      // mapped memory
-      buffer0_ = reinterpret_cast<particle*>(curr_buffer->get_mapped_memory());
-      buffer1_ = reinterpret_cast<particle*>(prev_buffer->get_mapped_memory());
-
-      desc_sets_->set_buffer(0, 0, 0, std::move(curr_buffer));
-      desc_sets_->set_buffer(1, 0, 0, std::move(prev_buffer));
       desc_sets_->build();
     }
 
@@ -101,11 +131,13 @@ class fdtd_1d_field
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
-      auto sets = desc_sets_->get_vk_desc_sets(0);
+      auto sets0 = desc_sets_->get_vk_desc_sets(0);
+      auto sets1 = desc_sets_->get_vk_desc_sets(1);
+
       if (frame_index == 0)
-        return { sets[0], sets[1] };
+        return { sets0[0], sets1[0], sets0[1] };
       else
-        return { sets[1], sets[0] };
+        return { sets1[0], sets0[0], sets1[1] };
     }
 
   private:
@@ -138,7 +170,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
 
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT),
-        { vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout }
       );
 
       pipeline_ = create_pipeline(
@@ -162,7 +194,6 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
-      push.dt  = DT;
       push.duration = field_->get_duration();
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
@@ -192,7 +223,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
       pipeline_ = create_pipeline<fdtd_push>(
         utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_1d/shaders/spv/fdtd_1d.comp.spv",
-        { vk_layout, vk_layout }
+        { vk_layout, vk_layout, vk_layout }
       );
     }
 
@@ -207,17 +238,11 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.window_size = { window_size.x, window_size.y };
       push.len = field_->get_length();
       push.dx  = DX;
-      push.dt  = DT;
+      push.v_fac = V_FAC;
+      push.p_fac = P_FAC;
       push.duration = field_->get_duration();
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
-      push.v_fac = V_FAC;
-      push.p_fac = P_FAC;
-      bind_push(
-        command,
-        static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_COMPUTE_BIT),
-        push
-      );
 
       // barrier for pressure, velocity update synchronization
       VkMemoryBarrier barrier = {
@@ -228,6 +253,14 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       };
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
+        // push constants
+        push.sound_buffer_id = i;
+        bind_push(
+          command,
+          static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_COMPUTE_BIT),
+          push
+        );
+
         // desc sets
         bind_desc_sets(command, field_->get_frame_desc_sets());
         dispatch_command(
