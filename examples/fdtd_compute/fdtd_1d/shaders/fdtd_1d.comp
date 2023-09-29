@@ -55,6 +55,13 @@ const float rho = 1.1;
 const float dp_max = k * h;
 const float c_area = w * h;
 
+// u bore filter
+const float ubf_a0 = 0.160863;
+const float ubf_a1 = 0.321726;
+const float ubf_a2 = 0.160863;
+const float ubf_b1 = -0.590436;
+const float ubf_b2 = 0.233886;
+
 void main()
 {
   uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
@@ -71,7 +78,7 @@ void main()
     curr[id].p = calc_p(id, curr_v1);
 
     if (id >= push.main_grid_count) {
-      curr[id].p = 0.f;
+      curr[id].p = prev[id - 1].p * 0.001;
     }
   }
 
@@ -79,10 +86,15 @@ void main()
   if (id == 0) {
     float dp = push.mouth_pressure - prev[id].p;
     float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
-    if (dp <= 0.05 * dp_max)
+    if (dp <= 0.05 * dp_max || push.mouth_pressure < 2000.f)
       u_bore = 0.f;
     float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-    curr[id].vx = u_bore * shelf / 0.000367 * 4.f;
+
+    // butter-worth filter
+    // input to the filter is contained by .values.y
+    float a = 0.1f;
+    float curr_v = u_bore * shelf / 0.000367 * 4.f;
+    curr[id].vx = a * prev[id].vx + (1.f - a) * curr_v;
   }
 
   // record sound buffer

@@ -28,7 +28,14 @@ std::vector<graphics::binding_info> desc_bindings = {
 };
 
 float calc_y(float x)
-{ return 0.01f + 0.001f * std::exp(7.5f * x); }
+{
+  // straight
+//  return 0.007f;
+  // cone
+//  return 0.01f + 0.05f * x;
+  // exponential
+  return 0.007f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
+}
 
 // push constant, particle
 #include "common.h"
@@ -84,6 +91,11 @@ class fdtd_1d_field
         for (int i = 0; i < whole_grid_count_; i++) {
           field_elements[i].y_offset = calc_y(DX * i);
         }
+
+        float bell_radius = field_elements[main_grid_count_ - 1].y_offset;
+        float input_radius = field_elements[0].y_offset;
+        amp_modify_ = std::pow(bell_radius, 2.f) / std::pow(input_radius, 2.f);
+
         // set pml
         for (int i = 0; i < PML_COUNT; i++) {
           field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
@@ -142,6 +154,7 @@ class fdtd_1d_field
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
+    float get_amp_modify()       const { return amp_modify_; }
     float* get_mouth_pressure_p()      { return &mouth_pressure_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
@@ -180,6 +193,7 @@ class fdtd_1d_field
 
     int frame_index_ = 0;
     int audio_frame_index_ = 0;
+    float amp_modify_ = 1.f;
 };
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -369,8 +383,9 @@ DEFINE_ENGINE(curved_fdtd_1d)
       }
 
       float raw_i = 0.f;
+      float amp = amplify_ * field_->get_amp_modify();
       while (raw_i < float(UPDATE_PER_FRAME)) {
-        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
+        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amp));
         raw_i += AUDIO_FPS / SAMPLING_RATE;
       }
 
@@ -401,7 +416,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
     std::vector<ALshort> segment_;
     int seg_frame_index_ = 0; // mod 3
     bool started_ = false;
-    float amplify_ = 10.f;
+    float amplify_ = 3.f;
 };
 
 } // namespace hnll
