@@ -27,6 +27,7 @@ void main()
   float y_offset = field[x_id].y_offset;
 
   float y_offset_this_pixel = abs(gl_FragCoord.y - push.window_size.y / 2.f) / len_to_pixel;
+  bool is_upper = (gl_FragCoord.y - push.window_size.y / 2.f) < 0;
 
   bool x_inside_area = (0 < x_id) && (x_id < push.main_grid_count);
   bool y_inside_area = y_offset_this_pixel <= y_offset;
@@ -34,7 +35,7 @@ void main()
     && y_offset_this_pixel > y_offset;
 
   bool inside_area = x_inside_area && y_inside_area;
-  bool on_edge = x_inside_area && y_on_edge;
+  bool on_edge = x_inside_area && y_on_edge && ((x_id != 60 && is_upper) || !is_upper);
 
   float p = curr[x_id].p / 500.f;
   out_color.w = 1.f;

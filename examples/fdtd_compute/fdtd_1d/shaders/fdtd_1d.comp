@@ -16,7 +16,7 @@ layout (push_constant) uniform Push { fdtd_push push; };
 
 #define M_PI 3.14159265359
 
-float calc_v(uint id)
+float calc_vx(uint id)
 {
   float p0 = prev[id - 1].p;
   float p1 = prev[id + 0].p;
@@ -31,11 +31,17 @@ float calc_v(uint id)
   return (prev[id].vx - push.v_fac * (p_term + s_term)) / (1.f + field[id].pml);
 }
 
+float calc_vy(uint id)
+{
+  float p_bore = prev[id].p;
+  return prev[id].vy - push.v_fac * (-p_bore);
+}
+
 float calc_p(uint id, float v1)
 {
-  float v0 = curr[id + 0].vx;
+  float v0 = curr[id].vx;
   float v_inter = (v0 + v1) / 2.f;
-  float v_term = v1 - v0;
+  float v_term = v1 - v0 + curr[id].vy;
 
   float s0 = M_PI * pow(field[id - 1].y_offset, 2.f);
   float s1 = M_PI * pow(field[id + 0].y_offset, 2.f);
@@ -68,13 +74,16 @@ void main()
 
   // update velocity
   if (1 <= id && id < push.whole_grid_count) {
-    curr[id].vx = calc_v(id);
+    curr[id].vx = calc_vx(id);
+
+    //if (id == 60 || id == 61)
+      //curr[id].vy = calc_vy(id);
   }
 
   // update pressure
   if (id < push.whole_grid_count) {
     // compute the next velocity not to add memory barrier
-    float curr_v1 = calc_v(id + 1);
+    float curr_v1 = calc_vx(id + 1);
     curr[id].p = calc_p(id, curr_v1);
 
     if (id >= push.main_grid_count) {
@@ -92,7 +101,7 @@ void main()
 
     // butter-worth filter
     // input to the filter is contained by .values.y
-    float a = 0.1f;
+    float a = 0.f;
     float curr_v = u_bore * shelf / 0.000367 * 4.f;
     curr[id].vx = a * prev[id].vx + (1.f - a) * curr_v;
   }

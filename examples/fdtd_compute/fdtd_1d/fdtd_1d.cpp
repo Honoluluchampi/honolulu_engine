@@ -30,9 +30,13 @@ std::vector<graphics::binding_info> desc_bindings = {
 float calc_y(float x)
 {
   // straight
-//  return 0.007f;
+  //return 0.007f;
+  // sine
+  return 0.02f + 0.01f * std::sin(50.f * x);
+  // stairs
+  return 0.007f + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
-//  return 0.01f + 0.05f * x;
+  return 0.007f + 0.06f * x;
   // exponential
   return 0.007f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
 }
