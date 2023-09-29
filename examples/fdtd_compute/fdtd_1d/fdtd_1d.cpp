@@ -15,7 +15,7 @@ constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
-constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 3;
+constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t PML_COUNT = 6;
 constexpr uint32_t SAMPLING_RATE = 44100;
@@ -44,7 +44,7 @@ class fdtd_1d_field
 
       // setup desc sets
       desc_pool_ = graphics::desc_pool::builder(*device_)
-        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10)
+        .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 20)
         .build();
 
       graphics::desc_set_info set_info { desc_bindings };
@@ -126,20 +126,17 @@ class fdtd_1d_field
       }
 
       desc_sets_->build();
-
-      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(0)[SOUND_DESC_SET_ID];
     }
 
     void update_field()
     {
       duration_ += DT;
-      frame_index = frame_index == FDTD_FRAME_BUFFER_COUNT - 1 ? 0 : frame_index + 1;
+      frame_index_ = frame_index_ == FDTD_FRAME_BUFFER_COUNT - 1 ? 0 : frame_index_ + 1;
     }
 
     void update_audio()
     {
-      audio_frame_index = audio_frame_index == AUDIO_FRAME_BUFFER_COUNT - 1 ? 0 : audio_frame_index + 1;
-      current_sound_desc_set_ = desc_sets_->get_vk_desc_sets(audio_frame_index)[SOUND_DESC_SET_ID];
+      audio_frame_index_ = audio_frame_index_ == AUDIO_FRAME_BUFFER_COUNT - 1 ? 0 : audio_frame_index_ + 1;
     }
 
     float get_duration()         const { return duration_; }
@@ -156,17 +153,17 @@ class fdtd_1d_field
 
       std::vector<VkDescriptorSet> ret;
       for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
-        ret.emplace_back(desc_sets[(FDTD_FRAME_BUFFER_COUNT - frame_index + i) % FDTD_FRAME_BUFFER_COUNT][PV_DESC_SET_ID]);
+        ret.emplace_back(desc_sets[(FDTD_FRAME_BUFFER_COUNT - frame_index_ + i) % FDTD_FRAME_BUFFER_COUNT][PV_DESC_SET_ID]);
       }
       ret.emplace_back(desc_sets[0][FIELD_DESC_SET_ID]);
-      ret.emplace_back(current_sound_desc_set_);
+      ret.emplace_back(desc_sets[audio_frame_index_][SOUND_DESC_SET_ID]);
 
       return ret;
     }
 
     float* get_latest_sound_buffer()
     {
-      return sound_buffers_[audio_frame_index];
+      return sound_buffers_[audio_frame_index_];
     }
 
   private:
@@ -181,10 +178,8 @@ class fdtd_1d_field
     float duration_ = 0.f;
     float mouth_pressure_ = 0.f;
 
-    int frame_index = 0;
-    int audio_frame_index = 0;
-
-    VkDescriptorSet current_sound_desc_set_;
+    int frame_index_ = 0;
+    int audio_frame_index_ = 0;
 };
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -201,7 +196,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
 
       pipeline_layout_ = create_pipeline_layout<fdtd_push>(
         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT),
-        { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout }
+        std::vector<VkDescriptorSetLayout>(FDTD_FRAME_BUFFER_COUNT + 2, vk_layout)
       );
 
       pipeline_ = create_pipeline(
@@ -253,7 +248,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
       pipeline_ = create_pipeline<fdtd_push>(
         utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_1d/shaders/spv/fdtd_1d.comp.spv",
-        { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout }
+        std::vector<VkDescriptorSetLayout>(FDTD_FRAME_BUFFER_COUNT + 2, vk_layout)
       );
     }
 
