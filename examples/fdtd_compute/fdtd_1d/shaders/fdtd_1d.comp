@@ -33,15 +33,16 @@ float calc_vx(uint id)
 
 float calc_vy(uint id)
 {
+  float p_out = 0.f;
   float p_bore = prev[id].p;
-  return prev[id].vy - push.v_fac * (-p_bore);
+  return prev[id].vy - push.v_fac * (p_out - p_bore);
 }
 
 float calc_p(uint id, float v1)
 {
   float v0 = curr[id].vx;
   float v_inter = (v0 + v1) / 2.f;
-  float v_term = v1 - v0 + curr[id].vy;
+  float v_term = v1 - v0 + (curr[id].vy);
 
   float s0 = M_PI * pow(field[id - 1].y_offset, 2.f);
   float s1 = M_PI * pow(field[id + 0].y_offset, 2.f);
@@ -76,8 +77,8 @@ void main()
   if (1 <= id && id < push.whole_grid_count) {
     curr[id].vx = calc_vx(id);
 
-    //if (id == 60 || id == 61)
-      //curr[id].vy = calc_vy(id);
+    if (100 <= id && id <= 100)
+      curr[id].vy = calc_vy(id);
   }
 
   // update pressure

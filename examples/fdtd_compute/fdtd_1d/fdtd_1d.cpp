@@ -27,16 +27,19 @@ std::vector<graphics::binding_info> desc_bindings = {
   { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
+// temp
+float shader_debug = 1.f;
+
 float calc_y(float x)
 {
   // straight
-  //return 0.007f;
+//  return 0.007f;
   // sine
-  return 0.02f + 0.01f * std::sin(50.f * x);
+//  return 0.02f + 0.01f * std::sin(50.f * x);
   // stairs
-  return 0.007f + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
+//  return 0.007f + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
-  return 0.007f + 0.06f * x;
+//  return 0.007f + 0.06f * x;
   // exponential
   return 0.007f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
 }
@@ -286,6 +289,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
+      push.debug = shader_debug;
 
       // barrier for pressure, velocity update synchronization
       VkMemoryBarrier barrier = {
@@ -364,6 +368,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::SliderFloat("amp", &amplify_, 1, 100);
       ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 5000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
+      ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
       ImGui::End();
 
       update_sound();

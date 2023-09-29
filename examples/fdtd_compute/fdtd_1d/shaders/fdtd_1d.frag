@@ -35,7 +35,7 @@ void main()
     && y_offset_this_pixel > y_offset;
 
   bool inside_area = x_inside_area && y_inside_area;
-  bool on_edge = x_inside_area && y_on_edge && ((x_id != 60 && is_upper) || !is_upper);
+  bool on_edge = x_inside_area && y_on_edge && ((x_id != 100 && is_upper) || !is_upper);
 
   float p = curr[x_id].p / 500.f;
   out_color.w = 1.f;
