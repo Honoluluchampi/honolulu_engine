@@ -113,8 +113,6 @@ class fdtd_1d_field
 
           desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, i, std::move(buffer));
         }
-
-        amp_modify_ = calc_amp_modify();
       }
 
       // set sound buffer
@@ -156,7 +154,6 @@ class fdtd_1d_field
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
-    float get_amp_modify()       const { return amp_modify_; }
     float* get_mouth_pressure_p()      { return &mouth_pressure_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
@@ -191,17 +188,9 @@ class fdtd_1d_field
         main_grid_count_ = 130;
         is_open_ = false;
       }
-      amp_modify_ = calc_amp_modify();
     }
 
   private:
-    float calc_amp_modify()
-    {
-      float bell_radius = field_buffer_[main_grid_count_ - 1].y_offset;
-      float input_radius = field_buffer_[0].y_offset;
-      return std::pow(bell_radius, 2.f) / std::pow(input_radius, 2.f);
-    }
-
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
@@ -216,7 +205,6 @@ class fdtd_1d_field
 
     int frame_index_ = 0;
     int audio_frame_index_ = 0;
-    float amp_modify_ = 1.f;
 
     bool is_open_ = false;
 };
@@ -413,9 +401,8 @@ DEFINE_ENGINE(curved_fdtd_1d)
       }
 
       float raw_i = 0.f;
-      float amp = amplify_ * field_->get_amp_modify();
       while (raw_i < float(UPDATE_PER_FRAME)) {
-        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amp));
+        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
         raw_i += AUDIO_FPS / SAMPLING_RATE;
       }
 

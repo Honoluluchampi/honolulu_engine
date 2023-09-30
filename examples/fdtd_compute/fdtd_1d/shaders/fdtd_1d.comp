@@ -107,6 +107,7 @@ void main()
 
   // record sound buffer
   if (id == push.main_grid_count - 1) {
-    sound_buffer[push.sound_buffer_id] = curr[id].p;
+    float amp_modify = pow(field[id].y_offset, 2.f) / pow(field[0].y_offset, 2.f);
+    sound_buffer[push.sound_buffer_id] = curr[id].p * amp_modify;
   }
 }
