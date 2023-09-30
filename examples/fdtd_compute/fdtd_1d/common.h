@@ -35,3 +35,4 @@ const int fdtd1_local_size_z = 1;
 const int PV_DESC_SET_ID = 0;
 const int FIELD_DESC_SET_ID = 1;
 const int SOUND_DESC_SET_ID = 2;
+const int PML_COUNT = 6;

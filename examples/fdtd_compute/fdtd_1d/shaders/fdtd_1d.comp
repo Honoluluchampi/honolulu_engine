@@ -15,8 +15,6 @@ layout (push_constant) uniform Push { fdtd_push push; };
 
 #define M_PI 3.14159265359
 
-const float PML_COUNT = 6.f;
-
 float calc_vx(uint id)
 {
   float p0 = prev[id - 1].p;
@@ -77,7 +75,7 @@ void main()
   uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
 
   // update velocity
-  if (1 <= id && id < push.whole_grid_count) {
+  if (1 <= id && id < push.main_grid_count + 2) {
     curr[id].vx = calc_vx(id);
   }
 

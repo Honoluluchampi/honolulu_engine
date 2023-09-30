@@ -17,7 +17,6 @@ constexpr float V_FAC = DT / (RHO * DX);
 constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
-constexpr uint32_t PML_COUNT = 6;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float    AUDIO_FPS = 1.f / DT;
 constexpr float    GRAPHICS_FPS = 30;
@@ -99,15 +98,6 @@ class fdtd_1d_field
           field_elements[i].y_offset = calc_y(DX * i);
         }
 
-        float bell_radius = field_elements[main_grid_count_ - 1].y_offset;
-        float input_radius = field_elements[0].y_offset;
-        amp_modify_ = std::pow(bell_radius, 2.f) / std::pow(input_radius, 2.f);
-
-        // set pml
-//        for (int i = 0; i < PML_COUNT; i++) {
-//          field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
-//        }
-
         for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
           auto buffer = graphics::buffer::create(
             *device_,
@@ -118,8 +108,13 @@ class fdtd_1d_field
             field_elements.data()
           );
 
+          if (i == 0)
+            field_buffer_ = reinterpret_cast<field_element*>(buffer->get_mapped_memory());
+
           desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, i, std::move(buffer));
         }
+
+        amp_modify_ = calc_amp_modify();
       }
 
       // set sound buffer
@@ -186,12 +181,33 @@ class fdtd_1d_field
       return sound_buffers_[audio_frame_index_];
     }
 
+    void open_close_hole()
+    {
+      if (!is_open_) {
+        main_grid_count_ = 80;
+        is_open_ = true;
+      }
+      else {
+        main_grid_count_ = 130;
+        is_open_ = false;
+      }
+      amp_modify_ = calc_amp_modify();
+    }
+
   private:
+    float calc_amp_modify()
+    {
+      float bell_radius = field_buffer_[main_grid_count_ - 1].y_offset;
+      float input_radius = field_buffer_[0].y_offset;
+      return std::pow(bell_radius, 2.f) / std::pow(input_radius, 2.f);
+    }
+
     s_ptr<graphics::desc_pool> desc_pool_;
     u_ptr<graphics::desc_sets> desc_sets_;
     utils::single_ptr<graphics::device> device_;
 
     float* sound_buffers_[AUDIO_FRAME_BUFFER_COUNT];
+    field_element* field_buffer_;
 
     int main_grid_count_;
     int whole_grid_count_;
@@ -201,6 +217,8 @@ class fdtd_1d_field
     int frame_index_ = 0;
     int audio_frame_index_ = 0;
     float amp_modify_ = 1.f;
+
+    bool is_open_ = false;
 };
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -286,7 +304,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.dx  = DX;
       push.v_fac = V_FAC;
       push.p_fac = P_FAC;
-      push.main_grid_count = 80;field_->get_main_grid_count();
+      push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
       push.debug = shader_debug;
@@ -369,6 +387,9 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 5000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
+      if (ImGui::Button("open / close")) {
+        field_->open_close_hole();
+      }
       ImGui::End();
 
       update_sound();
