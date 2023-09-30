@@ -26,7 +26,7 @@ float calc_vx(uint id)
   float s1 = M_PI * pow(field[id + 0].y_offset, 2.f);
   float s_inter = (s0 + s1) / 2.f;
   float s_term = p_inter / s_inter * (s1 - s0);
-  float pml = clamp(float(int(id) - push.main_grid_count + 1) / PML_COUNT, 0.f, 1.f);
+  float pml = clamp(float(int(id) - push.open_hole_id + 1) / PML_COUNT, 0.f, 1.f);
 
   return (prev[id].vx - push.v_fac * (p_term + s_term)) / (1.f + pml);
 }
@@ -50,7 +50,7 @@ float calc_p(uint id, float v1)
   float s_inter0 = (s0 + s1) / 2.f;
   float s_inter1 = (s1 + s2) / 2.f;
   float s_term = v_inter / s1 * (s_inter1 - s_inter0);
-  float pml = clamp(float(int(id) - push.main_grid_count + 1) / PML_COUNT, 0.f, 1.f);
+  float pml = clamp(float(int(id) - push.open_hole_id + 1) / PML_COUNT, 0.f, 1.f);
 
   return (prev[id].p - push.p_fac * (v_term + s_term)) / (1.f + pml);
 }
@@ -75,7 +75,7 @@ void main()
   uint id = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd1_local_size_x;
 
   // update velocity
-  if (1 <= id && id < push.main_grid_count + 2) {
+  if (1 <= id && id < push.whole_grid_count) {
     curr[id].vx = calc_vx(id);
   }
 
@@ -85,7 +85,7 @@ void main()
     float curr_v1 = calc_vx(id + 1);
     curr[id].p = calc_p(id, curr_v1);
 
-    if (id >= push.main_grid_count) {
+    if (id >= push.open_hole_id) {
       curr[id].p = 0;
     }
   }
@@ -106,7 +106,7 @@ void main()
   }
 
   // record sound buffer
-  if (id == push.main_grid_count - 1) {
+  if (id == push.open_hole_id - 1) {
     float amp_modify = pow(field[id].y_offset, 2.f) / pow(field[0].y_offset, 2.f);
     sound_buffer[push.sound_buffer_id] = curr[id].p * amp_modify;
   }

@@ -53,6 +53,7 @@ class fdtd_1d_field
     {
       // calc constants
       main_grid_count_ = static_cast<int>(BORE_LENGTH / DX);
+      open_hole_id_ = main_grid_count_;
       whole_grid_count_ = PML_COUNT + main_grid_count_;
 
       // setup desc sets
@@ -151,6 +152,7 @@ class fdtd_1d_field
     float get_duration()         const { return duration_; }
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
+    int   get_open_hole_id()  const { return open_hole_id_; }
     float* get_mouth_pressure_p()      { return &mouth_pressure_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
@@ -178,11 +180,11 @@ class fdtd_1d_field
     void open_close_hole()
     {
       if (!is_open_) {
-        main_grid_count_ = 80;
+        open_hole_id_ = 80;
         is_open_ = true;
       }
       else {
-        main_grid_count_ = 130;
+        open_hole_id_ = 130;
         is_open_ = false;
       }
     }
@@ -203,6 +205,7 @@ class fdtd_1d_field
     int audio_frame_index_ = 0;
 
     bool is_open_ = false;
+    int open_hole_id_;
 };
 
 DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading_type::UNIQUE>)
@@ -245,8 +248,7 @@ DEFINE_SHADING_SYSTEM(fdtd_1d_shader, game::dummy_renderable_comp<utils::shading
       push.dx  = DX;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
-      push.v_fac = V_FAC;
-      push.p_fac = P_FAC;
+      push.open_hole_id = field_->get_open_hole_id();
       bind_push(push, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
 
       // desc sets
@@ -290,6 +292,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.p_fac = P_FAC;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
+      push.open_hole_id = field_->get_open_hole_id();
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
       push.debug = shader_debug;
 
