@@ -9,12 +9,13 @@ layout (local_size_x = fdtd1_local_size_x, local_size_y = fdtd1_local_size_y, lo
 // field
 layout (std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
 layout (std430, set = 1, binding = 0) readonly buffer Prev  { particle prev[]; };
-//layout (std430, set = 2, binding = 0) readonly buffer Prev2 { particle prev2[]; };
 layout (std430, set = 2, binding = 0) readonly buffer Field { field_element field[]; };
 layout (std430, set = 3, binding = 0) buffer Sound { float sound_buffer[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
 #define M_PI 3.14159265359
+
+const float PML_COUNT = 6.f;
 
 float calc_vx(uint id)
 {
@@ -27,8 +28,9 @@ float calc_vx(uint id)
   float s1 = M_PI * pow(field[id + 0].y_offset, 2.f);
   float s_inter = (s0 + s1) / 2.f;
   float s_term = p_inter / s_inter * (s1 - s0);
+  float pml = clamp(float(int(id) - push.main_grid_count + 1) / PML_COUNT, 0.f, 1.f);
 
-  return (prev[id].vx - push.v_fac * (p_term + s_term)) / (1.f + field[id].pml);
+  return (prev[id].vx - push.v_fac * (p_term + s_term)) / (1.f + pml);
 }
 
 float calc_vy(uint id)
@@ -42,7 +44,7 @@ float calc_p(uint id, float v1)
 {
   float v0 = curr[id].vx;
   float v_inter = (v0 + v1) / 2.f;
-  float v_term = v1 - v0 + (curr[id].vy);
+  float v_term = v1 - v0;
 
   float s0 = M_PI * pow(field[id - 1].y_offset, 2.f);
   float s1 = M_PI * pow(field[id + 0].y_offset, 2.f);
@@ -50,8 +52,9 @@ float calc_p(uint id, float v1)
   float s_inter0 = (s0 + s1) / 2.f;
   float s_inter1 = (s1 + s2) / 2.f;
   float s_term = v_inter / s1 * (s_inter1 - s_inter0);
+  float pml = clamp(float(int(id) - push.main_grid_count + 1) / PML_COUNT, 0.f, 1.f);
 
-  return (prev[id].p - push.p_fac * (v_term + s_term)) / (1.f + field[id].pml);
+  return (prev[id].p - push.p_fac * (v_term + s_term)) / (1.f + pml);
 }
 
 // exciter constants
@@ -76,9 +79,6 @@ void main()
   // update velocity
   if (1 <= id && id < push.whole_grid_count) {
     curr[id].vx = calc_vx(id);
-
-    if (100 <= id && id <= 100)
-      curr[id].vy = calc_vy(id);
   }
 
   // update pressure
@@ -88,7 +88,7 @@ void main()
     curr[id].p = calc_p(id, curr_v1);
 
     if (id >= push.main_grid_count) {
-      curr[id].p = prev[id - 1].p * 0.001;
+      curr[id].p = 0;
     }
   }
 

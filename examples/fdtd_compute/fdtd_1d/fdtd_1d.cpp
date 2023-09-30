@@ -104,9 +104,9 @@ class fdtd_1d_field
         amp_modify_ = std::pow(bell_radius, 2.f) / std::pow(input_radius, 2.f);
 
         // set pml
-        for (int i = 0; i < PML_COUNT; i++) {
-          field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
-        }
+//        for (int i = 0; i < PML_COUNT; i++) {
+//          field_elements[whole_grid_count_ - 1 - i].pml = float(PML_COUNT - i) / float(PML_COUNT);
+//        }
 
         for (int i = 0; i < FDTD_FRAME_BUFFER_COUNT; i++) {
           auto buffer = graphics::buffer::create(
@@ -286,7 +286,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.dx  = DX;
       push.v_fac = V_FAC;
       push.p_fac = P_FAC;
-      push.main_grid_count = field_->get_main_grid_count();
+      push.main_grid_count = 80;field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
       push.debug = shader_debug;
