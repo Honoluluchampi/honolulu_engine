@@ -108,9 +108,6 @@ class fdtd_1d_field
             field_elements.data()
           );
 
-          if (i == 0)
-            field_buffer_ = reinterpret_cast<field_element*>(buffer->get_mapped_memory());
-
           desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, i, std::move(buffer));
         }
       }
@@ -196,7 +193,6 @@ class fdtd_1d_field
     utils::single_ptr<graphics::device> device_;
 
     float* sound_buffers_[AUDIO_FRAME_BUFFER_COUNT];
-    field_element* field_buffer_;
 
     int main_grid_count_;
     int whole_grid_count_;
