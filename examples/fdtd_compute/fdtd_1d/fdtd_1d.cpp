@@ -180,7 +180,7 @@ class fdtd_1d_field
     void open_close_hole()
     {
       if (!is_open_) {
-        open_hole_id_ = 80;
+        open_hole_id_ = 60;
         is_open_ = true;
       }
       else {
@@ -279,6 +279,9 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
     void render(const utils::compute_frame_info& info)
     {
+      // same ctor as field::main_grid_count
+      static int last_open_hole_id = static_cast<int>(BORE_LENGTH / DX);
+
       auto command = info.command_buffer;
       bind_pipeline(command);
 
@@ -292,7 +295,6 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.p_fac = P_FAC;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
-      push.open_hole_id = field_->get_open_hole_id();
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
       push.debug = shader_debug;
 
@@ -304,11 +306,17 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
       };
 
-      static float phase = 0.f;
+      int target_hole_id = field_->get_open_hole_id();
+      int UPDATE_PER_HOLE_MOVING = 20;
+      int update_count = 0;
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         // push constants
-        push.phase = phase;
+        int sign = 2 * int(target_hole_id > last_open_hole_id) - 1;
+        last_open_hole_id +=sign * int(last_open_hole_id != target_hole_id) * int(++update_count == UPDATE_PER_HOLE_MOVING);
+        update_count %= UPDATE_PER_HOLE_MOVING;
+        push.open_hole_id = last_open_hole_id;
+
         push.sound_buffer_id = i;
         bind_push(
           command,
@@ -336,8 +344,6 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         }
 
         field_->update_field();
-        phase += 2.f * M_PI * 440.f * DT;
-        phase = std::fmod(phase, 2.f * M_PI);
       }
 
       field_->update_audio();
