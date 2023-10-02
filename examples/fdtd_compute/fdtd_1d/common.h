@@ -3,7 +3,6 @@ struct fdtd_push
   ivec2 window_size;
   float len;
   float dx;
-  float phase;
   float v_fac;
   float p_fac;
   int   main_grid_count;
