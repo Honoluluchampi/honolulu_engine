@@ -153,8 +153,11 @@ class fdtd_1d_field
     int   get_main_grid_count()  const { return main_grid_count_; }
     int   get_whole_grid_count() const { return whole_grid_count_; }
     int   get_open_hole_id()     const { return open_hole_id_; }
-    float* get_mouth_pressure_p()      { return &mouth_pressure_; }
     bool  get_tonguing_flag()    const { return tonguing_flag_; }
+
+    // for imgui
+    int*   get_open_hole_id_p()   { return &open_hole_id_; }
+    float* get_mouth_pressure_p() { return &mouth_pressure_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
@@ -392,6 +395,17 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 4000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
+//      ImGui::SliderInt("tone hole position", field_->get_open_hole_id_p(), 30, 130);
+      if (ImGui::Button("F#")) {
+        *field_->get_open_hole_id_p() = 108;
+      }
+      if (ImGui::Button("G#")) {
+        *field_->get_open_hole_id_p() = 96;
+      }
+      if (ImGui::Button("A#")) {
+        *field_->get_open_hole_id_p() = 85;
+      }
+
       if (ImGui::Button("open / close")) {
         field_->open_close_hole();
       }
