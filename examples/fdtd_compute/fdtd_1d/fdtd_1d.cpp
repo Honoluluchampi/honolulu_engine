@@ -180,7 +180,7 @@ class fdtd_1d_field
     void open_close_hole()
     {
       if (!is_open_) {
-        open_hole_id_ = 60;
+        open_hole_id_ = 90;
         is_open_ = true;
       }
       else {
@@ -307,7 +307,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       };
 
       int target_hole_id = field_->get_open_hole_id();
-      int UPDATE_PER_HOLE_MOVING = 20;
+      int UPDATE_PER_HOLE_MOVING = 10;
       int update_count = 0;
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
@@ -377,7 +377,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::Text("fps : %f", 1.f / dt);
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::SliderFloat("amp", &amplify_, 1, 100);
-      ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 5000);
+      ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 4000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
       if (ImGui::Button("open / close")) {
