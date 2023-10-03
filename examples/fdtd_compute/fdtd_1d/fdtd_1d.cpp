@@ -9,8 +9,8 @@
 namespace hnll {
 
 constexpr float BORE_LENGTH = 0.5f;
-constexpr float DX  = 3.83e-3;
-constexpr float DT  = 1e-5;
+constexpr float DX  = 1.97e-3;
+constexpr float DT  = 5e-6;
 constexpr float RHO = 1.1f;
 constexpr float SOUND_SPEED = 340.f;
 constexpr float V_FAC = DT / (RHO * DX);
@@ -32,13 +32,13 @@ float shader_debug = 1.f;
 float calc_y(float x)
 {
   // straight
-//  return 0.007f;
+  return 0.007f;
   // sine
 //  return 0.02f + 0.01f * std::sin(50.f * x);
   // stairs
 //  return 0.007f + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
-//  return 0.007f + 0.06f * x;
+//  return 0.007f + 0.07f * x;
   // exponential
   return 0.007f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
 }
@@ -395,13 +395,13 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
 //      ImGui::SliderInt("tone hole position", field_->get_open_hole_id_p(), 30, 130);
       if (ImGui::Button("F#")) {
-        *field_->get_open_hole_id_p() = 108;
+        *field_->get_open_hole_id_p() = 108 * field_->get_whole_grid_count() / 130;
       }
       if (ImGui::Button("G#")) {
-        *field_->get_open_hole_id_p() = 96;
+        *field_->get_open_hole_id_p() = 96 * field_->get_whole_grid_count() / 130;
       }
       if (ImGui::Button("A#")) {
-        *field_->get_open_hole_id_p() = 85;
+        *field_->get_open_hole_id_p() = 85 * field_->get_whole_grid_count() / 130;
       }
 
       if (ImGui::Button("open / close")) {
@@ -417,7 +417,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
     {
       audio::engine::erase_finished_audio_on_queue(source_);
 
-      static const int queue_capacity = 3;
+      static const int queue_capacity = 2;
       if (audio::engine::get_audio_count_on_queue(source_) > queue_capacity)
         return;
 
