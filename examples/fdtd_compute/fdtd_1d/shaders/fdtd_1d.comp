@@ -77,17 +77,27 @@ void main()
   // update velocity
   if (1 <= id && id < push.whole_grid_count) {
     curr[id].vx = calc_vx(id);
+
+        // hole transition
+    bool between_holes = ((int(id) - push.open_hole_id) * (int(id) - push.last_hole_id)) < 0;
+    bool to_high = (push.open_hole_id < push.last_hole_id);
+
+    if (between_holes && to_high) {
+      curr[id].vx *= (1 - push.hole_transition_modify);
+    }
+    if (between_holes && !to_high) {
+      curr[id].vx *= push.hole_transition_modify;
+    }
   }
 
   // update pressure
   if (id < push.whole_grid_count) {
     // compute the next velocity not to add memory barrier
     float curr_v1 = calc_vx(id + 1);
-    curr[id].p = calc_p(id, curr_v1);
+    float curr_p = calc_p(id, curr_v1);
+    curr[id].p = curr_p;
 
-    if (id == push.open_hole_id) {
-      curr[id].p = prev[id - 1].p * 0.07;
-    }
+    curr[id].p = float(id < push.open_hole_id) * curr_p;
   }
 
   // exciter

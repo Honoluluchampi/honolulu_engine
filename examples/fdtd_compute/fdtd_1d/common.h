@@ -9,7 +9,9 @@ struct fdtd_push
   int   whole_grid_count;
   int   sound_buffer_id;
   int   open_hole_id;
+  int   last_hole_id;
   float mouth_pressure;
+  float hole_transition_modify;
   float debug;
 };
 

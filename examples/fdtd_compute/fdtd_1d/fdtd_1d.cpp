@@ -304,6 +304,8 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       push.p_fac = P_FAC;
       push.main_grid_count = field_->get_main_grid_count();
       push.whole_grid_count = field_->get_whole_grid_count();
+      push.open_hole_id = field_->get_open_hole_id();
+      push.last_hole_id = last_open_hole_id;
       push.mouth_pressure = *(field_->get_mouth_pressure_p());
       push.debug = shader_debug;
 
@@ -315,17 +317,13 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
         .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
       };
 
-      int target_hole_id = field_->get_open_hole_id();
-      int UPDATE_PER_HOLE_MOVING = 1;
-      int update_count = 0;
-      int TONGUING_FRAMES = 8000;
+      int TONGUING_FRAMES = 3000;
+      int HOLE_TRANSITION_FRAMES = 500;
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
-        // push constants
-        int sign = 2 * int(target_hole_id > last_open_hole_id) - 1;
-        last_open_hole_id +=sign * int(last_open_hole_id != target_hole_id) * int(++update_count == UPDATE_PER_HOLE_MOVING);
-        update_count %= UPDATE_PER_HOLE_MOVING;
-        push.open_hole_id = target_hole_id;
+        // hole transition
+        if (push.open_hole_id != push.last_hole_id)
+          push.hole_transition_modify = std::min(float(i) / float(HOLE_TRANSITION_FRAMES), 1.f);
 
         if (field_->get_tonguing_flag()) {
           push.mouth_pressure *= std::max(0.5f, std::min(float(i) / float(TONGUING_FRAMES), 1.f));
@@ -360,7 +358,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
 
         field_->update_field();
       }
-
+      last_open_hole_id = push.open_hole_id;
       field_->update_audio();
     }
 
