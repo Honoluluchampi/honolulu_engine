@@ -318,7 +318,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
       };
 
       int TONGUING_FRAMES = 3000;
-      int HOLE_TRANSITION_FRAMES = 500;
+      int HOLE_TRANSITION_FRAMES = 300;
 
       for (int i = 0; i < UPDATE_PER_FRAME; i++) {
         // hole transition
@@ -326,7 +326,7 @@ DEFINE_COMPUTE_SHADER(fdtd_1d_compute)
           push.hole_transition_modify = std::min(float(i) / float(HOLE_TRANSITION_FRAMES), 1.f);
 
         if (field_->get_tonguing_flag()) {
-          push.mouth_pressure *= std::max(0.5f, std::min(float(i) / float(TONGUING_FRAMES), 1.f));
+//          push.mouth_pressure *= std::max(0.5f, std::min(float(i) / float(TONGUING_FRAMES), 1.f));
           field_->set_tonguing_flag(false);
         }
 
