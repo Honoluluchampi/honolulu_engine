@@ -10,6 +10,7 @@ struct obj_model
   std::vector<vec3> vertices;
   std::vector<ivec3> planes; // three indices of the triangle vertices
   int VERTEX_PER_CIRCLE = 32;
+  float scale = 100.f;
   std::string name;
 
   int get_id(int offset_id, int per_circle_id, bool outer)
@@ -29,8 +30,11 @@ struct obj_model
     for (const auto& vert : vertices)
       writing_file << "v " << vert.x() << " " << vert.y() << " " << vert.z() << std::endl;
 
+    // temporal
+    writing_file << "vn -1, 0, 0" << std::endl;
+
     for (const auto& plane : planes)
-      writing_file << "f " << plane.x() << " " << plane.y() << " " << plane.z() << std::endl;
+      writing_file << "f " << plane.x() + 1 << "//1 " << plane.y() + 1 << "//1 " << plane.z() + 1 << "//1 " << std::endl;
 
     writing_file.close();
   }
@@ -50,19 +54,19 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     // add inner vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertices.emplace_back(
+      model.vertices.emplace_back(model.scale * vec3(
         dx * i,
         radius * std::sin(phi),
-        radius * std::cos(phi)
+        radius * std::cos(phi))
       );
     }
     // add outer vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertices.emplace_back(
+      model.vertices.emplace_back(model.scale * vec3(
         dx * i,
         (radius + thickness) * std::sin(phi),
-        (radius + thickness) * std::cos(phi)
+        (radius + thickness) * std::cos(phi))
       );
     }
   }
@@ -78,8 +82,8 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     );
     model.planes.emplace_back(
       model.get_id(0, i, false),
-      model.get_id(0, next_i, false),
-      model.get_id(0, next_i, true)
+      model.get_id(0, next_i, true),
+      model.get_id(0, next_i, false)
     );
   }
 
