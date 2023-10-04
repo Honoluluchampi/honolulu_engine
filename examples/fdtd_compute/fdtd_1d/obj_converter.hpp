@@ -7,15 +7,30 @@ namespace hnll {
 
 struct obj_model
 {
+  struct plane
+  {
+    ivec3 vertices;
+    ivec3 normals;
+  };
+
   std::vector<vec3> vertices;
-  std::vector<ivec3> planes; // three indices of the triangle vertices
+  std::vector<vec3> normals;
+  std::vector<plane> planes; // three indices of the triangle vertices
   int VERTEX_PER_CIRCLE = 32;
   float scale = 100.f;
   std::string name;
 
-  int get_id(int offset_id, int per_circle_id, bool outer)
+  int get_vert_id(int offset_id, int per_circle_id, bool outer)
   {
     return (VERTEX_PER_CIRCLE * 2 * offset_id) + per_circle_id + VERTEX_PER_CIRCLE * int(outer);
+  }
+
+  int get_body_norm_id(int per_circle_id)
+  {
+    // 0 : -1, 0, 0, (for input edge)
+    // 1 : 1, 0, 0, (for output edge)
+    // 2 ~ VERTEX_PER_CIRCLE + 2 : body
+    return per_circle_id + 2;
   }
 
   void write()
@@ -27,14 +42,21 @@ struct obj_model
     if (!writing_file.is_open())
       std::cerr << "failed to open file : " << name << std::endl;
 
+    // write vertex value
     for (const auto& vert : vertices)
       writing_file << "v " << vert.x() << " " << vert.y() << " " << vert.z() << std::endl;
 
-    // temporal
-    writing_file << "vn -1, 0, 0" << std::endl;
+    // write normal value
+    for (const auto& norm : normals)
+      writing_file << "vn " << norm.x() << " " << norm.y() << " " << norm.z() << std::endl;
 
+    // write plane with 1-index indices
     for (const auto& plane : planes)
-      writing_file << "f " << plane.x() + 1 << "//1 " << plane.y() + 1 << "//1 " << plane.z() + 1 << "//1 " << std::endl;
+      writing_file << "f " <<
+        plane.vertices.x() + 1 << "//" << plane.normals.x() + 1<< " " <<
+        plane.vertices.y() + 1 << "//" << plane.normals.y() + 1<< " " <<
+        plane.vertices.z() + 1 << "//" << plane.normals.z() + 1<< " " <<
+        std::endl;
 
     writing_file.close();
   }
@@ -55,20 +77,31 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
       model.vertices.emplace_back(model.scale * vec3(
-        dx * i,
-        radius * std::sin(phi),
-        radius * std::cos(phi))
+        dx * float(i),
+        radius * float(std::sin(phi)),
+        radius * float(std::cos(phi)))
       );
     }
     // add outer vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
       model.vertices.emplace_back(model.scale * vec3(
-        dx * i,
-        (radius + thickness) * std::sin(phi),
-        (radius + thickness) * std::cos(phi))
+        dx * float(i),
+        (radius + thickness) * float(std::sin(phi)),
+        (radius + thickness) * float(std::cos(phi)))
       );
     }
+  }
+
+  // register normals
+  // input edge
+  model.normals.emplace_back(-1, 0, 0);
+  // output edge
+  model.normals.emplace_back(1, 0, 0);
+  // body
+  for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
+    auto phi = 2.f * M_PI * i / float(model.VERTEX_PER_CIRCLE);
+    model.normals.emplace_back(0, std::sin(phi), std::cos(phi));
   }
 
   // register the planes
@@ -76,14 +109,18 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
   for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
     auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
     model.planes.emplace_back(
-      model.get_id(0, i, false),
-      model.get_id(0, i, true),
-      model.get_id(0, next_i, true)
+      ivec3(
+        model.get_vert_id(0, i, false),
+        model.get_vert_id(0, i, true),
+        model.get_vert_id(0, next_i, true)),
+      ivec3(0, 0, 0)
     );
     model.planes.emplace_back(
-      model.get_id(0, i, false),
-      model.get_id(0, next_i, true),
-      model.get_id(0, next_i, false)
+      ivec3(
+        model.get_vert_id(0, i, false),
+        model.get_vert_id(0, next_i, true),
+        model.get_vert_id(0, next_i, false)),
+      ivec3(0, 0, 0)
     );
   }
 
