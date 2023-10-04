@@ -5,6 +5,11 @@
 #include <game/compute_shader.hpp>
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
+#include <utils/utils.hpp>
+#include "obj_converter.hpp"
+
+// std
+#include <thread>
 
 namespace hnll {
 
@@ -21,6 +26,7 @@ constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float    AUDIO_FPS = 1.f / DT;
 constexpr float    GRAPHICS_FPS = 30;
 int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
+std::string OBJ_DIR = "/models/instruments/";
 
 std::vector<graphics::binding_info> desc_bindings = {
   { VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
@@ -91,7 +97,6 @@ class fdtd_1d_field
       // set field buffer (y_offset and pml)
       // field doesn't have the prev buffer
       {
-        // initial pressure
         std::vector<field_element> field_elements(whole_grid_count_ + 1, field_element(0.f, 0.f));
         // calc initial y offsets
         // TODO : set open space
@@ -108,6 +113,9 @@ class fdtd_1d_field
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             field_elements.data()
           );
+
+          if (i == 0)
+            field_element_buffer_ = reinterpret_cast<field_element*>(buffer->get_mapped_memory());
 
           desc_sets_->set_buffer(FIELD_DESC_SET_ID, 0, i, std::move(buffer));
         }
@@ -158,6 +166,7 @@ class fdtd_1d_field
     // for imgui
     int*   get_open_hole_id_p()   { return &open_hole_id_; }
     float* get_mouth_pressure_p() { return &mouth_pressure_; }
+    field_element* get_field_element_buffer_p() { return field_element_buffer_; }
 
     std::vector<VkDescriptorSet> get_frame_desc_sets()
     {
@@ -203,6 +212,7 @@ class fdtd_1d_field
     utils::single_ptr<graphics::device> device_;
 
     float* sound_buffers_[AUDIO_FRAME_BUFFER_COUNT];
+    field_element* field_element_buffer_;
 
     int main_grid_count_;
     int whole_grid_count_;
@@ -407,6 +417,23 @@ DEFINE_ENGINE(curved_fdtd_1d)
       if (ImGui::Button("open / close")) {
         field_->open_close_hole();
       }
+
+      if (ImGui::Button("convert to obj")) {
+        std::thread convert_thread([&]() {
+          // gather offsets
+          std::vector<float> offsets;
+          field_element* field_buffer = field_->get_field_element_buffer_p();
+          for (int i = 0; i < field_->get_main_grid_count(); i++) {
+            offsets.emplace_back(field_buffer[i].y_offset);
+          }
+          utils::mkdir_p(std::string(getenv("HNLL_ENGN")) + OBJ_DIR);
+          std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "test.obj";
+          convert_to_obj(filename, DX, 0.002, offsets);
+          std::cout << filename << std::endl;
+        });
+        convert_thread.detach();
+      }
+
       ImGui::End();
 
       update_sound();
