@@ -154,6 +154,25 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     }
   }
 
+  // outer edge
+  for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
+    auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
+    model.planes.emplace_back(
+      ivec3(
+        model.get_vert_id(segment_count - 1, i, false),
+        model.get_vert_id(segment_count - 1, i, true),
+        model.get_vert_id(segment_count - 1, next_i, true)),
+      ivec3(1, 1, 1)
+    );
+    model.planes.emplace_back(
+      ivec3(
+        model.get_vert_id(segment_count - 1, i, false),
+        model.get_vert_id(segment_count - 1, next_i, true),
+        model.get_vert_id(segment_count - 1, next_i, false)),
+      ivec3(1, 1, 1)
+    );
+  }
+
   model.write();
 }
 
