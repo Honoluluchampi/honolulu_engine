@@ -124,6 +124,36 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     );
   }
 
+  // body
+  for (int i = 0; i < segment_count; i++) {
+    for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
+      auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
+      // inner and outer planes
+      for (int in_out = 0; in_out <= 1; in_out++) {
+        model.planes.emplace_back(
+          ivec3(
+            model.get_vert_id(i, j, bool(in_out)),
+            model.get_vert_id(i + 1, j, bool(in_out)),
+            model.get_vert_id(i + 1, next_j, bool(in_out))),
+          ivec3(
+            model.get_body_norm_id(j),
+            model.get_body_norm_id(j),
+            model.get_body_norm_id(next_j))
+        );
+        model.planes.emplace_back(
+          ivec3(
+            model.get_vert_id(i, j, bool(in_out)),
+            model.get_vert_id(i + 1, next_j, bool(in_out)),
+            model.get_vert_id(i, next_j, bool(in_out))),
+          ivec3(
+            model.get_body_norm_id(j),
+            model.get_body_norm_id(next_j),
+            model.get_body_norm_id(next_j))
+        );
+      }
+    }
+  }
+
   model.write();
 }
 
