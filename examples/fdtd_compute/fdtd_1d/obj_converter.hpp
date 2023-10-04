@@ -25,12 +25,13 @@ struct obj_model
     return (VERTEX_PER_CIRCLE * 2 * offset_id) + per_circle_id + VERTEX_PER_CIRCLE * int(outer);
   }
 
-  int get_body_norm_id(int per_circle_id)
+  int get_body_norm_id(int per_circle_id, bool outer)
   {
     // 0 : -1, 0, 0, (for input edge)
     // 1 : 1, 0, 0, (for output edge)
-    // 2 ~ VERTEX_PER_CIRCLE + 2 : body
-    return per_circle_id + 2;
+    // 2 ~ VERTEX_PER_CIRCLE + 1 : inner body
+    // VERTEX_PER_CIRCLE + 2 ~ : outer body
+    return per_circle_id + 2 + VERTEX_PER_CIRCLE * int(outer);
   }
 
   void write()
@@ -94,14 +95,19 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
   }
 
   // register normals
-  // input edge
-  model.normals.emplace_back(-1, 0, 0);
-  // output edge
-  model.normals.emplace_back(1, 0, 0);
-  // body
-  for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
-    auto phi = 2.f * M_PI * i / float(model.VERTEX_PER_CIRCLE);
-    model.normals.emplace_back(0, std::sin(phi), std::cos(phi));
+  {
+    // input edge
+    model.normals.emplace_back(-1, 0, 0);
+    // output edge
+    model.normals.emplace_back(1, 0, 0);
+    // body
+    for (int inout = 0; inout <=1; inout++) {
+      for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
+        auto sign = 2.f * float(inout) - 1.f;
+        auto phi = 2.f * M_PI * i / float(model.VERTEX_PER_CIRCLE);
+        model.normals.emplace_back(0, sign * std::sin(phi), sign * std::cos(phi));
+      }
+    }
   }
 
   // register the planes
@@ -136,9 +142,9 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
             model.get_vert_id(i + 1, j, bool(in_out)),
             model.get_vert_id(i + 1, next_j, bool(in_out))),
           ivec3(
-            model.get_body_norm_id(j),
-            model.get_body_norm_id(j),
-            model.get_body_norm_id(next_j))
+            model.get_body_norm_id(j, bool(in_out)),
+            model.get_body_norm_id(j, bool(in_out)),
+            model.get_body_norm_id(next_j, bool(in_out)))
         );
         model.planes.emplace_back(
           ivec3(
@@ -146,15 +152,15 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
             model.get_vert_id(i + 1, next_j, bool(in_out)),
             model.get_vert_id(i, next_j, bool(in_out))),
           ivec3(
-            model.get_body_norm_id(j),
-            model.get_body_norm_id(next_j),
-            model.get_body_norm_id(next_j))
+            model.get_body_norm_id(j, bool(in_out)),
+            model.get_body_norm_id(next_j, bool(in_out)),
+            model.get_body_norm_id(next_j, bool(in_out)))
         );
       }
     }
   }
 
-  // outer edge
+  // output edge
   for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
     auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
     model.planes.emplace_back(

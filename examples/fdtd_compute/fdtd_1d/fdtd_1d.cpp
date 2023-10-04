@@ -38,7 +38,7 @@ float shader_debug = 1.f;
 float calc_y(float x)
 {
   // straight
-  return 0.007f;
+//  return 0.007f;
   // sine
 //  return 0.02f + 0.01f * std::sin(50.f * x);
   // stairs
