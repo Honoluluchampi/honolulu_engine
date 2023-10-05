@@ -147,8 +147,6 @@ void convert_to_obj(
 
   // body
   for (int i = 0; i < segment_count; i++) {
-//    if (float(i) * dx < start_x)
-//      continue;
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
 
@@ -167,15 +165,16 @@ void convert_to_obj(
           model.vertices[model.get_vert_id(id_set[k][2], id_set[k][3], true)],
           model.vertices[model.get_vert_id(id_set[k][4], id_set[k][5], true)],
         };
-        for (int i = 0; i < 3; i++) {
-          if (test_point_hole_intersection(vertices[i], hole_center, hole_radius)) {
+        for (int l = 0; l < 3; l++) {
+          if (test_point_hole_intersection(vertices[l], hole_center, hole_radius)) {
             count++;
-            intersecting_vert_id = i;
+            intersecting_vert_id = l;
           }
         }
 
         // inner and outer planes
         for (int in_out = 0; in_out <= 1; in_out++) {
+          // do not make hole on the bottom side of the bore
           if (count == 0 || vertices[0].y() < 0) {
             model.planes.emplace_back(
               ivec3(
@@ -186,6 +185,32 @@ void convert_to_obj(
                 model.get_body_norm_id(id_set[k][1], bool(in_out)),
                 model.get_body_norm_id(id_set[k][3], bool(in_out)),
                 model.get_body_norm_id(id_set[k][5], bool(in_out)))
+            );
+          }
+          // close the hole side
+          if (count == 1 && vertices[0].y() > 0) {
+            // id of the remaining two vertices
+            int id1 = ((intersecting_vert_id + 1) * 2 ) % 6;
+            int id2 = ((intersecting_vert_id + 2) * 2 ) % 6;
+            model.planes.emplace_back(
+              ivec3(
+                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
+                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], true),
+                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false)),
+              ivec3(
+                model.get_body_norm_id(id_set[k][id1 + 1], true),
+                model.get_body_norm_id(id_set[k][id2 + 1], true),
+                model.get_body_norm_id(id_set[k][id2 + 1], false))
+              );
+            model.planes.emplace_back(
+              ivec3(
+                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
+                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false),
+                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], false)),
+              ivec3(
+                model.get_body_norm_id(id_set[k][id1 + 1], true),
+                model.get_body_norm_id(id_set[k][id2 + 1], false),
+                model.get_body_norm_id(id_set[k][id1 + 1], false))
             );
           }
         }
