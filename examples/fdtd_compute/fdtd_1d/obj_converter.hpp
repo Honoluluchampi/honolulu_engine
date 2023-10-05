@@ -151,47 +151,44 @@ void convert_to_obj(
 //      continue;
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
-      // inner and outer planes
-      for (int in_out = 0; in_out <= 1; in_out++) {
-        const auto& v0 = model.vertices[model.get_vert_id(i, j, bool(in_out))];
-        const auto& v1 = model.vertices[model.get_vert_id(i + 1, j, bool(in_out))];
-        const auto& v2 = model.vertices[model.get_vert_id(i + 1, next_j, bool(in_out))];
 
-        if (!test_point_hole_intersection(v0, hole_center, hole_radius) &&
-          !test_point_hole_intersection(v1, hole_center, hole_radius) &&
-          !test_point_hole_intersection(v2, hole_center, hole_radius) ||
-          v0.y() < 0
-        )
-          model.planes.emplace_back(
-            ivec3(
-              model.get_vert_id(i, j, bool(in_out)),
-              model.get_vert_id(i + 1, j, bool(in_out)),
-              model.get_vert_id(i + 1, next_j, bool(in_out))),
-            ivec3(
-              model.get_body_norm_id(j, bool(in_out)),
-              model.get_body_norm_id(j, bool(in_out)),
-              model.get_body_norm_id(next_j, bool(in_out)))
-          );
+      int id_set[2][6] = {
+        { i, j, i + 1, j, i + 1, next_j },
+        { i, j, i + 1, next_j, i, next_j }
+      };
 
-        const auto& v3 = model.vertices[model.get_vert_id(i, j, bool(in_out))];
-        const auto& v4 = model.vertices[model.get_vert_id(i + 1, next_j, bool(in_out))];
-        const auto& v5 = model.vertices[model.get_vert_id(i, next_j, bool(in_out))];
+      // loop on the 2 triangles which makes the body's square
+      for (int k = 0; k < 2; k++) {
+        // count the number of the intersecting points
+        int count = 0;
+        int intersecting_vert_id = -1;
+        std::vector<vec3> vertices = {
+          model.vertices[model.get_vert_id(id_set[k][0], id_set[k][1], true)],
+          model.vertices[model.get_vert_id(id_set[k][2], id_set[k][3], true)],
+          model.vertices[model.get_vert_id(id_set[k][4], id_set[k][5], true)],
+        };
+        for (int i = 0; i < 3; i++) {
+          if (test_point_hole_intersection(vertices[i], hole_center, hole_radius)) {
+            count++;
+            intersecting_vert_id = i;
+          }
+        }
 
-        if (!test_point_hole_intersection(v3, hole_center, hole_radius) &&
-            !test_point_hole_intersection(v4, hole_center, hole_radius) &&
-            !test_point_hole_intersection(v5, hole_center, hole_radius) ||
-            v3.y() < 0
-          )
-          model.planes.emplace_back(
-            ivec3(
-              model.get_vert_id(i, j, bool(in_out)),
-              model.get_vert_id(i + 1, next_j, bool(in_out)),
-              model.get_vert_id(i, next_j, bool(in_out))),
-            ivec3(
-              model.get_body_norm_id(j, bool(in_out)),
-              model.get_body_norm_id(next_j, bool(in_out)),
-              model.get_body_norm_id(next_j, bool(in_out)))
-          );
+        // inner and outer planes
+        for (int in_out = 0; in_out <= 1; in_out++) {
+          if (count == 0 || vertices[0].y() < 0) {
+            model.planes.emplace_back(
+              ivec3(
+                model.get_vert_id(id_set[k][0], id_set[k][1], bool(in_out)),
+                model.get_vert_id(id_set[k][2], id_set[k][3], bool(in_out)),
+                model.get_vert_id(id_set[k][4], id_set[k][5], bool(in_out))),
+              ivec3(
+                model.get_body_norm_id(id_set[k][1], bool(in_out)),
+                model.get_body_norm_id(id_set[k][3], bool(in_out)),
+                model.get_body_norm_id(id_set[k][5], bool(in_out)))
+            );
+          }
+        }
       }
     }
   }
