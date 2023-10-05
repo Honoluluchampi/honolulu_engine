@@ -395,6 +395,8 @@ DEFINE_ENGINE(curved_fdtd_1d)
     {
       set_max_fps(30.f);
 
+      hole_ids_.resize(max_hole_count_);
+
       // audio setup
       audio::engine::start_hae_context();
       source_ = audio::engine::get_available_source_id();
@@ -411,16 +413,6 @@ DEFINE_ENGINE(curved_fdtd_1d)
       ImGui::SliderFloat("mouth_pressure", field_->get_mouth_pressure_p(), 0, 4000);
       ImGui::SliderInt("update per frame", &UPDATE_PER_FRAME, 2, 3030);
       ImGui::SliderFloat("shader debug", &shader_debug, 1.f, 30.f);
-//      ImGui::SliderInt("tone hole position", field_->get_open_hole_id_p(), 30, 130);
-      if (ImGui::Button("F#")) {
-        *field_->get_open_hole_id_p() = 108 * field_->get_whole_grid_count() / 130;
-      }
-      if (ImGui::Button("G#")) {
-        *field_->get_open_hole_id_p() = 96 * field_->get_whole_grid_count() / 130;
-      }
-      if (ImGui::Button("A#")) {
-        *field_->get_open_hole_id_p() = 85 * field_->get_whole_grid_count() / 130;
-      }
 
       if (ImGui::Button("open / close")) {
         field_->open_close_hole();
@@ -440,6 +432,13 @@ DEFINE_ENGINE(curved_fdtd_1d)
           std::cout << filename << std::endl;
         });
         convert_thread.detach();
+      }
+
+      for (int i = 0; i < max_hole_count_; i++) {
+        if (ImGui::Button(std::string("hole " + std::to_string(i)).c_str())) {
+          *field_->get_open_hole_id_p() = hole_ids_[i];
+        }
+        ImGui::SliderInt(std::string("position " + std::to_string(i)).c_str(), &hole_ids_[i], 30, 130);
       }
 
       ImGui::End();
@@ -491,6 +490,10 @@ DEFINE_ENGINE(curved_fdtd_1d)
     }
 
     utils::single_ptr<fdtd_1d_field> field_;
+
+    // hole config
+    int max_hole_count_ = 8;
+    std::vector<int> hole_ids_;
 
     // audio
     audio::source_id source_;
