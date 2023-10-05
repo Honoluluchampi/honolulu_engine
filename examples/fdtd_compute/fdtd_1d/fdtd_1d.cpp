@@ -395,7 +395,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
     {
       set_max_fps(30.f);
 
-      hole_ids_.resize(max_hole_count_);
+      hole_ids_.resize(max_hole_count_, -10);
 
       // audio setup
       audio::engine::start_hae_context();
@@ -428,7 +428,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
           }
           utils::mkdir_p(std::string(getenv("HNLL_ENGN")) + OBJ_DIR);
           std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "test.obj";
-          convert_to_obj(filename, DX, BORE_THICKNESS, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets);
+          convert_to_obj(filename, DX, BORE_THICKNESS, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets, hole_ids_, 0.003);
           std::cout << filename << std::endl;
         });
         convert_thread.detach();

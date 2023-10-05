@@ -64,8 +64,8 @@ struct obj_model
 };
 
 // returns true if an intersection is detected
-bool test_point_hole_intersection(const vec3& point, const vec2& hole_center, float hole_radius)
-{ return (vec2(point.x(), point.z()) - hole_center).norm() <= hole_radius; }
+bool test_point_hole_intersection(const vec3& point, float hole_x, float hole_radius)
+{ return (vec2(point.x(), point.z()) - vec2(hole_x, 0.f)).norm() <= hole_radius; }
 
 // TODO adjust a mouthpiece
 // takes the list of the offsets of each bore segment.
@@ -74,7 +74,9 @@ void convert_to_obj(
   float dx,
   float thickness,
   float start_x,
-  const std::vector<float>& offsets)
+  const std::vector<float>& offsets,
+  const std::vector<int>& hole_ids,
+  float hole_radius)
 {
   auto segment_count = offsets.size();
 
@@ -142,9 +144,6 @@ void convert_to_obj(
     );
   }
 
-  vec2 hole_center = vec2{ 0.3, 0.f } * model.scale;
-  float hole_radius = 0.003f * model.scale;
-
   // body
   for (int i = 0; i < segment_count; i++) {
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
@@ -165,10 +164,13 @@ void convert_to_obj(
           model.vertices[model.get_vert_id(id_set[k][2], id_set[k][3], true)],
           model.vertices[model.get_vert_id(id_set[k][4], id_set[k][5], true)],
         };
-        for (int l = 0; l < 3; l++) {
-          if (test_point_hole_intersection(vertices[l], hole_center, hole_radius)) {
-            count++;
-            intersecting_vert_id = l;
+
+        for (const auto& hole : hole_ids) {
+          for (int l = 0; l < 3; l++) {
+            if (test_point_hole_intersection(vertices[l], dx * float(hole_ids[hole]) * model.scale, hole_radius * model.scale)) {
+              count++;
+              intersecting_vert_id = l;
+            }
           }
         }
 
