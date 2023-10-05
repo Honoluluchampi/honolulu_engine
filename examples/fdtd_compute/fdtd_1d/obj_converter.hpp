@@ -63,9 +63,18 @@ struct obj_model
   }
 };
 
+// returns true if an intersection is detected
+bool test_point_hole_intersection(const vec3& point, const vec2& hole_center, float hole_radius)
+{ return (vec2(point.x(), point.z()) - hole_center).norm() <= hole_radius; }
+
 // TODO adjust a mouthpiece
 // takes the list of the offsets of each bore segment.
-void convert_to_obj(std::string name, float dx, float thickness, const std::vector<float>& offsets)
+void convert_to_obj(
+  std::string name,
+  float dx,
+  float thickness,
+  float start_x,
+  const std::vector<float>& offsets)
 {
   auto segment_count = offsets.size();
 
@@ -73,6 +82,9 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
   model.name = name;
   // register the vertices
   for (int i = 0; i < segment_count; i++) {
+    if (dx * float(i) < start_x)
+      continue;
+
     auto radius = offsets[i];
     // add inner vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
@@ -130,32 +142,56 @@ void convert_to_obj(std::string name, float dx, float thickness, const std::vect
     );
   }
 
+  vec2 hole_center = vec2{ 0.3, 0.f } * model.scale;
+  float hole_radius = 0.003f * model.scale;
+
   // body
   for (int i = 0; i < segment_count; i++) {
+//    if (float(i) * dx < start_x)
+//      continue;
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
       // inner and outer planes
       for (int in_out = 0; in_out <= 1; in_out++) {
-        model.planes.emplace_back(
-          ivec3(
-            model.get_vert_id(i, j, bool(in_out)),
-            model.get_vert_id(i + 1, j, bool(in_out)),
-            model.get_vert_id(i + 1, next_j, bool(in_out))),
-          ivec3(
-            model.get_body_norm_id(j, bool(in_out)),
-            model.get_body_norm_id(j, bool(in_out)),
-            model.get_body_norm_id(next_j, bool(in_out)))
-        );
-        model.planes.emplace_back(
-          ivec3(
-            model.get_vert_id(i, j, bool(in_out)),
-            model.get_vert_id(i + 1, next_j, bool(in_out)),
-            model.get_vert_id(i, next_j, bool(in_out))),
-          ivec3(
-            model.get_body_norm_id(j, bool(in_out)),
-            model.get_body_norm_id(next_j, bool(in_out)),
-            model.get_body_norm_id(next_j, bool(in_out)))
-        );
+        const auto& v0 = model.vertices[model.get_vert_id(i, j, bool(in_out))];
+        const auto& v1 = model.vertices[model.get_vert_id(i + 1, j, bool(in_out))];
+        const auto& v2 = model.vertices[model.get_vert_id(i + 1, next_j, bool(in_out))];
+
+        if (!test_point_hole_intersection(v0, hole_center, hole_radius) &&
+          !test_point_hole_intersection(v1, hole_center, hole_radius) &&
+          !test_point_hole_intersection(v2, hole_center, hole_radius) ||
+          v0.y() < 0
+        )
+          model.planes.emplace_back(
+            ivec3(
+              model.get_vert_id(i, j, bool(in_out)),
+              model.get_vert_id(i + 1, j, bool(in_out)),
+              model.get_vert_id(i + 1, next_j, bool(in_out))),
+            ivec3(
+              model.get_body_norm_id(j, bool(in_out)),
+              model.get_body_norm_id(j, bool(in_out)),
+              model.get_body_norm_id(next_j, bool(in_out)))
+          );
+
+        const auto& v3 = model.vertices[model.get_vert_id(i, j, bool(in_out))];
+        const auto& v4 = model.vertices[model.get_vert_id(i + 1, next_j, bool(in_out))];
+        const auto& v5 = model.vertices[model.get_vert_id(i, next_j, bool(in_out))];
+
+        if (!test_point_hole_intersection(v3, hole_center, hole_radius) &&
+            !test_point_hole_intersection(v4, hole_center, hole_radius) &&
+            !test_point_hole_intersection(v5, hole_center, hole_radius) ||
+            v3.y() < 0
+          )
+          model.planes.emplace_back(
+            ivec3(
+              model.get_vert_id(i, j, bool(in_out)),
+              model.get_vert_id(i + 1, next_j, bool(in_out)),
+              model.get_vert_id(i, next_j, bool(in_out))),
+            ivec3(
+              model.get_body_norm_id(j, bool(in_out)),
+              model.get_body_norm_id(next_j, bool(in_out)),
+              model.get_body_norm_id(next_j, bool(in_out)))
+          );
       }
     }
   }

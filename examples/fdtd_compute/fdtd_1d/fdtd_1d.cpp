@@ -25,6 +25,10 @@ constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float    AUDIO_FPS = 1.f / DT;
 constexpr float    GRAPHICS_FPS = 30;
+constexpr float MOUTHPIECE_RADIUS = 0.008f; // 8 mm
+constexpr float MOUTHPIECE_BUFFER = 0.0005f; // 0.5 mm
+constexpr float MOUTHPIECE_LENGTH = 0.09f; // 9 cm
+constexpr float MOUTHPIECE_BORE_INTERSECTION = 0.01f;
 int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
 std::string OBJ_DIR = "/models/instruments/";
 
@@ -37,16 +41,17 @@ float shader_debug = 1.f;
 
 float calc_y(float x)
 {
+  float input_edge_width = MOUTHPIECE_RADIUS - MOUTHPIECE_BUFFER;
   // straight
-//  return 0.007f;
+//  return input_edge_width;
   // sine
 //  return 0.02f + 0.01f * std::sin(50.f * x);
   // stairs
-//  return 0.007f + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
+//  return input_edge_width + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
-//  return 0.007f + 0.07f * x;
+  return input_edge_width + 0.07f * std::max(x - MOUTHPIECE_LENGTH, 0.f);
   // exponential
-  return 0.007f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
+  return input_edge_width - 0.001f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
 }
 
 // push constant, particle
@@ -428,7 +433,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
           }
           utils::mkdir_p(std::string(getenv("HNLL_ENGN")) + OBJ_DIR);
           std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "test.obj";
-          convert_to_obj(filename, DX, 0.002, offsets);
+          convert_to_obj(filename, DX, 0.002, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets);
           std::cout << filename << std::endl;
         });
         convert_thread.detach();
