@@ -13,7 +13,6 @@
 
 namespace hnll {
 
-constexpr float BORE_LENGTH = 0.5f;
 constexpr float DX  = 1.97e-3;
 constexpr float DT  = 5e-6;
 constexpr float RHO = 1.1f;
@@ -23,13 +22,14 @@ constexpr float P_FAC = DT / RHO * SOUND_SPEED * SOUND_SPEED / DX;
 constexpr uint32_t FDTD_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t SAMPLING_RATE = 44100;
-constexpr float    AUDIO_FPS = 1.f / DT;
-constexpr float    GRAPHICS_FPS = 30;
+constexpr float AUDIO_FPS = 1.f / DT;
+constexpr float GRAPHICS_FPS = 30;
+constexpr float BORE_LENGTH = 0.3f;
 constexpr float MOUTHPIECE_RADIUS = 0.008f; // 8 mm
 constexpr float MOUTHPIECE_BUFFER = 0.0005f; // 0.5 mm
 constexpr float MOUTHPIECE_LENGTH = 0.09f; // 9 cm
 constexpr float MOUTHPIECE_BORE_INTERSECTION = 0.01f;
-constexpr float HOLE_RADIUS = 0.003f; // 3 mm
+constexpr float HOLE_RADIUS = 0.0015f; // 3 mm
 constexpr float BORE_THICKNESS = 0.002f;
 int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
 std::string OBJ_DIR = "/models/instruments/";
@@ -55,7 +55,7 @@ float calc_y(float x)
   // cone
 //  return input_edge_width + 0.07f * std::max(x - MOUTHPIECE_LENGTH, 0.f);
   // exponential
-  return input_edge_width - 0.001f + 0.001f * std::exp(40.f * std::max(x - 0.4f, 0.f));
+  return input_edge_width - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.25f, 0.f));
 }
 
 // push constant, particle

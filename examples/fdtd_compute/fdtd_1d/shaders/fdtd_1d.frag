@@ -11,9 +11,9 @@ layout (std430, set = 1, binding = 0) readonly buffer Curr { particle curr[]; };
 layout (std430, set = 2, binding = 0) readonly buffer Field { field_element field[]; };
 layout (push_constant) uniform Push { fdtd_push push; };
 
-float max_length = 0.6f; // meter
+float max_length = 0.45f; // meter
 float mergin = 0.05f;
-float edge_width = 0.004f;
+float edge_width = 0.002f;
 
 vec3 positive_color = vec3(1.f, 0.2f, 0.f);
 vec3 negative_color = vec3(0.f, 0.2f, 1.f);
