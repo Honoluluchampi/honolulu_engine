@@ -167,7 +167,7 @@ void convert_to_obj(
 
         for (const auto& hole : hole_ids) {
           for (int l = 0; l < 3; l++) {
-            if (test_point_hole_intersection(vertices[l], dx * float(hole_ids[hole]) * model.scale, hole_radius * model.scale)) {
+            if (test_point_hole_intersection(vertices[l], dx * float(hole) * model.scale, hole_radius * model.scale)) {
               count++;
               intersecting_vert_id = l;
             }

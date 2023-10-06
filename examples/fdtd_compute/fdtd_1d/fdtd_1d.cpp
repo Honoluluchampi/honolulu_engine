@@ -29,6 +29,7 @@ constexpr float MOUTHPIECE_RADIUS = 0.008f; // 8 mm
 constexpr float MOUTHPIECE_BUFFER = 0.0005f; // 0.5 mm
 constexpr float MOUTHPIECE_LENGTH = 0.09f; // 9 cm
 constexpr float MOUTHPIECE_BORE_INTERSECTION = 0.01f;
+constexpr float HOLE_RADIUS = 0.003f; // 3 mm
 constexpr float BORE_THICKNESS = 0.002f;
 int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
 std::string OBJ_DIR = "/models/instruments/";
@@ -428,7 +429,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
           }
           utils::mkdir_p(std::string(getenv("HNLL_ENGN")) + OBJ_DIR);
           std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "test.obj";
-          convert_to_obj(filename, DX, BORE_THICKNESS, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets, hole_ids_, 0.003);
+          convert_to_obj(filename, DX, BORE_THICKNESS, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets, hole_ids_, HOLE_RADIUS);
           std::cout << filename << std::endl;
         });
         convert_thread.detach();
