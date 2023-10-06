@@ -233,6 +233,11 @@ void convert_to_obj(
                 model.get_body_norm_id(id_set[k][id1 + 1], false))
             );
           }
+
+          if (count == 2 && vertices[0].y() > 0) {
+            int out_vert_id =
+            // add a small triangle
+          }
         }
       }
     }
