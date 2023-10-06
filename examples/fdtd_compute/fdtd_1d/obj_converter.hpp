@@ -67,6 +67,24 @@ struct obj_model
 bool test_point_hole_intersection(const vec3& point, float hole_x, float hole_radius)
 { return (vec2(point.x(), point.z()) - vec2(hole_x, 0.f)).norm() <= hole_radius; }
 
+// start should be out of hole cylinder
+// end should be in the hole cylinder
+// therefore, the output is guaranteed to be the closer intersecting point
+vec3 test_line_hole_intersection(const vec3& start, const vec3& end, float hole_x, float hole_radius)
+{
+  float a = std::pow(end.x() - start.x(), 2.f) + std::pow(end.y() - start.y(), 2.f);
+  float b = 2.f * ((end.x() - start.x()) * (start.x() - hole_x) + (end.y() - start.y()) * start.y());
+  float c = std::pow(start.x() - hole_x, 2.f) + std::pow(start.y(), 2.f) - std::pow(hole_radius, 2.f);
+
+  float D = b * b - 4.f * a * c;
+  assert(D >= 0 && "test_line_hole_intersection");
+
+  float t = (-b - std::sqrt(D)) / (2.f * a);
+  assert(t <= 1.f);
+
+  return t * (end - start) + start;
+}
+
 // TODO adjust a mouthpiece
 // takes the list of the offsets of each bore segment.
 void convert_to_obj(
