@@ -20,10 +20,19 @@ struct obj_model
   float scale = 100.f;
   std::string name;
 
-  int get_vert_id(int offset_id, int per_circle_id, bool outer)
+  // returns added vertex's id
+  size_t add_vert(const auto& vec3)
   {
-    return (VERTEX_PER_CIRCLE * 2 * offset_id) + per_circle_id + VERTEX_PER_CIRCLE * int(outer);
+    auto ret = vertices.size();
+    vertices.emplace_back(vec3);
+    return ret;
   }
+
+  const vec3& get_vert(int offset_id, int per_circle_id, bool outer)
+  { return vertices[get_vert_id(offset_id, per_circle_id, outer)]; }
+
+  int get_vert_id(int offset_id, int per_circle_id, bool outer)
+  { return (VERTEX_PER_CIRCLE * 2 * offset_id) + per_circle_id + VERTEX_PER_CIRCLE * int(outer); }
 
   int get_body_norm_id(int per_circle_id, bool outer)
   {
@@ -177,6 +186,8 @@ void convert_to_obj(
         // count the number of the intersecting points
         int count = 0;
         int intersecting_vert_id = -1;
+        int detect_remaining_vert = 0;
+        float hole_x;
         std::vector<vec3> vertices = {
           model.vertices[model.get_vert_id(id_set[k][0], id_set[k][1], true)],
           model.vertices[model.get_vert_id(id_set[k][2], id_set[k][3], true)],
@@ -188,6 +199,8 @@ void convert_to_obj(
             if (test_point_hole_intersection(vertices[l], dx * float(hole) * model.scale, hole_radius * model.scale)) {
               count++;
               intersecting_vert_id = l;
+              detect_remaining_vert += l;
+              hole_x = dx * float(hole) * model.scale;
             }
           }
         }
@@ -235,8 +248,31 @@ void convert_to_obj(
           }
 
           if (count == 2 && vertices[0].y() > 0) {
-            int out_vert_id =
+            int out_id = ((3 - detect_remaining_vert) * 2 ) % 6;
+            int id1 = ((out_id + 1) * 2 ) % 6;
+            int id2 = ((out_id + 2) * 2 ) % 6;
             // add a small triangle
+            const auto& out_v = model.get_vert(id_set[k][out_id], id_set[k][out_id + 1], true);
+            // intersecting 2 vertices
+            const auto& v1 = model.get_vert(id_set[k][id1], id_set[k][id1 + 1], true);
+            const auto& v2 = model.get_vert(id_set[k][id2], id_set[k][id2 + 1], true);
+
+            auto new_v1 = test_line_hole_intersection(out_v, v1, hole_x, hole_radius * model.scale);
+            auto new_v2 = test_line_hole_intersection(out_v, v2, hole_x, hole_radius * model.scale);
+
+            auto new_v1_id = model.add_vert(new_v1);
+            auto new_v2_id = model.add_vert(new_v2);
+
+            model.planes.emplace_back(
+              ivec3(
+                model.get_vert_id(id_set[k][out_id], id_set[k][out_id + 1], true),
+                model.get_vert_id(id_set[k][id1], id_set[k][id1], true),
+                model.get_vert_id(id_set[k][id2], id_set[k][id2], true)),
+              ivec3(
+                model.get_body_norm_id(id_set[k][out_id + 1], true),
+                model.get_body_norm_id(id_set[k][id1 + 1], true),
+                model.get_body_norm_id(id_set[k][id2 + 1], true))
+            );
           }
         }
       }

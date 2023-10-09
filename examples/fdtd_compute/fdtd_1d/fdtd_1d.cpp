@@ -396,8 +396,6 @@ DEFINE_ENGINE(curved_fdtd_1d)
     {
       set_max_fps(30.f);
 
-      hole_ids_.resize(max_hole_count_, -10);
-
       // audio setup
       audio::engine::start_hae_context();
       source_ = audio::engine::get_available_source_id();
@@ -494,7 +492,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
 
     // hole config
     int max_hole_count_ = 8;
-    std::vector<int> hole_ids_;
+    std::vector<int> hole_ids_ = { 130, 120, 110, 100, 90, 80, 70, 60};
 
     // audio
     audio::source_id source_;
