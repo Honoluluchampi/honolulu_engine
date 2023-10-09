@@ -28,13 +28,13 @@ struct obj_model
     return ret;
   }
 
-  const vec3& get_vert(int offset_id, int per_circle_id, bool outer)
+  const vec3& get_vert(int offset_id, int per_circle_id, bool outer) const
   { return vertices[get_vert_id(offset_id, per_circle_id, outer)]; }
 
-  int get_vert_id(int offset_id, int per_circle_id, bool outer)
+  int get_vert_id(int offset_id, int per_circle_id, bool outer) const
   { return (VERTEX_PER_CIRCLE * 2 * offset_id) + per_circle_id + VERTEX_PER_CIRCLE * int(outer); }
 
-  int get_body_norm_id(int per_circle_id, bool outer)
+  int get_body_norm_id(int per_circle_id, bool outer) const
   {
     // 0 : -1, 0, 0, (for input edge)
     // 1 : 1, 0, 0, (for output edge)
@@ -81,15 +81,15 @@ bool test_point_hole_intersection(const vec3& point, float hole_x, float hole_ra
 // therefore, the output is guaranteed to be the closer intersecting point
 vec3 test_line_hole_intersection(const vec3& start, const vec3& end, float hole_x, float hole_radius)
 {
-  float a = std::pow(end.x() - start.x(), 2.f) + std::pow(end.y() - start.y(), 2.f);
-  float b = 2.f * ((end.x() - start.x()) * (start.x() - hole_x) + (end.y() - start.y()) * start.y());
-  float c = std::pow(start.x() - hole_x, 2.f) + std::pow(start.y(), 2.f) - std::pow(hole_radius, 2.f);
+  float a = std::pow(end.x() - start.x(), 2.f) + std::pow(end.z() - start.z(), 2.f);
+  float b = 2.f * ((end.x() - start.x()) * (start.x() - hole_x) + (end.z() - start.z()) * start.z());
+  float c = std::pow(start.x() - hole_x, 2.f) + std::pow(start.z(), 2.f) - std::pow(hole_radius, 2.f);
 
   float D = b * b - 4.f * a * c;
   assert(D >= 0 && "test_line_hole_intersection");
 
   float t = (-b - std::sqrt(D)) / (2.f * a);
-  assert(t <= 1.f);
+  assert(t <= 1.f && t >= 0.f);
 
   return t * (end - start) + start;
 }
@@ -118,7 +118,7 @@ void convert_to_obj(
     // add inner vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertices.emplace_back(model.scale * vec3(
+      model.add_vert(model.scale * vec3(
         dx * float(i),
         radius * float(std::sin(phi)),
         radius * float(std::cos(phi)))
@@ -127,7 +127,7 @@ void convert_to_obj(
     // add outer vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertices.emplace_back(model.scale * vec3(
+      model.add_vert(model.scale * vec3(
         dx * float(i),
         (radius + thickness) * float(std::sin(phi)),
         (radius + thickness) * float(std::cos(phi)))
@@ -189,9 +189,9 @@ void convert_to_obj(
         int detect_remaining_vert = 0;
         float hole_x;
         std::vector<vec3> vertices = {
-          model.vertices[model.get_vert_id(id_set[k][0], id_set[k][1], true)],
-          model.vertices[model.get_vert_id(id_set[k][2], id_set[k][3], true)],
-          model.vertices[model.get_vert_id(id_set[k][4], id_set[k][5], true)],
+          model.get_vert(id_set[k][0], id_set[k][1], true),
+          model.get_vert(id_set[k][2], id_set[k][3], true),
+          model.get_vert(id_set[k][4], id_set[k][5], true)
         };
 
         for (const auto& hole : hole_ids) {
@@ -248,9 +248,10 @@ void convert_to_obj(
           }
 
           if (count == 2 && vertices[0].y() > 0) {
-            int out_id = ((3 - detect_remaining_vert) * 2 ) % 6;
-            int id1 = ((out_id + 1) * 2 ) % 6;
-            int id2 = ((out_id + 2) * 2 ) % 6;
+            int out_id_raw = 3 - detect_remaining_vert;
+            int out_id = out_id_raw * 2;
+            int id1 = ((out_id_raw + 1) % 3) * 2;
+            int id2 = ((out_id_raw + 2) % 3) * 2;
             // add a small triangle
             const auto& out_v = model.get_vert(id_set[k][out_id], id_set[k][out_id + 1], true);
             // intersecting 2 vertices
@@ -266,12 +267,12 @@ void convert_to_obj(
             model.planes.emplace_back(
               ivec3(
                 model.get_vert_id(id_set[k][out_id], id_set[k][out_id + 1], true),
-                model.get_vert_id(id_set[k][id1], id_set[k][id1], true),
-                model.get_vert_id(id_set[k][id2], id_set[k][id2], true)),
+                new_v1_id,
+                new_v2_id),
               ivec3(
                 model.get_body_norm_id(id_set[k][out_id + 1], true),
-                model.get_body_norm_id(id_set[k][id1 + 1], true),
-                model.get_body_norm_id(id_set[k][id2 + 1], true))
+                model.get_body_norm_id(id_set[k][out_id + 1], true),
+                model.get_body_norm_id(id_set[k][out_id + 1], true))
             );
           }
         }
