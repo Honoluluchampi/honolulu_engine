@@ -111,9 +111,6 @@ void convert_to_obj(
   model.name = name;
   // register the vertices
   for (int i = 0; i < segment_count; i++) {
-    if (dx * float(i) < start_x)
-      continue;
-
     auto radius = offsets[i];
     // add inner vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
@@ -142,7 +139,7 @@ void convert_to_obj(
     // output edge
     model.normals.emplace_back(1, 0, 0);
     // body
-    for (int inout = 0; inout <=1; inout++) {
+    for (int inout = 0; inout <= 1; inout++) {
       for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
         auto sign = 2.f * float(inout) - 1.f;
         auto phi = 2.f * M_PI * i / float(model.VERTEX_PER_CIRCLE);
@@ -152,27 +149,46 @@ void convert_to_obj(
   }
 
   // register the planes
-  // input edge
   for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
+    // input edge
     auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
+    auto input_offset = int(start_x / dx) + 1;
     model.planes.emplace_back(
       ivec3(
-        model.get_vert_id(0, i, false),
-        model.get_vert_id(0, i, true),
-        model.get_vert_id(0, next_i, true)),
+        model.get_vert_id(input_offset, i, false),
+        model.get_vert_id(input_offset, i, true),
+        model.get_vert_id(input_offset, next_i, true)),
       ivec3(0, 0, 0)
     );
     model.planes.emplace_back(
       ivec3(
-        model.get_vert_id(0, i, false),
-        model.get_vert_id(0, next_i, true),
-        model.get_vert_id(0, next_i, false)),
+        model.get_vert_id(input_offset, i, false),
+        model.get_vert_id(input_offset, next_i, true),
+        model.get_vert_id(input_offset, next_i, false)),
       ivec3(0, 0, 0)
+    );
+
+    // output edge
+    model.planes.emplace_back(
+      ivec3(
+        model.get_vert_id(segment_count - 1, i, false),
+        model.get_vert_id(segment_count - 1, i, true),
+        model.get_vert_id(segment_count - 1, next_i, true)),
+      ivec3(1, 1, 1)
+    );
+    model.planes.emplace_back(
+      ivec3(
+        model.get_vert_id(segment_count - 1, i, false),
+        model.get_vert_id(segment_count - 1, next_i, true),
+        model.get_vert_id(segment_count - 1, next_i, false)),
+      ivec3(1, 1, 1)
     );
   }
 
   // body
   for (int i = 0; i < segment_count; i++) {
+    if (dx * float(i) < start_x)
+      continue;
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
 
@@ -221,82 +237,64 @@ void convert_to_obj(
             );
           }
           // close the hole side
-          if (count == 1 && vertices[0].y() > 0) {
-            // id of the remaining two vertices
-            int id1 = ((intersecting_vert_id + 1) * 2 ) % 6;
-            int id2 = ((intersecting_vert_id + 2) * 2 ) % 6;
-            model.planes.emplace_back(
-              ivec3(
-                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
-                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], true),
-                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false)),
-              ivec3(
-                model.get_body_norm_id(id_set[k][id1 + 1], true),
-                model.get_body_norm_id(id_set[k][id2 + 1], true),
-                model.get_body_norm_id(id_set[k][id2 + 1], false))
-              );
-            model.planes.emplace_back(
-              ivec3(
-                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
-                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false),
-                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], false)),
-              ivec3(
-                model.get_body_norm_id(id_set[k][id1 + 1], true),
-                model.get_body_norm_id(id_set[k][id2 + 1], false),
-                model.get_body_norm_id(id_set[k][id1 + 1], false))
-            );
-          }
+//          if (count == 1 && vertices[0].y() > 0) {
+//            // id of the remaining two vertices
+//            int id1 = ((intersecting_vert_id + 1) * 2 ) % 6;
+//            int id2 = ((intersecting_vert_id + 2) * 2 ) % 6;
+//            model.planes.emplace_back(
+//              ivec3(
+//                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
+//                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], true),
+//                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false)),
+//              ivec3(
+//                model.get_body_norm_id(id_set[k][id1 + 1], true),
+//                model.get_body_norm_id(id_set[k][id2 + 1], true),
+//                model.get_body_norm_id(id_set[k][id2 + 1], false))
+//              );
+//            model.planes.emplace_back(
+//              ivec3(
+//                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], true),
+//                model.get_vert_id(id_set[k][id2], id_set[k][id2 + 1], false),
+//                model.get_vert_id(id_set[k][id1], id_set[k][id1 + 1], false)),
+//              ivec3(
+//                model.get_body_norm_id(id_set[k][id1 + 1], true),
+//                model.get_body_norm_id(id_set[k][id2 + 1], false),
+//                model.get_body_norm_id(id_set[k][id1 + 1], false))
+//            );
+//          }
 
-          if (count == 2 && vertices[0].y() > 0) {
-            int out_id_raw = 3 - detect_remaining_vert;
-            int out_id = out_id_raw * 2;
-            int id1 = ((out_id_raw + 1) % 3) * 2;
-            int id2 = ((out_id_raw + 2) % 3) * 2;
-            // add a small triangle
-            const auto& out_v = model.get_vert(id_set[k][out_id], id_set[k][out_id + 1], true);
-            // intersecting 2 vertices
-            const auto& v1 = model.get_vert(id_set[k][id1], id_set[k][id1 + 1], true);
-            const auto& v2 = model.get_vert(id_set[k][id2], id_set[k][id2 + 1], true);
-
-            auto new_v1 = test_line_hole_intersection(out_v, v1, hole_x, hole_radius * model.scale);
-            auto new_v2 = test_line_hole_intersection(out_v, v2, hole_x, hole_radius * model.scale);
-
-            auto new_v1_id = model.add_vert(new_v1);
-            auto new_v2_id = model.add_vert(new_v2);
-
-            model.planes.emplace_back(
-              ivec3(
-                model.get_vert_id(id_set[k][out_id], id_set[k][out_id + 1], true),
-                new_v1_id,
-                new_v2_id),
-              ivec3(
-                model.get_body_norm_id(id_set[k][out_id + 1], true),
-                model.get_body_norm_id(id_set[k][out_id + 1], true),
-                model.get_body_norm_id(id_set[k][out_id + 1], true))
-            );
-          }
+//          else if (count == 2 && vertices[0].y() > 0) {
+//            int out_id_raw = 3 - detect_remaining_vert;
+//            assert(out_id_raw < 3 && out_id_raw >= 0);
+//            int out_id = out_id_raw * 2;
+//            int id1 = ((out_id_raw + 1) % 3) * 2;
+//            int id2 = ((out_id_raw + 2) % 3) * 2;
+//            // add a small triangle
+//            const auto& out_v = model.get_vert(id_set[k][out_id], id_set[k][out_id + 1], in_out);
+//            // intersecting 2 vertices
+//            const auto& v1 = model.get_vert(id_set[k][id1], id_set[k][id1 + 1], in_out);
+//            const auto& v2 = model.get_vert(id_set[k][id2], id_set[k][id2 + 1], in_out);
+//
+//            auto new_v1 = test_line_hole_intersection(out_v, v1, hole_x, hole_radius * model.scale);
+//            auto new_v2 = test_line_hole_intersection(out_v, v2, hole_x, hole_radius * model.scale);
+//
+//            auto new_v1_id = model.add_vert(new_v1);
+//            auto new_v2_id = model.add_vert(new_v2);
+//
+//            model.planes.emplace_back(
+//              ivec3(
+//                model.get_vert_id(id_set[k][out_id], id_set[k][out_id + 1], in_out),
+//                new_v1_id,
+//                new_v2_id),
+//              ivec3(
+//                model.get_body_norm_id(id_set[k][out_id + 1], in_out),
+//                model.get_body_norm_id(id_set[k][out_id + 1], in_out),
+//                model.get_body_norm_id(id_set[k][out_id + 1], in_out))
+//            );
+//          }
         }
       }
     }
-  }
-
-  // output edge
-  for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
-    auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
-    model.planes.emplace_back(
-      ivec3(
-        model.get_vert_id(segment_count - 1, i, false),
-        model.get_vert_id(segment_count - 1, i, true),
-        model.get_vert_id(segment_count - 1, next_i, true)),
-      ivec3(1, 1, 1)
-    );
-    model.planes.emplace_back(
-      ivec3(
-        model.get_vert_id(segment_count - 1, i, false),
-        model.get_vert_id(segment_count - 1, next_i, true),
-        model.get_vert_id(segment_count - 1, next_i, false)),
-      ivec3(1, 1, 1)
-    );
   }
 
   model.write();
