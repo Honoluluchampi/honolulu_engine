@@ -67,3 +67,12 @@ if [ ! -e $HNLL_ENGN/submodules/AudioFile/AudioFile.h ]; then
   echo "downloading AudioFile"
   curl -o $HNLL_ENGN/submodules/AudioFile/AudioFile.h https://raw.githubusercontent.com/adamstark/AudioFile/master/AudioFile.h
 fi
+
+# download igl
+if [ ! -e $HNLL_ENGN/submodules/igl/igl_inline.h ]; then
+  mkdir -p $HNLL_ENGN/submodules/igl
+  echo "downloading igl"
+  curl -o $HNLL_ENGN/submodules/igl/igl_inline.h https://raw.githubusercontent.com/libigl/libigl/main/include/igl/igl_inline.h
+  curl -o $HNLL_ENGN/submodules/igl/read_triangle_mesh.h https://raw.githubusercontent.com/libigl/libigl/main/include/igl/read_triangle_mesh.h
+  curl -o $HNLL_ENGN/submodules/igl/writeOBJ.h https://raw.githubusercontent.com/libigl/libigl/main/include/igl/writeOBJ.h
+fi
