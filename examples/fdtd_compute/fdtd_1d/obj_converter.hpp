@@ -5,6 +5,8 @@
 
 namespace hnll {
 
+constexpr double MODEL_SCALE = 100.f;
+
 // compatible with mcut
 struct obj_model
 {
@@ -16,7 +18,6 @@ struct obj_model
   uint32_t face_count = 0;
 
   int VERTEX_PER_CIRCLE = 32;
-  float scale = 100.f;
   std::string name;
 
   int get_vert_id(int offset_id, int per_circle_id, bool outer) const
@@ -36,9 +37,9 @@ struct obj_model
     assert(vertex_coords.size() % 3 == 0);
     for (int i = 0; i < vertex_coords.size() / 3; i++)
       writing_file << "v "
-        << vertex_coords[i * 3 + 0] * scale << " "
-        << vertex_coords[i * 3 + 1] * scale << " "
-        << vertex_coords[i * 3 + 2] * scale << " "
+        << vertex_coords[i * 3 + 0] << " "
+        << vertex_coords[i * 3 + 1] << " "
+        << vertex_coords[i * 3 + 2] << " "
         << std::endl;
 
     // temp : single norm
@@ -58,56 +59,35 @@ struct obj_model
   }
 };
 
-// TODO adjust a mouthpiece
-// takes the list of the offsets of each bore segment.
-void convert_to_obj(
-  std::string name,
+obj_model create_instrument(
   float dx,
   float thickness,
   float start_x,
-  const std::vector<float>& offsets,
-  const std::vector<int>& hole_ids,
-  float hole_radius)
+  const std::vector<float>& offsets)
 {
   auto segment_count = offsets.size();
 
   obj_model model;
-  model.name = name;
+  model.name = "raw_instrument";
   // register the vertices
   for (int i = 0; i < segment_count; i++) {
     auto radius = offsets[i];
     // add inner vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertex_coords.emplace_back(dx * float(i));
-      model.vertex_coords.emplace_back(radius * float(std::sin(phi))),
-      model.vertex_coords.emplace_back(radius * float(std::cos(phi)));
+      model.vertex_coords.emplace_back(MODEL_SCALE * dx * float(i));
+      model.vertex_coords.emplace_back(MODEL_SCALE * radius * float(std::sin(phi))),
+      model.vertex_coords.emplace_back(MODEL_SCALE * radius * float(std::cos(phi)));
     }
     // add outer vertices
     for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
       auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
-      model.vertex_coords.emplace_back(dx * float(i));
-      model.vertex_coords.emplace_back((radius + thickness) * float(std::sin(phi))),
-      model.vertex_coords.emplace_back((radius + thickness) * float(std::cos(phi)));
+      model.vertex_coords.emplace_back(MODEL_SCALE * dx * float(i));
+      model.vertex_coords.emplace_back(MODEL_SCALE * (radius + thickness) * float(std::sin(phi))),
+      model.vertex_coords.emplace_back(MODEL_SCALE * (radius + thickness) * float(std::cos(phi)));
     }
   }
   model.vertex_count += model.VERTEX_PER_CIRCLE * 2 * segment_count;
-
-  // register normals
-  {
-//    // input edge
-//    model.normals.emplace_back(-1, 0, 0);
-//    // output edge
-//    model.normals.emplace_back(1, 0, 0);
-//    // body
-//    for (int inout = 0; inout <= 1; inout++) {
-//      for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
-//        auto sign = 2.f * float(inout) - 1.f;
-//        auto phi = 2.f * M_PI * i / float(model.VERTEX_PER_CIRCLE);
-//        model.normals.emplace_back(0, sign * std::sin(phi), sign * std::cos(phi));
-//      }
-//    }
-  }
 
   // register the planes
   for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
@@ -157,7 +137,22 @@ void convert_to_obj(
 
   model.face_sizes.resize(model.face_count, 3);
 
-  model.write();
+  return model;
+}
+
+// TODO adjust a mouthpiece
+// takes the list of the offsets of each bore segment.
+void convert_to_obj(
+  std::string name,
+  float dx,
+  float thickness,
+  float start_x,
+  const std::vector<float>& offsets,
+  const std::vector<int>& hole_ids,
+  float hole_radius)
+{
+  auto bore = create_instrument(dx, thickness, start_x, offsets);
+//  auto cylinder = create_cylinder(hole_radius);
 }
 
 } // namespace hnll
