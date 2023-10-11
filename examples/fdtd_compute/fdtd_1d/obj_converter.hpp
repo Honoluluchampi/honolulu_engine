@@ -6,6 +6,7 @@
 namespace hnll {
 
 constexpr double MODEL_SCALE = 100.f;
+constexpr int    VERTEX_PER_CIRCLE = 32;
 
 // compatible with mcut
 struct obj_model
@@ -17,7 +18,6 @@ struct obj_model
   uint32_t vertex_count = 0;
   uint32_t face_count = 0;
 
-  int VERTEX_PER_CIRCLE = 32;
   std::string name;
 
   int get_vert_id(int offset_id, int per_circle_id, bool outer) const
@@ -73,26 +73,26 @@ obj_model create_instrument(
   for (int i = 0; i < segment_count; i++) {
     auto radius = offsets[i];
     // add inner vertices
-    for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
-      auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
+    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+      auto phi = 2.f * M_PI * j / float(VERTEX_PER_CIRCLE);
       model.vertex_coords.emplace_back(MODEL_SCALE * dx * float(i));
       model.vertex_coords.emplace_back(MODEL_SCALE * radius * float(std::sin(phi))),
       model.vertex_coords.emplace_back(MODEL_SCALE * radius * float(std::cos(phi)));
     }
     // add outer vertices
-    for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
-      auto phi = 2.f * M_PI * j / float(model.VERTEX_PER_CIRCLE);
+    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+      auto phi = 2.f * M_PI * j / float(VERTEX_PER_CIRCLE);
       model.vertex_coords.emplace_back(MODEL_SCALE * dx * float(i));
       model.vertex_coords.emplace_back(MODEL_SCALE * (radius + thickness) * float(std::sin(phi))),
       model.vertex_coords.emplace_back(MODEL_SCALE * (radius + thickness) * float(std::cos(phi)));
     }
   }
-  model.vertex_count += model.VERTEX_PER_CIRCLE * 2 * segment_count;
+  model.vertex_count += VERTEX_PER_CIRCLE * 2 * segment_count;
 
   // register the planes
-  for (int i = 0; i < model.VERTEX_PER_CIRCLE; i++) {
+  for (int i = 0; i < VERTEX_PER_CIRCLE; i++) {
     // input edge
-    auto next_i = (i + 1) % model.VERTEX_PER_CIRCLE;
+    auto next_i = (i + 1) % VERTEX_PER_CIRCLE;
     auto input_offset = int(start_x / dx) + 1;
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, true));
@@ -108,14 +108,14 @@ obj_model create_instrument(
     model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
   }
-  model.face_count += model.VERTEX_PER_CIRCLE * 4;
+  model.face_count += VERTEX_PER_CIRCLE * 4;
 
   // body
   for (int i = 0; i < segment_count; i++) {
     if (dx * float(i) < start_x)
       continue;
-    for (int j = 0; j < model.VERTEX_PER_CIRCLE; j++) {
-      auto next_j = (j + 1) % model.VERTEX_PER_CIRCLE;
+    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+      auto next_j = (j + 1) % VERTEX_PER_CIRCLE;
 
       int id_set[2][6] = {
         { i, j, i + 1, j, i + 1, next_j },
@@ -133,9 +133,57 @@ obj_model create_instrument(
       }
     }
   }
-  model.face_count += (segment_count - int(start_x / dx + 1)) * model.VERTEX_PER_CIRCLE * 4;
+  model.face_count += (segment_count - int(start_x / dx + 1)) * VERTEX_PER_CIRCLE * 4;
 
   model.face_sizes.resize(model.face_count, 3);
+
+  return model;
+}
+
+obj_model create_cylinder(std::string name, float hole_radius, float x_offset)
+{
+  obj_model model;
+  model.name = name;
+
+  // register vertices
+  float z_offset[2] = { 0.f, 10.f };
+  // bottom and top circle
+  for (int i = 0; i < 2; i++) {
+    model.vertex_coords.emplace_back(x_offset * MODEL_SCALE);
+    model.vertex_coords.emplace_back(z_offset[i]);
+    model.vertex_coords.emplace_back(0.f);
+    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+      auto phi = 2.f * M_PI * float(j) / float(VERTEX_PER_CIRCLE);
+      model.vertex_coords.emplace_back(MODEL_SCALE * (x_offset + hole_radius * std::cos(phi)));
+      model.vertex_coords.emplace_back(z_offset[i]);
+      model.vertex_coords.emplace_back(MODEL_SCALE * (hole_radius * std::sin(phi)));
+    }
+  }
+
+  // register circle faces
+  uint32_t id_offset[2] = {0, VERTEX_PER_CIRCLE + 1};
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+      model.face_indices.emplace_back(id_offset[i]);
+      model.face_indices.emplace_back(id_offset[i] + 1 + (j % VERTEX_PER_CIRCLE));
+      model.face_indices.emplace_back(id_offset[i] + 1 + ((j + 1) % VERTEX_PER_CIRCLE));
+    }
+  }
+
+  // register wall faces
+  for (int i = 0; i < VERTEX_PER_CIRCLE; i++) {
+    model.face_indices.emplace_back(id_offset[0] + 1 + (i % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[0] + 1 + ((i + 1) % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[1] + 1 + ((i + 1) % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[0] + 1 + (i % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[1] + 1 + ((i + 1) % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[1] + 1 + (i % VERTEX_PER_CIRCLE));
+  }
+
+  model.vertex_count = VERTEX_PER_CIRCLE * 2 + 2;
+  model.face_count = VERTEX_PER_CIRCLE * 4;
+
+  model.write();
 
   return model;
 }
@@ -152,7 +200,7 @@ void convert_to_obj(
   float hole_radius)
 {
   auto bore = create_instrument(dx, thickness, start_x, offsets);
-//  auto cylinder = create_cylinder(hole_radius);
+  auto cylinder = create_cylinder(name, hole_radius, hole_ids[1] * dx);
 }
 
 } // namespace hnll
