@@ -10,6 +10,10 @@ struct obj_model
 {
   std::vector<double> vertex_coords;
   std::vector<uint32_t> face_indices;
+  std::vector<uint32_t> face_sizes;
+
+  uint32_t vertex_count = 0;
+  uint32_t face_count = 0;
 
   int VERTEX_PER_CIRCLE = 32;
   float scale = 100.f;
@@ -28,6 +32,7 @@ struct obj_model
       std::cerr << "failed to open file : " << name << std::endl;
 
     // write vertex value
+    assert(vertex_coords.size() / 3 == vertex_count);
     assert(vertex_coords.size() % 3 == 0);
     for (int i = 0; i < vertex_coords.size() / 3; i++)
       writing_file << "v "
@@ -40,6 +45,7 @@ struct obj_model
     writing_file << "vn " << 0 << " " << 1 << " " << 0 << std::endl;
 
     // write plane with 1-index indices
+    assert(face_indices.size() / 3 == face_count);
     assert(face_indices.size() % 3 == 0);
     for (int i = 0; i < face_indices.size() / 3; i++)
       writing_file << "f "
@@ -85,6 +91,7 @@ void convert_to_obj(
       model.vertex_coords.emplace_back((radius + thickness) * float(std::cos(phi)));
     }
   }
+  model.vertex_count += model.VERTEX_PER_CIRCLE * 2 * segment_count;
 
   // register normals
   {
@@ -121,6 +128,7 @@ void convert_to_obj(
     model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
   }
+  model.face_count += model.VERTEX_PER_CIRCLE * 4;
 
   // body
   for (int i = 0; i < segment_count; i++) {
@@ -145,6 +153,9 @@ void convert_to_obj(
       }
     }
   }
+  model.face_count += (segment_count - int(start_x / dx + 1)) * model.VERTEX_PER_CIRCLE * 4;
+
+  model.face_sizes.resize(model.face_count, 3);
 
   model.write();
 }
