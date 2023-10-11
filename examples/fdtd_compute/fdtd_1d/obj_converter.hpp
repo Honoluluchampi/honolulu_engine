@@ -2,6 +2,7 @@
 
 #include <utils/common_alias.hpp>
 #include <fstream>
+#include <mcut/mcut.h>
 
 namespace hnll {
 
@@ -94,19 +95,20 @@ obj_model create_instrument(
     // input edge
     auto next_i = (i + 1) % VERTEX_PER_CIRCLE;
     auto input_offset = int(start_x / dx) + 1;
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, true));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
+
+    // output edge
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, false));
-    // output edge
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, true));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
   }
   model.face_count += VERTEX_PER_CIRCLE * 4;
 
@@ -181,6 +183,7 @@ obj_model create_cylinder(float hole_radius, float x_offset)
 
   model.vertex_count = VERTEX_PER_CIRCLE * 2 + 2;
   model.face_count = VERTEX_PER_CIRCLE * 4;
+  model.face_sizes.resize(model.face_count, 3);
 
   return model;
 }
@@ -196,8 +199,136 @@ void convert_to_obj(
   const std::vector<int>& hole_ids,
   float hole_radius)
 {
-  auto bore = create_instrument(dx, thickness, start_x, offsets);
-  auto cylinder = create_cylinder(hole_radius, hole_ids[1] * dx);
+  auto cylinder = create_instrument(dx, thickness, start_x, offsets);
+  auto bore = create_cylinder(hole_radius, hole_ids[1] * dx);
+
+  McContext context = MC_NULL_HANDLE;
+  McResult err = mcCreateContext(&context, MC_DEBUG);
+  assert(err == MC_NO_ERROR);
+
+  // dispatch task
+  McFlags bool_op = MC_DISPATCH_FILTER_FRAGMENT_SEALING_INSIDE | MC_DISPATCH_FILTER_FRAGMENT_LOCATION_ABOVE;
+  err = mcDispatch(
+    context,
+    MC_DISPATCH_VERTEX_ARRAY_DOUBLE | MC_DISPATCH_ENFORCE_GENERAL_POSITION | bool_op,
+    // source
+    reinterpret_cast<const void*>(bore.vertex_coords.data()),
+    reinterpret_cast<const uint32_t*>(bore.face_indices.data()),
+    bore.face_sizes.data(),
+    static_cast<uint32_t>(bore.vertex_coords.size() / 3),
+    static_cast<uint32_t>(bore.face_sizes.size()),
+    // cut mesh
+    reinterpret_cast<const void*>(cylinder.vertex_coords.data()),
+    reinterpret_cast<const uint32_t*>(cylinder.face_indices.data()),
+    cylinder.face_sizes.data(),
+    static_cast<uint32_t>(cylinder.vertex_count),
+    static_cast<uint32_t>(cylinder.face_sizes.size())
+  );
+  assert(err == MC_NO_ERROR);
+
+  // the number of available connected component should be 1
+  uint32_t numCC; // connected component
+  err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, 0, NULL, &numCC);
+  assert(err == MC_NO_ERROR);
+  assert(numCC == 1);
+
+  std::vector<McConnectedComponent> CCs(numCC, MC_NULL_HANDLE);
+  CCs.resize(numCC);
+  err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, (uint32_t)CCs.size(), CCs.data(), NULL);
+  assert(err == MC_NO_ERROR);
+
+  // query the data of each connected component from MCUT
+  McConnectedComponent connComp = CCs[0];
+
+  // query the vertices
+  McSize numBytes = 0;
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, 0, NULL, &numBytes);
+  assert(err == MC_NO_ERROR);
+  uint32_t ccVertexCount = (uint32_t)(numBytes / (sizeof(double) * 3));
+  std::vector<double> ccVertices((McSize)ccVertexCount * 3u, 0);
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, numBytes, (void*)ccVertices.data(), NULL);
+  assert(err == MC_NO_ERROR);
+
+  // query the faces
+  numBytes = 0;
+
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, 0, NULL, &numBytes);
+  assert(err == MC_NO_ERROR);
+  std::vector<uint32_t> ccFaceIndices(numBytes / sizeof(uint32_t), 0);
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, numBytes, ccFaceIndices.data(), NULL);
+  assert(err == MC_NO_ERROR);
+
+  std::vector<uint32_t> faceSizes(ccFaceIndices.size() / 3, 3);
+  const uint32_t ccFaceCount = static_cast<uint32_t>(faceSizes.size());
+
+  /// ------------------------------------------------------------------------------------
+
+  // Here we show, how to know when connected components, pertain particular boolean operations.
+
+  McPatchLocation patchLocation = (McPatchLocation)0;
+
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_PATCH_LOCATION, sizeof(McPatchLocation), &patchLocation, NULL);
+  assert(err == MC_NO_ERROR);
+
+  McFragmentLocation fragmentLocation = (McFragmentLocation)0;
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FRAGMENT_LOCATION, sizeof(McFragmentLocation), &fragmentLocation, NULL);
+  assert(err == MC_NO_ERROR);
+
+  // save cc mesh to .obj file
+  // -------------------------
+
+  auto extract_fname = [](const std::string& full_path) {
+    // get filename
+    std::string base_filename = full_path.substr(full_path.find_last_of("/\\") + 1);
+    // remove extension from filename
+    std::string::size_type const p(base_filename.find_last_of('.'));
+    std::string file_without_extension = base_filename.substr(0, p);
+    return file_without_extension;
+  };
+
+  std::string fpath(name);
+
+  printf("write file: %s\n", fpath.c_str());
+
+  std::ofstream file(fpath);
+
+  // write vertices and normals
+  for (uint32_t i = 0; i < ccVertexCount; ++i) {
+    double x = ccVertices[(McSize)i * 3 + 0];
+    double y = ccVertices[(McSize)i * 3 + 1];
+    double z = ccVertices[(McSize)i * 3 + 2];
+    file << "v " << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << x << " " << y << " " << z << std::endl;
+  }
+
+  int faceVertexOffsetBase = 0;
+
+  // for each face in CC
+  for (uint32_t f = 0; f < ccFaceCount; ++f) {
+    bool reverseWindingOrder = (fragmentLocation == MC_FRAGMENT_LOCATION_BELOW) && (patchLocation == MC_PATCH_LOCATION_OUTSIDE);
+    int faceSize = faceSizes.at(f);
+    file << "f ";
+    // for each vertex in face
+    for (int v = (reverseWindingOrder ? (faceSize - 1) : 0);
+         (reverseWindingOrder ? (v >= 0) : (v < faceSize));
+         v += (reverseWindingOrder ? -1 : 1)) {
+      const int ccVertexIdx = ccFaceIndices[(McSize)faceVertexOffsetBase + v];
+      file << (ccVertexIdx + 1) << " ";
+    } // for (int v = 0; v < faceSize; ++v) {
+    file << std::endl;
+
+    faceVertexOffsetBase += faceSize;
+  }
+
+  // 6. free connected component data
+  // --------------------------------
+  err = mcReleaseConnectedComponents(context, (uint32_t)CCs.size(), CCs.data());
+  assert(err == MC_NO_ERROR);
+
+  // 7. destroy context
+  // ------------------
+  err = mcReleaseContext(context);
+
+  assert(err == MC_NO_ERROR);
 }
 
 } // namespace hnll
