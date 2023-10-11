@@ -68,7 +68,7 @@ obj_model create_instrument(
   auto segment_count = offsets.size();
 
   obj_model model;
-  model.name = "raw_instrument";
+
   // register the vertices
   for (int i = 0; i < segment_count; i++) {
     auto radius = offsets[i];
@@ -140,10 +140,9 @@ obj_model create_instrument(
   return model;
 }
 
-obj_model create_cylinder(std::string name, float hole_radius, float x_offset)
+obj_model create_cylinder(float hole_radius, float x_offset)
 {
   obj_model model;
-  model.name = name;
 
   // register vertices
   float z_offset[2] = { 0.f, 10.f };
@@ -183,8 +182,6 @@ obj_model create_cylinder(std::string name, float hole_radius, float x_offset)
   model.vertex_count = VERTEX_PER_CIRCLE * 2 + 2;
   model.face_count = VERTEX_PER_CIRCLE * 4;
 
-  model.write();
-
   return model;
 }
 
@@ -200,7 +197,7 @@ void convert_to_obj(
   float hole_radius)
 {
   auto bore = create_instrument(dx, thickness, start_x, offsets);
-  auto cylinder = create_cylinder(name, hole_radius, hole_ids[1] * dx);
+  auto cylinder = create_cylinder(hole_radius, hole_ids[1] * dx);
 }
 
 } // namespace hnll
