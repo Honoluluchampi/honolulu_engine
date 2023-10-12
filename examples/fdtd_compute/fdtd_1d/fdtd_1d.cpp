@@ -24,7 +24,7 @@ constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float AUDIO_FPS = 1.f / DT;
 constexpr float GRAPHICS_FPS = 30;
-constexpr float BORE_LENGTH = 0.3f;
+constexpr float BORE_LENGTH = 0.35f;
 constexpr float MOUTHPIECE_RADIUS = 0.008f; // 8 mm
 constexpr float MOUTHPIECE_BUFFER = 0.0005f; // 0.5 mm
 constexpr float MOUTHPIECE_LENGTH = 0.09f; // 9 cm
@@ -48,8 +48,8 @@ float calc_y(float x)
 //  return input_edge_width;
   // sine + exponential
   return input_edge_width +
-    0.004f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
-    - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.25f, 0.f));
+    0.003f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
+    - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.3f, 0.f));
   // stairs
 //  return input_edge_width + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
@@ -435,7 +435,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
         if (ImGui::Button(std::string("hole " + std::to_string(i)).c_str())) {
           *field_->get_open_hole_id_p() = hole_ids_[i];
         }
-        ImGui::SliderInt(std::string("position " + std::to_string(i)).c_str(), &hole_ids_[i], 30, 130);
+        ImGui::SliderInt(std::string("position " + std::to_string(i)).c_str(), &hole_ids_[i], 30, field_->get_main_grid_count());
       }
 
       ImGui::End();
@@ -490,7 +490,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
 
     // hole config
     int max_hole_count_ = 8;
-    std::vector<int> hole_ids_ = { 130, 120, 110, 100, 90, 80, 70, 60};
+    std::vector<int> hole_ids_ = { 148, 132, 118, 110, 99, 89, 78, 74};
 
     // audio
     audio::source_id source_;

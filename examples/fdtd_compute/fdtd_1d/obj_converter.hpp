@@ -394,7 +394,7 @@ void convert_to_obj(
     float offset[4] = {
       start_x,
       float(hole_ids[4] + hole_ids[5]) / 2.f * dx,
-      float(hole_ids[2] + hole_ids[1]) / 2.f * dx,
+      float(hole_ids[0] + hole_ids[1]) / 2.f * dx,
       float(offsets.size()) * dx,
     };
 
