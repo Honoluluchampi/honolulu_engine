@@ -163,12 +163,15 @@ obj_model create_cylinder(float hole_radius, float x_offset)
 
   // register circle faces
   uint32_t id_offset[2] = {0, VERTEX_PER_CIRCLE + 1};
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
-      model.face_indices.emplace_back(id_offset[i]);
-      model.face_indices.emplace_back(id_offset[i] + 1 + (j % VERTEX_PER_CIRCLE));
-      model.face_indices.emplace_back(id_offset[i] + 1 + ((j + 1) % VERTEX_PER_CIRCLE));
-    }
+  for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
+    // top circle
+    model.face_indices.emplace_back(id_offset[0]);
+    model.face_indices.emplace_back(id_offset[0] + 1 + ((j + 1) % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[0] + 1 + (j % VERTEX_PER_CIRCLE));
+    // bottom circle
+    model.face_indices.emplace_back(id_offset[1]);
+    model.face_indices.emplace_back(id_offset[1] + 1 + (j % VERTEX_PER_CIRCLE));
+    model.face_indices.emplace_back(id_offset[1] + 1 + ((j + 1) % VERTEX_PER_CIRCLE));
   }
 
   // register wall faces
@@ -182,7 +185,7 @@ obj_model create_cylinder(float hole_radius, float x_offset)
   }
 
   model.vertex_count = VERTEX_PER_CIRCLE * 2 + 2;
-  model.face_count = VERTEX_PER_CIRCLE * 4;
+  model.face_count = model.face_indices.size() / 3;
   model.face_sizes.resize(model.face_count, 3);
 
   return model;
