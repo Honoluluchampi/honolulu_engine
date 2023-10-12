@@ -60,9 +60,55 @@ struct obj_model
   }
 };
 
-void write_obj(const std::string& name )
+void write_obj(
+  const std::string& name,
+  McContext& context,
+  McConnectedComponent& connComp,
+  const std::vector<double>& ccVertices,
+  const std::vector<uint32_t>& ccFaceIndices)
 {
+  McPatchLocation patchLocation = (McPatchLocation)0;
 
+  auto err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_PATCH_LOCATION, sizeof(McPatchLocation), &patchLocation, NULL);
+  assert(err == MC_NO_ERROR);
+
+  McFragmentLocation fragmentLocation = (McFragmentLocation)0;
+  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FRAGMENT_LOCATION, sizeof(McFragmentLocation), &fragmentLocation, NULL);
+  assert(err == MC_NO_ERROR);
+
+  // save cc mesh to .obj file
+  std::string fpath(name);
+
+  printf("write file: %s\n", fpath.c_str());
+
+  std::ofstream file(fpath);
+
+  // write vertices and normals
+  for (uint32_t i = 0; i < ccVertices.size() / 3; ++i) {
+    double x = ccVertices[(McSize)i * 3 + 0];
+    double y = ccVertices[(McSize)i * 3 + 1];
+    double z = ccVertices[(McSize)i * 3 + 2];
+    file << "v " << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << x << " " << y << " " << z << std::endl;
+  }
+
+  int faceVertexOffsetBase = 0;
+
+  // for each face in CC
+  for (uint32_t f = 0; f < ccFaceIndices.size() / 3; ++f) {
+    bool reverseWindingOrder = (fragmentLocation == MC_FRAGMENT_LOCATION_BELOW) && (patchLocation == MC_PATCH_LOCATION_OUTSIDE);
+    int faceSize = 3;
+    file << "f ";
+    // for each vertex in face
+    for (int v = (reverseWindingOrder ? (faceSize - 1) : 0);
+         (reverseWindingOrder ? (v >= 0) : (v < faceSize));
+         v += (reverseWindingOrder ? -1 : 1)) {
+      const int ccVertexIdx = ccFaceIndices[(McSize)faceVertexOffsetBase + v];
+      file << (ccVertexIdx + 1) << " ";
+    } // for (int v = 0; v < faceSize; ++v) {
+    file << std::endl;
+
+    faceVertexOffsetBase += faceSize;
+  }
 }
 
 obj_model create_instrument(
@@ -322,52 +368,7 @@ void convert_to_obj(
     assert(err == MC_NO_ERROR);
   }
 
-  /// ------------------------------------------------------------------------------------
-
-  // Here we show, how to know when connected components, pertain particular boolean operations.
-
-  McPatchLocation patchLocation = (McPatchLocation)0;
-
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_PATCH_LOCATION, sizeof(McPatchLocation), &patchLocation, NULL);
-  assert(err == MC_NO_ERROR);
-
-  McFragmentLocation fragmentLocation = (McFragmentLocation)0;
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FRAGMENT_LOCATION, sizeof(McFragmentLocation), &fragmentLocation, NULL);
-  assert(err == MC_NO_ERROR);
-
-  // save cc mesh to .obj file
-  std::string fpath(name);
-
-  printf("write file: %s\n", fpath.c_str());
-
-  std::ofstream file(fpath);
-
-  // write vertices and normals
-  for (uint32_t i = 0; i < ccVertices.size() / 3; ++i) {
-    double x = ccVertices[(McSize)i * 3 + 0];
-    double y = ccVertices[(McSize)i * 3 + 1];
-    double z = ccVertices[(McSize)i * 3 + 2];
-    file << "v " << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << x << " " << y << " " << z << std::endl;
-  }
-
-  int faceVertexOffsetBase = 0;
-
-  // for each face in CC
-  for (uint32_t f = 0; f < ccFaceIndices.size() / 3; ++f) {
-    bool reverseWindingOrder = (fragmentLocation == MC_FRAGMENT_LOCATION_BELOW) && (patchLocation == MC_PATCH_LOCATION_OUTSIDE);
-    int faceSize = 3;
-    file << "f ";
-    // for each vertex in face
-    for (int v = (reverseWindingOrder ? (faceSize - 1) : 0);
-         (reverseWindingOrder ? (v >= 0) : (v < faceSize));
-         v += (reverseWindingOrder ? -1 : 1)) {
-      const int ccVertexIdx = ccFaceIndices[(McSize)faceVertexOffsetBase + v];
-      file << (ccVertexIdx + 1) << " ";
-    } // for (int v = 0; v < faceSize; ++v) {
-    file << std::endl;
-
-    faceVertexOffsetBase += faceSize;
-  }
+  write_obj(name, context, connComp, ccVertices, ccFaceIndices);
 
   // 6. free connected component data
   // --------------------------------

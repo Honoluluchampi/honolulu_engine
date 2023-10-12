@@ -426,7 +426,7 @@ DEFINE_ENGINE(curved_fdtd_1d)
             offsets.emplace_back(field_buffer[i].y_offset);
           }
           utils::mkdir_p(std::string(getenv("HNLL_ENGN")) + OBJ_DIR);
-          std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "tet.obj";
+          std::string filename = std::string(getenv("HNLL_ENGN")) + OBJ_DIR + "test.obj";
           convert_to_obj(filename, DX, BORE_THICKNESS, MOUTHPIECE_LENGTH - MOUTHPIECE_BORE_INTERSECTION, offsets, hole_ids_, HOLE_RADIUS);
           std::cout << filename << std::endl;
         });
