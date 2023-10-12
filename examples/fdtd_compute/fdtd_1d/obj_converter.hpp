@@ -88,34 +88,32 @@ obj_model create_instrument(
       model.vertex_coords.emplace_back(MODEL_SCALE * (radius + thickness) * float(std::cos(phi)));
     }
   }
-  model.vertex_count += VERTEX_PER_CIRCLE * 2 * segment_count;
 
   // register the planes
   for (int i = 0; i < VERTEX_PER_CIRCLE; i++) {
     // input edge
     auto next_i = (i + 1) % VERTEX_PER_CIRCLE;
-    auto input_offset = int(start_x / dx) + 1;
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, true));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
-    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
-
-    // output edge
+    auto input_offset = 0;int(start_x / dx) + 1;
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, false));
+
+    // output edge
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, true));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, false));
+    model.face_indices.emplace_back(model.get_vert_id(segment_count - 1, next_i, true));
   }
-  model.face_count += VERTEX_PER_CIRCLE * 4;
 
   // body
-  for (int i = 0; i < segment_count; i++) {
-    if (dx * float(i) < start_x)
-      continue;
+  for (int i = 0; i < segment_count - 1; i++) {
+//    if (dx * float(i) < start_x)
+//      continue;
     for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % VERTEX_PER_CIRCLE;
 
@@ -127,16 +125,21 @@ obj_model create_instrument(
       // loop on the 2 triangles which makes the body's square
       for (int k = 0; k < 2; k++) {
         // inner and outer planes
-        for (int in_out = 0; in_out <= 1; in_out++) {
-          model.face_indices.emplace_back(model.get_vert_id(id_set[k][0], id_set[k][1], bool(in_out)));
-          model.face_indices.emplace_back(model.get_vert_id(id_set[k][2], id_set[k][3], bool(in_out)));
-          model.face_indices.emplace_back(model.get_vert_id(id_set[k][4], id_set[k][5], bool(in_out)));
-        }
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][0], id_set[k][1], true));
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][2], id_set[k][3], true));
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][4], id_set[k][5], true));
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][0], id_set[k][1], false));
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][4], id_set[k][5], false));
+        model.face_indices.emplace_back(model.get_vert_id(id_set[k][2], id_set[k][3], false));
       }
     }
   }
-  model.face_count += (segment_count - int(start_x / dx + 1)) * VERTEX_PER_CIRCLE * 4;
 
+  // stats
+  assert(model.vertex_coords.size() % 3 == 0);
+  model.vertex_count = model.vertex_coords.size() / 3;
+  assert(model.face_indices.size() % 3 == 0);
+  model.face_count = model.face_indices.size() / 3;
   model.face_sizes.resize(model.face_count, 3);
 
   return model;
@@ -202,15 +205,15 @@ void convert_to_obj(
   const std::vector<int>& hole_ids,
   float hole_radius)
 {
-  auto cylinder = create_instrument(dx, thickness, start_x, offsets);
-  auto bore = create_cylinder(hole_radius, hole_ids[1] * dx);
+  auto bore = create_instrument(dx, thickness, start_x, offsets);
+  auto cylinder = create_cylinder(hole_radius, hole_ids[1] * dx);
 
   McContext context = MC_NULL_HANDLE;
   McResult err = mcCreateContext(&context, MC_DEBUG);
   assert(err == MC_NO_ERROR);
 
   // dispatch task
-  McFlags bool_op = MC_DISPATCH_FILTER_FRAGMENT_SEALING_INSIDE | MC_DISPATCH_FILTER_FRAGMENT_LOCATION_ABOVE;
+  McFlags bool_op = MC_DISPATCH_FILTER_FRAGMENT_SEALING_INSIDE | MC_DISPATCH_FILTER_FRAGMENT_LOCATION_BELOW;
   err = mcDispatch(
     context,
     MC_DISPATCH_VERTEX_ARRAY_DOUBLE | MC_DISPATCH_ENFORCE_GENERAL_POSITION | bool_op,
@@ -278,17 +281,6 @@ void convert_to_obj(
   assert(err == MC_NO_ERROR);
 
   // save cc mesh to .obj file
-  // -------------------------
-
-  auto extract_fname = [](const std::string& full_path) {
-    // get filename
-    std::string base_filename = full_path.substr(full_path.find_last_of("/\\") + 1);
-    // remove extension from filename
-    std::string::size_type const p(base_filename.find_last_of('.'));
-    std::string file_without_extension = base_filename.substr(0, p);
-    return file_without_extension;
-  };
-
   std::string fpath(name);
 
   printf("write file: %s\n", fpath.c_str());
