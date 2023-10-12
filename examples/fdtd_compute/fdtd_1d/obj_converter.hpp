@@ -60,6 +60,11 @@ struct obj_model
   }
 };
 
+void write_obj(const std::string& name )
+{
+
+}
+
 obj_model create_instrument(
   float dx,
   float thickness,
@@ -189,6 +194,54 @@ obj_model create_cylinder(float hole_radius, float x_offset)
   model.face_sizes.resize(model.face_count, 3);
 
   return model;
+}
+
+obj_model create_cube(float scale, float x_offset)
+{
+  obj_model cube;
+  std::vector<vec3d> vertices = {
+    { -1.f, -1.f, -1.f },
+    {  1.f, -1.f, -1.f },
+    {  1.f,  1.f, -1.f },
+    { -1.f,  1.f, -1.f },
+    { -1.f, -1.f,  1.f },
+    {  1.f, -1.f,  1.f },
+    {  1.f,  1.f,  1.f },
+    { -1.f,  1.f,  1.f },
+  };
+
+  std::vector<ivec3> faces = {
+    { 0, 3, 1 },
+    { 1, 3, 2 },
+    { 0, 1, 4 },
+    { 1, 5, 4 },
+    { 1, 2, 5 },
+    { 2, 6, 5 },
+    { 2, 3, 6 },
+    { 3, 7, 6 },
+    { 3, 0, 7 },
+    { 0, 4, 7 },
+    { 4, 5, 7 },
+    { 5, 6, 7 },
+  };
+
+  for (const auto& v : vertices) {
+    cube.vertex_coords.emplace_back(MODEL_SCALE * x_offset + (v.x() * scale));
+    cube.vertex_coords.emplace_back(v.y());
+    cube.vertex_coords.emplace_back(v.z());
+  }
+
+  for (const auto& f : faces) {
+    cube.face_indices.emplace_back(f.x());
+    cube.face_indices.emplace_back(f.y());
+    cube.face_indices.emplace_back(f.z());
+  }
+
+  cube.vertex_count = vertices.size();
+  cube.face_count = faces.size();
+  cube.face_sizes.resize(cube.face_count, 3);
+
+  return cube;
 }
 
 // TODO adjust a mouthpiece
