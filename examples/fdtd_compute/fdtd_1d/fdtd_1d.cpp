@@ -48,7 +48,7 @@ float calc_y(float x)
 //  return input_edge_width;
   // sine + exponential
   return input_edge_width +
-    0.008f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
+    0.004f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
     - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.25f, 0.f));
   // stairs
 //  return input_edge_width + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
