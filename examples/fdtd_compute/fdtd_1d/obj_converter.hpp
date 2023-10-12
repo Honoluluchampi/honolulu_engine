@@ -63,7 +63,6 @@ struct obj_model
 obj_model create_instrument(
   float dx,
   float thickness,
-  float start_x,
   const std::vector<float>& offsets)
 {
   auto segment_count = offsets.size();
@@ -93,7 +92,7 @@ obj_model create_instrument(
   for (int i = 0; i < VERTEX_PER_CIRCLE; i++) {
     // input edge
     auto next_i = (i + 1) % VERTEX_PER_CIRCLE;
-    auto input_offset = 0;int(start_x / dx) + 1;
+    auto input_offset = 0;
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, false));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, i, true));
     model.face_indices.emplace_back(model.get_vert_id(input_offset, next_i, true));
@@ -112,8 +111,6 @@ obj_model create_instrument(
 
   // body
   for (int i = 0; i < segment_count - 1; i++) {
-//    if (dx * float(i) < start_x)
-//      continue;
     for (int j = 0; j < VERTEX_PER_CIRCLE; j++) {
       auto next_j = (j + 1) % VERTEX_PER_CIRCLE;
 
@@ -205,8 +202,7 @@ void convert_to_obj(
   const std::vector<int>& hole_ids,
   float hole_radius)
 {
-  auto bore = create_instrument(dx, thickness, start_x, offsets);
-  auto cylinder = create_cylinder(hole_radius, hole_ids[1] * dx);
+  auto bore = create_instrument(dx, thickness, offsets);
 
   McContext context = MC_NULL_HANDLE;
   McResult err = mcCreateContext(&context, MC_DEBUG);
@@ -214,58 +210,64 @@ void convert_to_obj(
 
   // dispatch task
   McFlags bool_op = MC_DISPATCH_FILTER_FRAGMENT_SEALING_INSIDE | MC_DISPATCH_FILTER_FRAGMENT_LOCATION_BELOW;
-  err = mcDispatch(
-    context,
-    MC_DISPATCH_VERTEX_ARRAY_DOUBLE | MC_DISPATCH_ENFORCE_GENERAL_POSITION | bool_op,
-    // source
-    reinterpret_cast<const void*>(bore.vertex_coords.data()),
-    reinterpret_cast<const uint32_t*>(bore.face_indices.data()),
-    bore.face_sizes.data(),
-    static_cast<uint32_t>(bore.vertex_coords.size() / 3),
-    static_cast<uint32_t>(bore.face_sizes.size()),
-    // cut mesh
-    reinterpret_cast<const void*>(cylinder.vertex_coords.data()),
-    reinterpret_cast<const uint32_t*>(cylinder.face_indices.data()),
-    cylinder.face_sizes.data(),
-    static_cast<uint32_t>(cylinder.vertex_count),
-    static_cast<uint32_t>(cylinder.face_sizes.size())
-  );
-  assert(err == MC_NO_ERROR);
 
-  // the number of available connected component should be 1
-  uint32_t numCC; // connected component
-  err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, 0, NULL, &numCC);
-  assert(err == MC_NO_ERROR);
-  assert(numCC == 1);
+  // geometry
+  McConnectedComponent connComp;
+  std::vector<McConnectedComponent> CCs;
+  std::vector<double> ccVertices = std::move(bore.vertex_coords);
+  std::vector<uint32_t> ccFaceIndices = std::move(bore.face_indices);
 
-  std::vector<McConnectedComponent> CCs(numCC, MC_NULL_HANDLE);
-  CCs.resize(numCC);
-  err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, (uint32_t)CCs.size(), CCs.data(), NULL);
-  assert(err == MC_NO_ERROR);
+  for (int i = 0; i < hole_ids.size(); i++) {
+    auto cylinder = create_cylinder(hole_radius, hole_ids[i] * dx);
 
-  // query the data of each connected component from MCUT
-  McConnectedComponent connComp = CCs[0];
+    err = mcDispatch(
+      context,
+      MC_DISPATCH_VERTEX_ARRAY_DOUBLE | MC_DISPATCH_ENFORCE_GENERAL_POSITION | bool_op,
+      // source
+      reinterpret_cast<const void *>(ccVertices.data()),
+      reinterpret_cast<const uint32_t *>(ccFaceIndices.data()),
+      std::vector<uint32_t>(ccFaceIndices.size() / 3, 3).data(),
+      static_cast<uint32_t>(ccVertices.size() / 3),
+      static_cast<uint32_t>(ccFaceIndices.size() / 3),
+      // cut mesh
+      reinterpret_cast<const void *>(cylinder.vertex_coords.data()),
+      reinterpret_cast<const uint32_t *>(cylinder.face_indices.data()),
+      cylinder.face_sizes.data(),
+      static_cast<uint32_t>(cylinder.vertex_count),
+      static_cast<uint32_t>(cylinder.face_sizes.size())
+    );
+    assert(err == MC_NO_ERROR);
 
-  // query the vertices
-  McSize numBytes = 0;
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, 0, NULL, &numBytes);
-  assert(err == MC_NO_ERROR);
-  uint32_t ccVertexCount = (uint32_t)(numBytes / (sizeof(double) * 3));
-  std::vector<double> ccVertices((McSize)ccVertexCount * 3u, 0);
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, numBytes, (void*)ccVertices.data(), NULL);
-  assert(err == MC_NO_ERROR);
+    // the number of available connected component should be 1
+    uint32_t numCC; // connected component
+    err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, 0, NULL, &numCC);
+    assert(err == MC_NO_ERROR);
 
-  // query the faces
-  numBytes = 0;
+    CCs.resize(numCC, MC_NULL_HANDLE);
 
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, 0, NULL, &numBytes);
-  assert(err == MC_NO_ERROR);
-  std::vector<uint32_t> ccFaceIndices(numBytes / sizeof(uint32_t), 0);
-  err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, numBytes, ccFaceIndices.data(), NULL);
-  assert(err == MC_NO_ERROR);
+    err = mcGetConnectedComponents(context, MC_CONNECTED_COMPONENT_TYPE_FRAGMENT, (uint32_t)CCs.size(), CCs.data(), NULL);
+    assert(err == MC_NO_ERROR);
 
-  std::vector<uint32_t> faceSizes(ccFaceIndices.size() / 3, 3);
-  const uint32_t ccFaceCount = static_cast<uint32_t>(faceSizes.size());
+    // query the data of each connected component from MCUT
+    connComp = CCs[0];
+
+    // query the vertices
+    McSize numBytes = 0;
+    err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, 0, NULL, &numBytes);
+    assert(err == MC_NO_ERROR);
+    uint32_t ccVertexCount = (uint32_t)(numBytes / (sizeof(double) * 3));
+    ccVertices.resize((McSize)ccVertexCount * 3u, 0);
+    err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_VERTEX_DOUBLE, numBytes, (void*)ccVertices.data(), NULL);
+    assert(err == MC_NO_ERROR);
+
+    // query the faces
+    numBytes = 0;
+    err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, 0, NULL, &numBytes);
+    assert(err == MC_NO_ERROR);
+    ccFaceIndices.resize(numBytes / sizeof(uint32_t), 0);
+    err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, numBytes, ccFaceIndices.data(), NULL);
+    assert(err == MC_NO_ERROR);
+  }
 
   /// ------------------------------------------------------------------------------------
 
@@ -288,7 +290,7 @@ void convert_to_obj(
   std::ofstream file(fpath);
 
   // write vertices and normals
-  for (uint32_t i = 0; i < ccVertexCount; ++i) {
+  for (uint32_t i = 0; i < ccVertices.size() / 3; ++i) {
     double x = ccVertices[(McSize)i * 3 + 0];
     double y = ccVertices[(McSize)i * 3 + 1];
     double z = ccVertices[(McSize)i * 3 + 2];
@@ -298,9 +300,9 @@ void convert_to_obj(
   int faceVertexOffsetBase = 0;
 
   // for each face in CC
-  for (uint32_t f = 0; f < ccFaceCount; ++f) {
+  for (uint32_t f = 0; f < ccFaceIndices.size() / 3; ++f) {
     bool reverseWindingOrder = (fragmentLocation == MC_FRAGMENT_LOCATION_BELOW) && (patchLocation == MC_PATCH_LOCATION_OUTSIDE);
-    int faceSize = faceSizes.at(f);
+    int faceSize = 3;
     file << "f ";
     // for each vertex in face
     for (int v = (reverseWindingOrder ? (faceSize - 1) : 0);
