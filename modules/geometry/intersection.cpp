@@ -78,6 +78,28 @@ double test_aabb_sphere(const bounding_volume &aabb, const bounding_volume &sphe
   return std::max(sphere.get_sphere_radius() - std::sqrt(sq_dist), static_cast<double>(0));
 }
 
+double intersection::test_bv_intersection(const hnll::geometry::bounding_volume &a, const hnll::geometry::bounding_volume &b)
+{
+  auto a_type = a.get_bv_type();
+  auto b_type = b.get_bv_type();
+
+  if (a_type == bv_type::AABB && b_type == bv_type::AABB) {
+    return test_aabb_aabb(a, b);
+  }
+  else if (a_type == bv_type::SPHERE && b_type == bv_type::SPHERE) {
+    return test_sphere_sphere(a, b);
+  }
+  else if (a_type == bv_type::AABB && b_type == bv_type::SPHERE) {
+    return test_aabb_sphere(a, b);
+  }
+  else if (a_type == bv_type::SPHERE && b_type == bv_type::AABB) {
+    return test_aabb_sphere(b, a);
+  }
+  else {
+    throw std::runtime_error("invalid bv_type");
+  }
+}
+
 double intersection::test_sphere_frustum(const bounding_volume &sphere, const perspective_frustum &frustum)
 {
   assert(sphere.get_bv_type() == bv_type::SPHERE);

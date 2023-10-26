@@ -15,14 +15,14 @@ TEST(thread_pool, mt_queue)
 {
   std::vector<int> input = { 1, 7, 2, 3, 7, 5, 0, 4 };
 
-  mt_deque<int> queue;
+  utils::mt_deque<int> queue;
 
   for (auto& val : input) {
-    queue.push(std::move(val));
+    queue.push_tail(std::move(val));
   }
 
   for (int i = 0; i < input.size(); i++) {
-    EXPECT_EQ(input[i], *queue.try_pop());
+    EXPECT_EQ(input[i], *queue.try_pop_front());
   }
 }
 
