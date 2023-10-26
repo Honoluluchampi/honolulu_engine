@@ -1,5 +1,8 @@
 #pragma once
 
+// std
+#include <variant>
+
 // hnll
 #include <utils/common_alias.hpp>
 

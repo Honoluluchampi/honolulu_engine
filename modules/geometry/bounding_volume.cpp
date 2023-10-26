@@ -3,8 +3,21 @@
 
 namespace hnll::geometry {
 
-template<>
-u_ptr<aabb> aabb::create(const std::vector<vec3d>& vertices)
+bounding_volume::bounding_volume(const vec3d &center_point, const vec3d& radius) :
+  center_point_(center_point),
+  radius_(radius),
+  transform_(std::make_shared<utils::transform>()),
+  type_(bv_type::AABB)
+{}
+
+bounding_volume::bounding_volume(const vec3d &center_point, const double radius) :
+  center_point_(center_point),
+  radius_(radius, 0.f, 0.f),
+  transform_(std::make_shared<utils::transform>()),
+  type_(bv_type::SPHERE)
+{}
+
+u_ptr<bounding_volume> bounding_volume::create_aabb(const std::vector<vec3d>& vertices)
 {
   // TODO : compute convex-hull
   auto convex_hull = vertices;
@@ -25,24 +38,21 @@ u_ptr<aabb> aabb::create(const std::vector<vec3d>& vertices)
   }
   vec3d center_point = {(maxx + minx) / 2, (maxy + miny) / 2, (maxz + minz) / 2};
   vec3d radius = {(maxx - minx) / 2, (maxy - miny) / 2, (maxz - minz) / 2};
-  return std::make_unique<aabb>(center_point, radius);
+  return std::make_unique<bounding_volume>(center_point, radius);
 }
 
-template<>
-u_ptr<aabb> aabb::create(const vec3d &center, const vec3d &radius)
-{ return std::make_unique<aabb>(center, radius); }
+u_ptr<bounding_volume> bounding_volume::create_aabb(const vec3d &center, const vec3d &radius)
+{ return std::make_unique<bounding_volume>(center, radius); }
 
-template <>
-u_ptr<b_sphere> b_sphere::create(const vec3d& center, double radius)
-{ return std::make_unique<b_sphere>(center, radius); }
+u_ptr<bounding_volume> bounding_volume::create_sphere(const vec3d& center, double radius)
+{ return std::make_unique<bounding_volume>(center, radius); }
 
-template<>
-u_ptr<aabb> aabb::create_empty_bv(const vec3d& initial_point)
-{ return std::make_unique<aabb>(initial_point, vec3d(0.f, 0.f, 0.f)); }
-
-template<>
-u_ptr<b_sphere> b_sphere::create_empty_bv(const hnll::vec3d &initial_point)
-{ return std::make_unique<b_sphere>(initial_point, 0.f); }
+u_ptr<bounding_volume> bounding_volume::create_empty_bv(bv_type type, const hnll::vec3d &initial_point)
+{
+  auto ret = std::make_unique<bounding_volume>(initial_point, 0.f);
+  ret->type_ = type;
+  return ret;
+}
 
 std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3d> &vertices)
 {
@@ -73,16 +83,16 @@ std::pair<int,int> most_separated_points_on_aabb(const std::vector<vec3d> &verti
   return {min, max};
 }
 
-u_ptr<b_sphere> sphere_from_distant_points(const std::vector<vec3d> &vertices)
+u_ptr<bounding_volume> sphere_from_distant_points(const std::vector<vec3d> &vertices)
 {
   auto separated_idx = most_separated_points_on_aabb(vertices);
   auto center_point = (vertices[separated_idx.first] + vertices[separated_idx.second]) * 0.5f;
   double radius = (vertices[separated_idx.first] - center_point).dot(vertices[separated_idx.first] - center_point);
   radius = std::sqrt(radius);
-  return std::make_unique<b_sphere>(center_point, radius);
+  return std::make_unique<bounding_volume>(center_point, radius);
 }
 
-void extend_sphere_to_point(b_sphere& sphere, const vec3d& point)
+void extend_sphere_to_point(bounding_volume& sphere, const vec3d& point)
 {
   auto diff = point - sphere.get_world_center_point();
   auto dist2 = diff.dot(diff);
@@ -96,8 +106,7 @@ void extend_sphere_to_point(b_sphere& sphere, const vec3d& point)
 }
 
 // currently only support ritter's algorithm
-template<>
-u_ptr<b_sphere> b_sphere::create(const std::vector<vec3d>& vertices)
+u_ptr<bounding_volume> bounding_volume::create_sphere(const std::vector<vec3d>& vertices)
 {
   auto sphere = sphere_from_distant_points(vertices);
   for (const auto& vertex : vertices)
