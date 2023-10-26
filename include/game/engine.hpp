@@ -82,7 +82,6 @@ class engine_core
 template <ShadingSystem... T> struct shading_system_list {};
 template <Actor... A>         struct actor_list {};
 template <ComputeShader... C> struct compute_shader_list {};
-using no_actor = actor_list<>;
 template <class Derived, typename... T> class engine_base;
 
 template <class Derived, ShadingSystem... S, Actor... A, ComputeShader... C>
