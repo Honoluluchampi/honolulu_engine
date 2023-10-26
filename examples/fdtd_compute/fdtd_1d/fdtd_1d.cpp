@@ -24,12 +24,12 @@ constexpr uint32_t AUDIO_FRAME_BUFFER_COUNT = 2;
 constexpr uint32_t SAMPLING_RATE = 44100;
 constexpr float AUDIO_FPS = 1.f / DT;
 constexpr float GRAPHICS_FPS = 30;
-constexpr float BORE_LENGTH = 0.35f;
+constexpr float BORE_LENGTH = 0.80f;
 constexpr float MOUTHPIECE_RADIUS = 0.008f; // 8 mm
 constexpr float MOUTHPIECE_BUFFER = 0.0005f; // 0.5 mm
 constexpr float MOUTHPIECE_LENGTH = 0.09f; // 9 cm
 constexpr float MOUTHPIECE_BORE_INTERSECTION = 0.01f;
-constexpr float HOLE_RADIUS = 0.0015f; // 3 mm
+constexpr float HOLE_RADIUS = 0.002f; // 3 mm
 constexpr float BORE_THICKNESS = 0.002f;
 int UPDATE_PER_FRAME = static_cast<int>(AUDIO_FPS / GRAPHICS_FPS);
 std::string OBJ_DIR = "/models/instruments/";
@@ -47,9 +47,9 @@ float calc_y(float x)
   // straight
 //  return input_edge_width;
   // sine + exponential
-//  return input_edge_width +
-//    0.003f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
-//    - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.3f, 0.f));
+  return input_edge_width +
+    0.003f * (1 - std::cos(std::clamp(90.f * (x - MOUTHPIECE_LENGTH), 0.f, float(4.f * M_PI))))
+    - 0.001f + 0.001f * std::exp(65.f * std::max(x - 0.76f, 0.f));
   // stairs
 //  return input_edge_width + 0.003f * (x > 0.15f) + 0.003f * (x > 0.30f);
   // cone
