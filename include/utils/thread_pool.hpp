@@ -40,6 +40,14 @@ class function_wrapper
       virtual ~impl_base() {}
     };
 
+    template <typename F>
+    struct impl_type : impl_base
+    {
+      F f;
+      explicit impl_type(F&& f_) : f(std::move(f_)) {}
+      void call() override { f(); }
+    };
+
   public:
     template <typename F>
     explicit function_wrapper(F&& f) : impl_(new impl_type<F>(std::move(f))) {}
@@ -57,14 +65,6 @@ class function_wrapper
     function_wrapper& operator=(const function_wrapper&) = delete;
 
   private:
-    template <typename F>
-    struct impl_type : impl_base
-    {
-      F f;
-      explicit impl_type(F&& f_) : f(std::move(f_)) {}
-      void call() override { f(); }
-    };
-
     u_ptr<impl_base> impl_;
 };
 
