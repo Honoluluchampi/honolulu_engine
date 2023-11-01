@@ -29,6 +29,7 @@ class mt_deque {
     void push_tail(T &&new_value) {
       auto new_data = std::make_unique<T>(std::move(new_value));
       auto new_node = std::make_unique<node>();
+      auto new_node_raw = new_node.get();
       {
         // assign data ptr
         std::lock_guard<std::mutex> tail_lock(tail_mutex_);
@@ -36,9 +37,8 @@ class mt_deque {
 
         // set next-prev ptr
         tail_->next = std::move(new_node);
-        new_node->prev = tail_;
-
-        tail_ = new_node.get();
+        new_node_raw->prev = tail_;
+        tail_ = new_node_raw;
       }
       data_cond_.notify_one();
     }
