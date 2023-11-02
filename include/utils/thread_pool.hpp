@@ -73,13 +73,12 @@ class function_wrapper
 class thread_pool
 {
   public:
-    thread_pool();
-
+    thread_pool(int thread_count = 0);
     ~thread_pool();
 
     // add task to the queue
     template <typename FunctionType>
-    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f);
+    std::future<typename std::invoke_result<FunctionType()>::type> submit(FunctionType f);
 
     void run_pending_task();
 
@@ -104,7 +103,7 @@ class thread_pool
 };
 
 template <typename FunctionType>
-std::future<typename std::result_of<FunctionType()>::type> thread_pool::submit(FunctionType f)
+std::future<typename std::invoke_result<FunctionType()>::type> thread_pool::submit(FunctionType f)
 {
   // infer result type
   typedef typename std::result_of<FunctionType()>::type result_type;

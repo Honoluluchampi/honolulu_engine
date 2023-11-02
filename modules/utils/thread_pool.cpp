@@ -2,10 +2,11 @@
 
 namespace hnll::utils {
 
-thread_pool::thread_pool() : done_(false), joiner_(threads_)
+thread_pool::thread_pool(int _thread_count) : done_(false), joiner_(threads_)
 {
   // init worker threads
-  const auto thread_count = std::thread::hardware_concurrency();
+  const auto thread_count = _thread_count == 0 ?
+    std::thread::hardware_concurrency() : _thread_count;
   try {
     for (int i = 0; i < thread_count; i++) {
       // create local queues and threads

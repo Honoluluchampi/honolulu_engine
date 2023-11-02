@@ -12,6 +12,13 @@ constexpr int ELEMENT_COUNT = 10000;
 
 TEST(thread_pool, single_task)
 {
+  utils::thread_pool tp;
+
+  auto task = utils::function_wrapper([](){ return 1; });
+  auto future = tp.submit([](){
+    return 1;
+  });
+  auto future = tp.submit(std::move(task));
 }
 
 } // namespace hnll
