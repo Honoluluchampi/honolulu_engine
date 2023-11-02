@@ -10,7 +10,7 @@ thread_pool::thread_pool() : done_(false), joiner_(threads_)
     for (int i = 0; i < thread_count; i++) {
       // create local queues and threads
       local_queues_.emplace_back(std::make_unique<mt_deque<function_wrapper>>());
-      threads_.emplace_back(std::thread(&thread_pool::worker_thread, this, i));
+      threads_.emplace_back(&thread_pool::worker_thread, this, i);
     }
   }
   catch (...) {

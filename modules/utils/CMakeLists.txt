@@ -1,7 +1,7 @@
 set(SOURCES
     utils.cpp
     singleton.cpp
-    thread_pool.cpp
+        thread_pool.cpp
 )
 
 add_library(hnll_utils STATIC ${SOURCES})
