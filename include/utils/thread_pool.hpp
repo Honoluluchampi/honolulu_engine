@@ -111,13 +111,14 @@ std::future<typename std::invoke_result<FunctionType()>::type> thread_pool::subm
   std::packaged_task<result_type()> task(std::move(f));
   // preserve the future before moving this to the queue
   auto task_future = task.get_future();
+  auto task_wrapper = function_wrapper{ std::move(task) };
 
   if (local_queue_) {
-    local_queue_->push_front(std::move(task));
+    local_queue_->push_front(std::move(task_wrapper));
   }
-    // main thread doesn't have local queue
+  // main thread doesn't have local queue
   else {
-    global_queue_.push_tail(std::move(task));
+    global_queue_.push_tail(std::move(task_wrapper));
   }
   return task_future;
 }
