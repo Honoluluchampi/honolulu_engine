@@ -16,7 +16,9 @@ TEST(thread_pool, single_task)
 {
   utils::thread_pool tp;
 
-  auto future = tp.submit(task);
+  auto future = tp.submit_int(task);
+
+  std::packaged_task<int()> pt(task);
 }
 
 } // namespace hnll

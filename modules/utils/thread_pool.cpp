@@ -2,6 +2,9 @@
 
 namespace hnll::utils {
 
+thread_local mt_deque<function_wrapper>* thread_pool::local_queue_{};
+thread_local unsigned thread_pool::queue_index_{};
+
 thread_pool::thread_pool(int _thread_count) : done_(false), joiner_(threads_)
 {
   // init worker threads

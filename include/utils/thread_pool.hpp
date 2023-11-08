@@ -80,6 +80,25 @@ class thread_pool
     template <typename FunctionType>
     std::future<typename std::invoke_result<FunctionType()>::type> submit(FunctionType f);
 
+    std::future<int> submit_int(int(*f)())
+    {
+      // infer result type
+      // init task with future
+      std::packaged_task<int()> task(f);
+      // preserve the future before moving this to the queue
+      auto task_future = task.get_future();
+      auto task_wrapper = function_wrapper{ std::move(task) };
+
+      if (local_queue_) {
+        local_queue_->push_front(std::move(task_wrapper));
+      }
+        // main thread doesn't have local queue
+      else {
+        global_queue_.push_tail(std::move(task_wrapper));
+      }
+      return task_future;
+    }
+
     void run_pending_task();
 
   private:
@@ -106,9 +125,9 @@ template <typename FunctionType>
 std::future<typename std::invoke_result<FunctionType()>::type> thread_pool::submit(FunctionType f)
 {
   // infer result type
-  typedef typename std::result_of<FunctionType()>::type result_type;
+  typedef typename std::invoke_result<FunctionType()>::type result_type;
   // init task with future
-  std::packaged_task<result_type()> task(std::move(f));
+  std::packaged_task<result_type> task(f);
   // preserve the future before moving this to the queue
   auto task_future = task.get_future();
   auto task_wrapper = function_wrapper{ std::move(task) };
