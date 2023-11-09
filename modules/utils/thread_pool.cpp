@@ -14,6 +14,9 @@ thread_pool::thread_pool(int _thread_count) : done_(false), joiner_(threads_)
     for (int i = 0; i < thread_count; i++) {
       // create local queues and threads
       local_queues_.emplace_back(std::make_unique<mt_deque<function_wrapper>>());
+    }
+    // wait until all the queues are constructed
+    for (int i = 0; i < thread_count; i++) {
       threads_.emplace_back(&thread_pool::worker_thread, this, i);
     }
   }

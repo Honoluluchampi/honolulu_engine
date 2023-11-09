@@ -17,12 +17,11 @@ TEST(thread_pool, single_task)
 {
   utils::thread_pool tp;
 
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-
   auto future = tp.submit(task);
   auto future2 = tp.submit(task_with_args, 2.f, true);
 
-  std::packaged_task<int()> pt(task);
+  EXPECT_EQ(future.get(), 1);
+  EXPECT_EQ(future2.get(), 0);
 }
 
 } // namespace hnll
