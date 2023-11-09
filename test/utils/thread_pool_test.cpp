@@ -16,7 +16,8 @@ TEST(thread_pool, single_task)
 {
   utils::thread_pool tp;
 
-  auto future = tp.submit_int(task);
+  auto future_int = tp.submit_int(task);
+  auto future = tp.submit(task);
 
   std::packaged_task<int()> pt(task);
 }

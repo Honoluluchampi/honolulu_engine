@@ -78,7 +78,7 @@ class thread_pool
 
     // add task to the queue
     template <typename FunctionType>
-    std::future<typename std::invoke_result<FunctionType()>::type> submit(FunctionType f);
+    std::future<typename std::invoke_result<FunctionType>::type> submit(FunctionType f);
 
     std::future<int> submit_int(int(*f)())
     {
@@ -122,12 +122,12 @@ class thread_pool
 };
 
 template <typename FunctionType>
-std::future<typename std::invoke_result<FunctionType()>::type> thread_pool::submit(FunctionType f)
+std::future<typename std::invoke_result<FunctionType>::type> thread_pool::submit(FunctionType f)
 {
   // infer result type
-  typedef typename std::invoke_result<FunctionType()>::type result_type;
+  typedef typename std::invoke_result<FunctionType>::type result_type;
   // init task with future
-  std::packaged_task<result_type> task(f);
+  std::packaged_task<result_type()> task(f);
   // preserve the future before moving this to the queue
   auto task_future = task.get_future();
   auto task_wrapper = function_wrapper{ std::move(task) };
