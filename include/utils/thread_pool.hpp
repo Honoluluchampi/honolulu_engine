@@ -81,6 +81,7 @@ class thread_pool
     std::future<Result> submit(Func&& f, Args&&... args);
 
     void run_pending_task();
+    void wait_for_all_tasks();
 
   private:
     void worker_thread(unsigned queue_index);

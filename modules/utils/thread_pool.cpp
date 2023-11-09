@@ -45,6 +45,18 @@ void thread_pool::run_pending_task()
     std::this_thread::yield();
 }
 
+void thread_pool::wait_for_all_tasks()
+{
+  while (1) {
+    bool local_tasks_finished = true;
+    for (const auto& local_queue : local_queues_) {
+      local_tasks_finished &= local_queue->empty();
+    }
+    if (global_queue_.empty() && local_tasks_finished)
+      return;
+  }
+}
+
 void thread_pool::worker_thread(unsigned int queue_index)
 {
   queue_index_ = queue_index;
