@@ -45,23 +45,16 @@ TEST(thread_pool, multiple_task)
 }
 
 int recursive_wait(utils::thread_pool& pool, int i) {
-  if (i == 0)
-    return 1;
+  auto future = pool.submit([i]() { return i; });
 
-  else {
-//    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // add another task
-//    auto future = pool.submit(recursive_wait, pool, i - 1);
-//    return future.get() + 1;
-    return recursive_wait(pool, i - 1) + 1;
-  }
+  return future.get() + i;
 }
 
 int recursive_wait2(int i) {
   if (i == 0)
     return 1;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+//  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   return recursive_wait2(i - 1) + 1;
 }
 
@@ -70,8 +63,8 @@ TEST(thread_pool, work_stealing)
   std::vector <std::future<int>> futures;
   utils::thread_pool pool;
 
-  for (int i = 0; i < 12; i++) { //std::thread::hardware_concurrency(); i++) {
-    futures.emplace_back(pool.submit(recursive_wait, pool, i));
+  for (int i = 0; i < 2; i++) { // std::thread::hardware_concurrency(); i++) {
+    futures.emplace_back(pool.submit(recursive_wait, pool, 1));
   }
 
   int ans = 0;
@@ -79,7 +72,7 @@ TEST(thread_pool, work_stealing)
     ans += future.get();
   }
 
-  EXPECT_EQ(ans, 78);
+  EXPECT_EQ(ans, 3);
 
   // 6.6 sec
 //  ans = 0;

@@ -124,12 +124,10 @@ std::future<Result> thread_pool::submit(Func&& f, Args&&... args)
 
     if (local_queue_) {
       local_queue_->push_front(std::move(task_wrapper));
-      std::cout << "local task " << queue_index_ << std::endl;
     }
       // main thread doesn't have local queue
     else {
       global_queue_.push_tail(std::move(task_wrapper));
-      std::cout << "global task" << std::endl;
     }
   }
   return task_future;
