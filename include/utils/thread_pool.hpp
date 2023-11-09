@@ -76,28 +76,9 @@ class thread_pool
     thread_pool(int thread_count = 0);
     ~thread_pool();
 
-    // add task to the queue
-    template <typename FunctionType>
-    std::future<typename std::invoke_result<FunctionType>::type> submit(FunctionType f);
-
-    std::future<int> submit_int(int(*f)())
-    {
-      // infer result type
-      // init task with future
-      std::packaged_task<int()> task(f);
-      // preserve the future before moving this to the queue
-      auto task_future = task.get_future();
-      auto task_wrapper = function_wrapper{ std::move(task) };
-
-      if (local_queue_) {
-        local_queue_->push_front(std::move(task_wrapper));
-      }
-        // main thread doesn't have local queue
-      else {
-        global_queue_.push_tail(std::move(task_wrapper));
-      }
-      return task_future;
-    }
+    // add task to the queue by perfect forwarding arguments
+    template <typename Func, typename... Args, typename Result = std::invoke_result_t<Func, Args...>>
+    std::future<Result> submit(Func&& f, Args&&... args);
 
     void run_pending_task();
 
@@ -121,13 +102,15 @@ class thread_pool
     static thread_local unsigned queue_index_;
 };
 
-template <typename FunctionType>
-std::future<typename std::invoke_result<FunctionType>::type> thread_pool::submit(FunctionType f)
+template <typename Func, typename... Args, typename Result>
+std::future<Result> thread_pool::submit(Func&& f, Args&&... args)
 {
-  // infer result type
-  typedef typename std::invoke_result<FunctionType>::type result_type;
   // init task with future
-  std::packaged_task<result_type()> task(f);
+  auto task = std::packaged_task<Result()>(
+    [f = std::tuple<Func>(std::forward<Func>(f)), args = std::tuple<Args...>(std::forward<Args>(args)...)]()
+    { return std::apply(std::get<0>(f), args); }
+  );
+
   // preserve the future before moving this to the queue
   auto task_future = task.get_future();
   auto task_wrapper = function_wrapper{ std::move(task) };
