@@ -5,6 +5,7 @@
 #include <utils/mt_queue.hpp>
 
 // std
+#include <iostream>
 #include <future>
 
 // mt is synonym for "multi thread"
@@ -99,6 +100,8 @@ class thread_pool
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
 
+    std::mutex submit_mutex_;
+
     static thread_local mt_deque<function_wrapper>* local_queue_;
     static thread_local unsigned queue_index_;
 };
@@ -116,12 +119,18 @@ std::future<Result> thread_pool::submit(Func&& f, Args&&... args)
   auto task_future = task.get_future();
   auto task_wrapper = function_wrapper{ std::move(task) };
 
-  if (local_queue_) {
-    local_queue_->push_front(std::move(task_wrapper));
-  }
-  // main thread doesn't have local queue
-  else {
-    global_queue_.push_tail(std::move(task_wrapper));
+  {
+    std::lock_guard<std::mutex> lock(submit_mutex_);
+
+    if (local_queue_) {
+      local_queue_->push_front(std::move(task_wrapper));
+      std::cout << "local task " << queue_index_ << std::endl;
+    }
+      // main thread doesn't have local queue
+    else {
+      global_queue_.push_tail(std::move(task_wrapper));
+      std::cout << "global task" << std::endl;
+    }
   }
   return task_future;
 }

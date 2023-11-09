@@ -83,8 +83,10 @@ u_ptr<function_wrapper> thread_pool::try_steal_task()
     // not to look the first queue every time
     auto idx = (queue_index_ + i + 1) % local_queues_.size();
 
-    if (ret = local_queues_[idx]->try_pop_back(); ret)
+    if (ret = local_queues_[idx]->try_pop_back(); ret) {
+      std::cout << "task steal" << std::endl;
       return std::move(ret);
+    }
   }
 
   return nullptr;
