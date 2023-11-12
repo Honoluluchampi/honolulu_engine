@@ -52,7 +52,9 @@ int recursive_wait(utils::thread_pool& pool, int i) {
     [](utils::thread_pool& pool, int i) { return recursive_wait(pool, i - 1); },
     pool, i);
 
-  return future.get() + 1;
+  auto ans = future.get();
+
+  return ans + 1;
 }
 
 int recursive_wait2(int i) {
