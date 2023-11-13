@@ -29,16 +29,12 @@ add_executable(fdtd_2d ${SOURCES})
 target_include_directories(fdtd_2d PUBLIC $ENV{HNLL_ENGN}/include)
 target_link_libraries(fdtd_2d PUBLIC hnll_engine)
 
-# 3D
+# cylindrical
 set(SOURCES
-        fdtd_3d/fdtd_3d.cpp
-        fdtd_3d/fdtd3d_field.cpp
-        )
-add_executable(fdtd_3d ${SOURCES})
-target_include_directories(fdtd_3d PUBLIC
-        $ENV{HNLL_ENGN}/include
-        )
-target_link_libraries(fdtd_3d PUBLIC hnll_engine)
-
-# test
-add_subdirectory(test)
+        fdtd_cylindrical/fdtd_cylindrical.cpp
+        fdtd_cylindrical/fdtd_cylindrical_compute_shader.cpp
+        fdtd_cylindrical/fdtd_cylindrical_field.cpp
+        fdtd_cylindrical/fdtd_cylindrical_shading_system.cpp)
+add_executable(fdtd_cylindrical ${SOURCES})
+target_include_directories(fdtd_cylindrical PUBLIC $ENV{HNLL_ENGN}/include)
+target_link_libraries(fdtd_cylindrical PUBLIC hnll_engine)
