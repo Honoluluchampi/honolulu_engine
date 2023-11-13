@@ -16,7 +16,7 @@ uint g_id(int i, int j) { return i + j * (push.z_grid_count); }
 void main()
 {
   float x_fix_ratio = push.z_grid_count / ((1 - mergin * 2.f) * push.z_pixel_count);
-  float y_fix_ratio = push.r_grid_count / ((1 - mergin * 2.f) * push.r_pixel_count);
+  float y_fix_ratio = push.r_grid_count * 2.f / ((1 - mergin * 2.f) * push.r_pixel_count);
   float fix_ratio = max(x_fix_ratio, y_fix_ratio);
   float x_mergin = (fix_ratio * push.z_pixel_count - push.z_grid_count) / (2 * fix_ratio);
   float y_mergin = (fix_ratio * push.r_pixel_count - push.r_grid_count) / (2 * fix_ratio);

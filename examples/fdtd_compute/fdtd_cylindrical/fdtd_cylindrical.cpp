@@ -39,8 +39,8 @@ DEFINE_ENGINE(fdtd_cylindrical)
         update_per_frame_ += 1;
 
       fdtd_info info = {
-        .x_len = x_len_,
-        .y_len = y_len_,
+        .z_len = z_len_,
+        .r_len = r_len_,
         .sound_speed = sound_speed_,
         .rho = rho_,
         .pml_count = 6,
@@ -65,16 +65,16 @@ DEFINE_ENGINE(fdtd_cylindrical)
     {
       ImGui::Begin("stats");
       ImGui::Text("graphics fps : %d", int(1.f/dt));
-      ImGui::Text("x grid : %d", field_->get_x_grid());
-      ImGui::Text("y grid : %d", field_->get_y_grid());
+      ImGui::Text("z grid : %d", field_->get_z_grid_count());
+      ImGui::Text("r grid : %d", field_->get_r_grid_count());
       ImGui::Text("dt : %f", field_->get_dt());
-      ImGui::Text("grid size : %f", field_->get_dx());
+      ImGui::Text("grid size : %f", field_->get_dz());
       ImGui::Text("duration : %f", field_->get_duration());
       ImGui::Text("cursor x : %f", cursor_pos_.x());
       ImGui::Text("cursor y : %f", cursor_pos_.y());
 
-      ImGui::SliderFloat("x length", &x_len_, 0.1f, 0.8f);
-      ImGui::SliderFloat("y length", &y_len_, 0.1f, 0.4f);
+      ImGui::SliderFloat("z length", &z_len_, 0.1f, 0.8f);
+      ImGui::SliderFloat("max radius", &r_len_, 0.1f, 0.4f);
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
@@ -95,27 +95,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
 
       update_gui();
       update_sound();
-
-      if (ImGui::Button("restart")) {
-        std::thread t([this] {
-          this->staging_field_ = fdtd_cylindrical_field::create(
-            {
-              this->x_len_,
-              this->y_len_,
-              this->sound_speed_,
-              this->rho_,
-              6,
-              update_per_frame_
-            }
-          );
-        });
-        t.detach();
-        wait_for_construction_ = true;
-      }
-
-      if (ImGui::Button("open/close hole")) {
-        field_->set_tone_hole_state(!field_->get_tone_hole_is_open());
-      }
 
       ImGui::End();
 
@@ -190,8 +169,8 @@ DEFINE_ENGINE(fdtd_cylindrical)
     u_ptr<fdtd_cylindrical_field> staging_field_;
     bool wait_for_construction_ = false;
 
-    float x_len_       = 0.6f;
-    float y_len_       = 0.3f;
+    float z_len_       = 0.6f;
+    float r_len_       = 0.15f; // radius
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
     int   update_per_frame_;
@@ -222,7 +201,7 @@ int main() {
   hnll::utils::vulkan_config config;
   config.enable_validation_layers = false;
 
-  hnll::fdtd_cylindrical engine("fdtd2d", config);
+  hnll::fdtd_cylindrical engine("fdtd_cylindrical", config);
 
   try { engine.run(); }
   catch (const std::exception& e) {
