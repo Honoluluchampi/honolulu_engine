@@ -99,8 +99,6 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
 
-  initial_grid[30].p = 1000.f;
-
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
 

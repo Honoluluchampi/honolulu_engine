@@ -59,7 +59,7 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
       for (int i = 0; i < upf; i++) {
         // record pressure update
         push.buffer_index = i;
-        push.debug = 1000.f * std::sin(2.f * M_PI * 400.f * (target_->get_duration() + float(i) * target_->get_dt()));
+        push.debug = 0.3f * std::sin(2.f * M_PI * 400.f * (target_->get_duration() + float(i) * target_->get_dt()));
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
         auto desc_sets = target_->get_frame_desc_sets();

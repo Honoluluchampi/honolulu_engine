@@ -68,22 +68,25 @@ void main() {
       float p = calc_p(i, j);
       curr[idx].p = p;
 
-      if (idx == push.input_index) {
-        curr[idx].p = push.debug;
-        p = push.debug;
-      }
-
       // re-calculate the current pressure to reduce the barrier synchronization
       // update vz
       if (i > 0) {
         float p_xm1 = calc_p(i - 1, j);
         curr[idx].vz = (prev0[idx].vz - push.v_fac * (p - p_xm1) / DZ) / (1 + pml);
+
+        if (idx == push.input_index) {
+          curr[idx].vz = push.debug;
+        }
       }
 
       // update y velo
       if (j < push.r_grid_count - 1) {
         float p_yp1 = calc_p(i, j + 1);
         curr[idx].vr = (prev0[idx].vr - push.v_fac * (p_yp1 - p) / DR) / (1 + pml);
+
+        if (idx == push.input_index) {
+          curr[idx].vr = push.debug;
+        }
       }
 
       if (idx == push.listener_index)
