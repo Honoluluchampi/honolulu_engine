@@ -94,11 +94,11 @@ class bv_mesh
     static u_ptr<bv_mesh<type>> create() { return std::make_unique<bv_mesh<type>>(); }
 
     // getter
-    const bounding_volume<type>&                     get_bv() const { return *bv_; }
-    const std::vector<u_ptr<bounding_volume<type>>>& get_bvs() const { return bvs_; }
-    u_ptr<bounding_volume<type>> move_bv() { return std::move(bv_); }
-    u_ptr<bounding_volume<type>> get_bv_copy() const
-    { auto bv = *bv_; return std::make_unique<bounding_volume<type>>(bv); }
+    const bounding_volume&                     get_bv() const { return *bv_; }
+    const std::vector<u_ptr<bounding_volume>>& get_bvs() const { return bvs_; }
+    u_ptr<bounding_volume> move_bv() { return std::move(bv_); }
+    u_ptr<bounding_volume> get_bv_copy() const
+    { auto bv = *bv_; return std::make_unique<bounding_volume>(bv); }
 
     size_t get_vertex_count() const { return v_ids_.size(); }
     size_t get_face_count()   const { return f_ids_.size(); }
@@ -107,8 +107,8 @@ class bv_mesh
     const face_id_set   get_f_ids() const { return f_ids_; }
 
     // setter
-    void set_bv(u_ptr<bounding_volume<type>>&& bv) { bv_ = std::move(bv); }
-    void set_bvs(std::vector<u_ptr<bounding_volume<type>>>&& bvs) { bvs_ = std::move(bvs); }
+    void set_bv(u_ptr<bounding_volume>&& bv) { bv_ = std::move(bv); }
+    void set_bvs(std::vector<u_ptr<bounding_volume>>&& bvs) { bvs_ = std::move(bvs); }
 
     void add_v_id(vertex_id id) { v_ids_.emplace(id); }
     void add_f_id(face_id id)   { f_ids_.emplace(id); }
@@ -116,8 +116,8 @@ class bv_mesh
   private:
     vertex_id_set v_ids_;
     face_id_set   f_ids_;
-    u_ptr<bounding_volume<type>> bv_;
-    std::vector<u_ptr<bounding_volume<type>>> bvs_;
+    u_ptr<bounding_volume> bv_;
+    std::vector<u_ptr<bounding_volume>> bvs_;
 };
 
 } // namespace hnll::geometry

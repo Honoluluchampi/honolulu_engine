@@ -5,6 +5,7 @@
 #include <utils/mt_queue.hpp>
 
 // std
+#include <iostream>
 #include <future>
 
 // mt is synonym for "multi thread"
@@ -40,6 +41,14 @@ class function_wrapper
       virtual ~impl_base() {}
     };
 
+    template <typename F>
+    struct impl_type : impl_base
+    {
+      F f;
+      explicit impl_type(F&& f_) : f(std::move(f_)) {}
+      void call() override { f(); }
+    };
+
   public:
     template <typename F>
     explicit function_wrapper(F&& f) : impl_(new impl_type<F>(std::move(f))) {}
@@ -57,14 +66,6 @@ class function_wrapper
     function_wrapper& operator=(const function_wrapper&) = delete;
 
   private:
-    template <typename F>
-    struct impl_type : impl_base
-    {
-      F f;
-      explicit impl_type(F&& f_) : f(std::move(f_)) {}
-      void call() override { f(); }
-    };
-
     u_ptr<impl_base> impl_;
 };
 
@@ -73,15 +74,15 @@ class function_wrapper
 class thread_pool
 {
   public:
-    thread_pool();
-
+    thread_pool(int thread_count = 0);
     ~thread_pool();
 
-    // add task to the queue
-    template <typename FunctionType>
-    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f);
+    // add task to the queue by perfect forwarding arguments
+    template <typename Func, typename... Args, typename Result = std::invoke_result_t<Func, Args...>>
+    std::future<Result> submit(Func&& f, Args&&... args);
 
     void run_pending_task();
+    void wait_for_all_tasks();
 
   private:
     void worker_thread(unsigned queue_index);
@@ -99,26 +100,35 @@ class thread_pool
     std::vector<std::thread> threads_;
     threads_joiner joiner_;
 
+    std::mutex submit_mutex_;
+
     static thread_local mt_deque<function_wrapper>* local_queue_;
     static thread_local unsigned queue_index_;
 };
 
-template <typename FunctionType>
-std::future<typename std::result_of<FunctionType()>::type> thread_pool::submit(FunctionType f)
+template <typename Func, typename... Args, typename Result>
+std::future<Result> thread_pool::submit(Func&& f, Args&&... args)
 {
-  // infer result type
-  typedef typename std::result_of<FunctionType()>::type result_type;
   // init task with future
-  std::packaged_task<result_type()> task(std::move(f));
+  auto task = std::packaged_task<Result()>(
+    [f = std::tuple<Func>(std::forward<Func>(f)), args = std::tuple<Args...>(std::forward<Args>(args)...)]()
+    { return std::apply(std::get<0>(f), args); }
+  );
+
   // preserve the future before moving this to the queue
   auto task_future = task.get_future();
+  auto task_wrapper = function_wrapper{ std::move(task) };
 
-  if (local_queue_) {
-    local_queue_->push_front(std::move(task));
-  }
-    // main thread doesn't have local queue
-  else {
-    global_queue_.push_tail(std::move(task));
+  {
+    std::lock_guard<std::mutex> lock(submit_mutex_);
+
+    if (local_queue_) {
+      local_queue_->push_front(std::move(task_wrapper));
+    }
+      // main thread doesn't have local queue
+    else {
+      global_queue_.push_tail(std::move(task_wrapper));
+    }
   }
   return task_future;
 }

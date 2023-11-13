@@ -4,6 +4,7 @@ set(TEST_SRC
         geometry/intersection_test.cpp
         audio/fft_test.cpp
         graphics/desc_sets_test.cpp
+        utils/mt_queue_test.cpp
         utils/thread_pool_test.cpp
         )
 

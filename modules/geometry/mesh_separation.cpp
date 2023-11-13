@@ -97,8 +97,7 @@ face_id choose_random_f_id(const face_id_set& f_ids, const he_mesh& original)
 }
 
 // bv_type dependent part -------------------------------------------------------------
-template <bv_type type>
-u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f, const he_mesh& original)
+u_ptr<bounding_volume> create_bv_from_single_face(bv_type type, const face& f, const he_mesh& original)
 {
   std::vector<vec3d> vertices;
   auto first_id = f.he_id;
@@ -108,12 +107,26 @@ u_ptr<bounding_volume<type>> create_bv_from_single_face(const face& f, const he_
     vertices.push_back(original.get_vertex(curr.v_id).position);
     curr_id = curr.next;
   } while (curr_id != first_id);
-  return bounding_volume<type>::create(vertices);
+
+  switch (type) {
+    case bv_type::SPHERE : {
+      return bounding_volume::create_sphere(vertices);
+      break;
+    }
+    case bv_type::AABB : {
+      return bounding_volume::create_aabb(vertices);
+      break;
+    }
+    default : {
+      throw std::runtime_error("invalid bv_type");
+      break;
+    }
+  }
 }
 
-double compute_loss(const aabb& curr_aabb, face_id f_id, const he_mesh& original)
+double compute_aabb_loss(const bounding_volume& curr_aabb, face_id f_id, const he_mesh& original)
 {
-  auto f_aabb = create_bv_from_single_face<bv_type::AABB>(f_id, original);
+  auto f_aabb = create_bv_from_single_face(bv_type::AABB, f_id, original);
   double max_x = std::max(curr_aabb.get_max_x(), f_aabb->get_max_x());
   double min_x = std::min(curr_aabb.get_min_x(), f_aabb->get_min_x());
   double max_y = std::max(curr_aabb.get_max_y(), f_aabb->get_max_y());
@@ -136,7 +149,7 @@ double dist2(const vec3d& a, const vec3d& b)
   return ba.x() * ba.x() + ba.y() * ba.y() + ba.z() * ba.z();
 }
 
-double compute_loss(const b_sphere& curr_s, face_id f_id, const he_mesh& original)
+double compute_sphere_loss(const bounding_volume& curr_s, face_id f_id, const he_mesh& original)
 {
   const auto& f = original.get_face(f_id);
   const auto& he = original.get_half_edge(f.he_id);
@@ -150,8 +163,22 @@ double compute_loss(const b_sphere& curr_s, face_id f_id, const he_mesh& origina
   return radius2;
 }
 
-template <bv_type type>
-face_id choose_best_face_id(const face_id_set& adjoining_face_ids, const bounding_volume<type>& bv, const he_mesh& original)
+double compute_loss(const bounding_volume& curr_bv, face_id f_id, const he_mesh& original)
+{
+  switch (curr_bv.get_bv_type()) {
+    case bv_type::SPHERE : {
+      return compute_sphere_loss(curr_bv, f_id, original);
+    }
+    case bv_type::AABB : {
+      return compute_aabb_loss(curr_bv, f_id, original);
+    }
+    default : {
+      throw std::runtime_error("invalid bv_type");
+    }
+  }
+}
+
+face_id choose_best_face_id(const face_id_set& adjoining_face_ids, const bounding_volume& bv, const he_mesh& original)
 {
   double loss = 1e9 + 7;
   face_id ret = -1;
@@ -177,9 +204,9 @@ void add_face_to_bv_mesh(const face& f, bv_mesh<type>& bm, const he_mesh& origin
   bm.add_v_id(prev.v_id);
 }
 
-void update_bv(aabb& curr, const face& f, const he_mesh& original)
+void update_aabb(bounding_volume& curr, const face& f, const he_mesh& original)
 {
-  auto face_aabb = create_bv_from_single_face<bv_type::AABB>(f, original);
+  auto face_aabb = create_bv_from_single_face(bv_type::AABB, f, original);
   vec3d max_vec3, min_vec3;
   max_vec3.x() = std::max(curr.get_max_x(), face_aabb->get_max_x());
   min_vec3.x() = std::min(curr.get_min_x(), face_aabb->get_min_x());
@@ -193,7 +220,7 @@ void update_bv(aabb& curr, const face& f, const he_mesh& original)
   curr.set_aabb_radius(radius_vec3);
 }
 
-void update_bv(b_sphere& curr, const face& f, const he_mesh& original)
+void update_sphere(bounding_volume& curr, const face& f, const he_mesh& original)
 {
   // calc farthest point
   half_edge_id far_he_id = NULL_ID;
@@ -228,6 +255,24 @@ void update_bv(b_sphere& curr, const face& f, const he_mesh& original)
   curr.set_sphere_radius(new_radius);
 }
 
+void update_bv(bounding_volume& curr, const face& f, const he_mesh& original)
+{
+  switch (curr.get_bv_type()) {
+    case bv_type::SPHERE : {
+      update_sphere(curr, f, original);
+      break;
+    }
+    case bv_type::AABB : {
+      update_aabb(curr, f, original);
+      break;
+    }
+    default : {
+      throw std::runtime_error("invalid bv_type");
+      break;
+    }
+  }
+}
+
 // separation part ------------------------------------------------------------------------
 template<bv_type type>
 std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
@@ -243,7 +288,7 @@ std::vector<u_ptr<bv_mesh<type>>> separate_greedy(const he_mesh& original)
     // compute each meshlet
     // init objects
     auto ml = bv_mesh<type>::create(); // meshlet is represented as bv_mesh
-    auto bv = create_bv_from_single_face<type>(curr_f_id, original);
+    auto bv = create_bv_from_single_face(type, curr_f_id, original);
 
     face_id_set adjoining_f_ids {curr_f_id};
 

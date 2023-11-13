@@ -1,22 +1,27 @@
 // hnll
 #include <geometry/intersection.hpp>
 #include <geometry/primitives.hpp>
+#include <geometry/bounding_volume.hpp>
 
 // lib
 #include <eigen3/Eigen/Dense>
 
 namespace hnll::geometry {
 
-double intersection::test_bv_intersection(const aabb &aabb_a, const aabb &aabb_b)
+double test_aabb_aabb(const bounding_volume &aabb_a, const bounding_volume &aabb_b)
 {
+  assert(aabb_a.get_bv_type() == bv_type::AABB);
+  assert(aabb_b.get_bv_type() == bv_type::AABB);
   if (std::abs(aabb_a.get_world_center_point().x() - aabb_b.get_world_center_point().x()) > aabb_a.get_aabb_radius().x() + aabb_b.get_aabb_radius().x()) return false;
   if (std::abs(aabb_a.get_world_center_point().y() - aabb_b.get_world_center_point().y()) > aabb_a.get_aabb_radius().y() + aabb_b.get_aabb_radius().y()) return false;
   if (std::abs(aabb_a.get_world_center_point().z() - aabb_b.get_world_center_point().z()) > aabb_a.get_aabb_radius().z() + aabb_b.get_aabb_radius().z()) return false;
   return true;
 }
 
-double intersection::test_bv_intersection(const b_sphere &sphere_a, const b_sphere &sphere_b)
+double test_sphere_sphere(const bounding_volume &sphere_a, const bounding_volume &sphere_b)
 {
+  assert(sphere_a.get_bv_type() == bv_type::SPHERE);
+  assert(sphere_b.get_bv_type() == bv_type::SPHERE);
   Eigen::Vector3d difference = sphere_a.get_world_center_point() - sphere_b.get_world_center_point();
   double distance2 = difference.dot(difference);
   float radius_sum = sphere_a.get_sphere_radius() + sphere_b.get_sphere_radius();
@@ -38,7 +43,7 @@ double distance_point_to_plane(const vec3d& q, const plane& p)
 }
 
 // caller of this function is responsible for insuring that the bounding_volume is aabb
-vec3 cp_point_to_aabb(const vec3d& p, const aabb& aabb)
+vec3 cp_point_to_aabb(const vec3d& p, const bounding_volume& aabb)
 {
   vec3 q;
   // TODO : simdlize
@@ -52,7 +57,7 @@ vec3 cp_point_to_aabb(const vec3d& p, const aabb& aabb)
 }
 
 // sq_dist is abbreviation of 'squared distance'
-double sq_dist_point_to_aabb(const vec3d& p, const aabb& aabb)
+double sq_dist_point_to_aabb(const vec3d& p, const bounding_volume& aabb)
 {
   double result = 0.0f;
   for (int i = 0; i < 3; i++) {
@@ -65,16 +70,41 @@ double sq_dist_point_to_aabb(const vec3d& p, const aabb& aabb)
   return result;
 }
 
-double intersection::test_bv_intersection(const aabb &aabb_, const b_sphere &sphere)
+double test_aabb_sphere(const bounding_volume &aabb, const bounding_volume &sphere)
 {
-  auto sq_dist = sq_dist_point_to_aabb(sphere.get_world_center_point(), aabb_);
+  assert(aabb.get_bv_type() == bv_type::AABB);
+  assert(sphere.get_bv_type() == bv_type::SPHERE);
+  auto sq_dist = sq_dist_point_to_aabb(sphere.get_world_center_point(), aabb);
   return std::max(sphere.get_sphere_radius() - std::sqrt(sq_dist), static_cast<double>(0));
 }
 
-double intersection::test_sphere_frustum(const b_sphere &sphere, const perspective_frustum &frustum)
+double intersection::test_bv_intersection(const hnll::geometry::bounding_volume &a, const hnll::geometry::bounding_volume &b)
 {
+  auto a_type = a.get_bv_type();
+  auto b_type = b.get_bv_type();
+
+  if (a_type == bv_type::AABB && b_type == bv_type::AABB) {
+    return test_aabb_aabb(a, b);
+  }
+  else if (a_type == bv_type::SPHERE && b_type == bv_type::SPHERE) {
+    return test_sphere_sphere(a, b);
+  }
+  else if (a_type == bv_type::AABB && b_type == bv_type::SPHERE) {
+    return test_aabb_sphere(a, b);
+  }
+  else if (a_type == bv_type::SPHERE && b_type == bv_type::AABB) {
+    return test_aabb_sphere(b, a);
+  }
+  else {
+    throw std::runtime_error("invalid bv_type");
+  }
+}
+
+double intersection::test_sphere_frustum(const bounding_volume &sphere, const perspective_frustum &frustum)
+{
+  assert(sphere.get_bv_type() == bv_type::SPHERE);
+
   const auto  center = sphere.get_world_center_point().cast<double>();
-//  const auto  radius = sphere.get_sphere_radius();
 
   auto radii = sphere.get_aabb_radius();
   auto radius = std::sqrt(std::pow(radii.x(), 2) + std::pow(radii.y(), 2) + std::pow(radii.z(), 2));

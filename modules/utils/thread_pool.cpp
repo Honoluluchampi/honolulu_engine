@@ -2,15 +2,22 @@
 
 namespace hnll::utils {
 
-thread_pool::thread_pool() : done_(false), joiner_(threads_)
+thread_local mt_deque<function_wrapper>* thread_pool::local_queue_{};
+thread_local unsigned thread_pool::queue_index_{};
+
+thread_pool::thread_pool(int _thread_count) : done_(false), joiner_(threads_)
 {
   // init worker threads
-  const auto thread_count = std::thread::hardware_concurrency();
+  const auto thread_count = _thread_count == 0 ?
+    std::thread::hardware_concurrency() : _thread_count;
   try {
     for (int i = 0; i < thread_count; i++) {
       // create local queues and threads
       local_queues_.emplace_back(std::make_unique<mt_deque<function_wrapper>>());
-      threads_.emplace_back(std::thread(&thread_pool::worker_thread, this, i));
+    }
+    // wait until all the queues are constructed
+    for (int i = 0; i < thread_count; i++) {
+      threads_.emplace_back(&thread_pool::worker_thread, this, i);
     }
   }
   catch (...) {
@@ -36,6 +43,18 @@ void thread_pool::run_pending_task()
     (*task)();
   else
     std::this_thread::yield();
+}
+
+void thread_pool::wait_for_all_tasks()
+{
+  while (1) {
+    bool local_tasks_finished = true;
+    for (const auto& local_queue : local_queues_) {
+      local_tasks_finished &= local_queue->empty();
+    }
+    if (global_queue_.empty() && local_tasks_finished)
+      return;
+  }
 }
 
 void thread_pool::worker_thread(unsigned int queue_index)
@@ -64,8 +83,9 @@ u_ptr<function_wrapper> thread_pool::try_steal_task()
     // not to look the first queue every time
     auto idx = (queue_index_ + i + 1) % local_queues_.size();
 
-    if (ret = local_queues_[idx]->try_pop_back(); ret)
+    if (ret = local_queues_[idx]->try_pop_back(); ret) {
       return std::move(ret);
+    }
   }
 
   return nullptr;

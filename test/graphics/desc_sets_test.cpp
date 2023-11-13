@@ -10,11 +10,12 @@
 
 namespace hnll {
 
-auto& window = utils::singleton<graphics::window>::get_instance(50, 30, "test");
-auto& device = utils::singleton<graphics::device>::get_instance(utils::rendering_type::VERTEX_SHADING);
+auto config = utils::singleton<utils::vulkan_config>::build_instance();
+auto window = utils::singleton<graphics::window>::build_instance(50, 30, "test");
+auto device = utils::singleton<graphics::device>::build_instance();
 
 TEST(desc_set, ctor) {
-  auto desc_pool = graphics::desc_pool::builder(device)
+  auto desc_pool = graphics::desc_pool::builder(*device)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
     .build();
 
@@ -25,7 +26,7 @@ TEST(desc_set, ctor) {
   graphics::desc_set_info set2 {{ bind1 }, "set1" };
 
   auto desc_set = graphics::desc_sets::create(
-    device,
+    *device,
     desc_pool,
     { set1, set2 },
     2
