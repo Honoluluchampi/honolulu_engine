@@ -71,7 +71,7 @@ void fdtd_cylindrical_field::set_pml(
       float pml_y = std::max(float(pml_count_ - (r_max - r)), 0.f) * pml_each;
       auto pml_x = std::max(pml_l, pml_r);
       auto pml = std::max(pml_x, pml_y);
-      auto idx = z + (z_grid_count_ + 1) * r;
+      auto idx = z + z_grid_count_ * r;
       grids[idx].state = pml;
     }
   }
