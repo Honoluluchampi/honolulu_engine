@@ -27,6 +27,8 @@ fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compu
 void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& info)
 {
   if (target_ != nullptr && target_->is_ready()) {
+    target_->update_sound_frame();
+
     auto &command = info.command_buffer;
 
     fdtd_cylindrical_push push;
@@ -38,7 +40,7 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
     push.p_fac = target_->get_p_fac();
     push.listener_index = target_->get_listener_index();
 //    push.input_pressure = target_->get_mouth_pressure();
-    push.input_index = -1;
+    push.input_index = 30;
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -57,6 +59,7 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
       for (int i = 0; i < upf; i++) {
         // record pressure update
         push.buffer_index = i;
+        push.debug = 1000.f * std::sin(2.f * M_PI * 100.f * (target_->get_duration() + float(i) * target_->get_dt()));
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
         auto desc_sets = target_->get_frame_desc_sets();

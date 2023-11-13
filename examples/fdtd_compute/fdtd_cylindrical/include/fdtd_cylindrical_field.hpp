@@ -31,7 +31,7 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     ~fdtd_cylindrical_field();
 
     void update_frame() { frame_index_ = frame_index_ == frame_count_ - 1 ? 0 : frame_index_ + 1; }
-
+    void update_sound_frame() { sound_frame_index_ = sound_frame_index_ == frame_count_ - 1 ? 0 : sound_frame_index_ + 1; }
     // getter
     std::vector<VkDescriptorSet> get_frame_desc_sets();
     uint32_t get_field_id() const { return field_id_; }
@@ -54,7 +54,7 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     bool  is_ready()      const { return is_ready_; } // is constructed
     int   get_update_per_frame() const { return update_per_frame_; }
     int   get_listener_index() const { return listener_index_; }
-    float* get_sound_buffer(int game_frame_index) { return sound_buffers_[game_frame_index]; }
+    float* get_sound_buffer() { return sound_buffers_[sound_frame_index_]; }
 
     // setter
     void add_duration() { duration_ += dt_ * update_per_frame_; }
@@ -106,5 +106,6 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     int listener_index_ = 0;
     // pointer for sound buffer
     float* sound_buffers_[3];
+    int sound_frame_index_ = 0;
 };
 } // namespace hnll

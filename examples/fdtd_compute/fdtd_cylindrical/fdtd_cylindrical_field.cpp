@@ -33,6 +33,8 @@ fdtd_cylindrical_field::fdtd_cylindrical_field(const fdtd_info& info)
   compute_constants();
   setup_desc_sets(info);
 
+  listener_index_ = 50;
+
   is_ready_ = true;
 }
 
@@ -140,7 +142,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
-      desc_sets_->get_vk_desc_sets(0)[1]
+      desc_sets_->get_vk_desc_sets(sound_frame_index_)[1]
     };
   }
   else if (frame_index_ == 1){
@@ -148,7 +150,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
-      desc_sets_->get_vk_desc_sets(1)[1]
+      desc_sets_->get_vk_desc_sets(sound_frame_index_)[1]
     };
   }
   else {
@@ -156,7 +158,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
-      desc_sets_->get_vk_desc_sets(2)[1]
+      desc_sets_->get_vk_desc_sets(sound_frame_index_)[1]
     };
   }
 }

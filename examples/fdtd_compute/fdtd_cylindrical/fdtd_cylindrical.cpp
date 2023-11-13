@@ -104,15 +104,12 @@ DEFINE_ENGINE(fdtd_cylindrical)
 
     void update_sound()
     {
-      static int frame_index = 0;
-      constexpr auto frame_count = utils::FRAMES_IN_FLIGHT;
-
       audio::engine::erase_finished_audio_on_queue(source_);
 
       if (audio::engine::get_audio_count_on_queue(source_) > queue_capacity_)
         return;
 
-      float* raw_data = field_->get_sound_buffer(frame_index);
+      float* raw_data = field_->get_sound_buffer();
       float raw_i = 0.f;
       while (raw_i < update_per_frame_) {
         segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
@@ -136,8 +133,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
           started_ = true;
         }
       }
-
-      frame_index = frame_index == frame_count - 1 ? 0 : frame_index + 1;
     }
 
     u_ptr<fdtd_cylindrical_field> field_;
