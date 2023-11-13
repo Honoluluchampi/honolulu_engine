@@ -1,16 +1,15 @@
 // be careful not to include this file more than once
+const int fdtd_cylindrical_local_size_x = 64;
+const int fdtd_cylindrical_local_size_y = 1;
+const int fdtd_cylindrical_local_size_z = 1;
 
-const int fdtd2_local_size_x = 64;
-const int fdtd2_local_size_y = 1;
-const int fdtd2_local_size_z = 1;
-
-struct fdtd2_push {
+struct fdtd_cylindrical_push {
   // grid count
-  int x_grid;
-  int y_grid;
+  int z_grid;
+  int r_grid;
   // domain's dimensions
-  float x_len;
-  float y_len;
+  float z_len;
+  float max_radius;
   // physical constant
   float p_fac;
   float v_fac;

@@ -2,16 +2,16 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../common/fdtd2_config.h"
-#include "../common/fdtd_struct.h"
+#include "../common/fdtd_cylindrical_config.h"
 
 layout (location = 0) out vec4 out_color;
 
-struct fdtd2_frag_push {
+struct fdtd_cylindrical_frag_push {
   float width;
   float height;
-  int x_grid;
-  int y_grid;
+  // grid count
+  int z_grid;
+  int r_grid;
 };
 
 layout (push_constant) uniform Push { fdtd2_frag_push push; };

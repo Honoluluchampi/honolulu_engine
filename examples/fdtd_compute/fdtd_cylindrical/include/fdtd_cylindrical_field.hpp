@@ -13,8 +13,8 @@
 namespace hnll {
 
 struct fdtd_info {
-  float x_len;
-  float y_len;
+  float z_len;
+  float max_radius;
   float sound_speed;
   float rho;
   int   pml_count;

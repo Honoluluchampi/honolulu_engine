@@ -7,7 +7,7 @@
 namespace hnll {
 
 // shared with shaders
-#include "common/fdtd2_config.h"
+#include "common/fdtd2_cylindrical.h"
 
 // static member
 fdtd_cylindrical_field* fdtd_cylindrical_compute_shader::target_ = nullptr;
@@ -18,7 +18,7 @@ fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compu
   desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd_cylindrical_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
-  pipeline_ = create_pipeline<fdtd2_push>(
+  pipeline_ = create_pipeline<fdtd_cylindrical_push>(
     utils::get_engine_root_path() +
     "/examples/fdtd_compute/fdtd_cylindrical/shaders/spv/fdtd2_compute_active_grids.comp.spv",
     { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
@@ -31,7 +31,7 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
 
     float local_dt = target_->get_dt();
 
-    fdtd2_push push;
+    fdtd_cylindrical_push push;
     push.x_grid = target_->get_x_grid();
     push.y_grid = target_->get_y_grid();
     push.x_len = target_->get_x_len();
