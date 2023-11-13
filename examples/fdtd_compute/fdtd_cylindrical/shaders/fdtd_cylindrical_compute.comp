@@ -45,10 +45,11 @@ float calc_p(uint i, uint j)
   float lower_vr = j == 0 ? 0 : prev0[g_id(i, j - 1)].vr;
   float vr_center = (upper_vr + lower_vr) / 2.f;
 
-  float z_term = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
-//  float r_term = ((rp2 / r) * upper_vr - (rm2 / r) * lower_vr) / DR;
-  float r_term = vr_center / r + (upper_vr - lower_vr) / DR;
-  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term);
+  float dvrdr = (upper_vr - lower_vr) / DR;
+  float dvzdz = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
+//  float r_term = vr_center / r + (upper_vr - lower_vr) / DR;
+  //  float r_term = ((rp2 / r) * upper_vr - (rm2 / r) * lower_vr) / DR;
+  float p = prev0[g_id(i, j)].p - push.p_fac * (vr_center / r + dvrdr + dvzdz);
   p /= (1.f + pml);
 
   return p;
