@@ -14,12 +14,14 @@ namespace hnll {
 
 struct fdtd_info {
   float z_len;
-  float max_radius;
+  float r_len;
   float sound_speed;
   float rho;
   int   pml_count;
   int   update_per_frame;
 };
+
+struct particle;
 
 DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
 {
@@ -31,47 +33,40 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     void update_frame() { frame_index_ = frame_index_ == frame_count_ - 1 ? 0 : frame_index_ + 1; }
 
     // getter
-    std::vector<VkDescriptorSet> get_frame_desc_sets(int game_frame_index);
+    std::vector<VkDescriptorSet> get_frame_desc_sets();
     uint32_t get_field_id() const { return field_id_; }
 
     // push constant
-    int get_x_grid()      const { return x_grid_; }
-    int get_y_grid()      const { return y_grid_; }
-    float get_x_len()     const { return x_len_; }
-    float get_y_len()     const { return y_len_; }
-    float get_v_fac()     const { return v_fac_;  }
-    float get_p_fac()     const { return p_fac_; }
+    int get_z_grid_count() const { return z_grid_count_; }
+    int get_r_grid_count() const { return r_grid_count_; }
+    float get_z_len() const { return z_len_; }
+    float get_r_len() const { return r_len_; }
+    float get_v_fac() const { return v_fac_;  }
+    float get_p_fac() const { return p_fac_; }
     float get_mouth_pressure() const { return mouth_pressure_; }
 
-    size_t get_active_ids_count() const { return active_ids_count_; }
     int   get_pml_count() const { return pml_count_; }
     float get_dt()        const { return dt_; }
-    float get_dx()        const { return dx_; }
+    float get_dz()        const { return dz_; }
+    float get_dr()        const { return dr_; }
     float get_duration()  const { return duration_; }
     bool  is_ready()      const { return is_ready_; } // is constructed
     int   get_update_per_frame() const { return update_per_frame_; }
     int   get_listener_index() const { return listener_index_; }
     float* get_sound_buffer(int game_frame_index) { return sound_buffers_[game_frame_index]; }
-    bool get_tone_hole_is_open() const { return tone_hole_open_; }
 
     // setter
     void add_duration() { duration_ += dt_ * update_per_frame_; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
     void set_as_target(fdtd_cylindrical_field* target) const;
     void set_mouth_pressure(float mp) { mouth_pressure_ = mp; }
-    void set_tone_hole_state(bool state) { tone_hole_open_ = state; }
 
     static const std::vector<graphics::binding_info> field_bindings;
-    static const std::vector<graphics::binding_info> texture_bindings;
 
   private:
     void compute_constants();
     void setup_desc_sets(const fdtd_info& info);
-    void setup_textures(const fdtd_info& info);
-    void set_pml(
-      std::vector<vec4>& grids,
-      std::set<int>&  active_ids,
-      int x_min, int x_max, int y_min, int y_max);
+    void set_pml(std::vector<particle>& grids, int z_min, int z_max, int r_max);
 
     utils::single_ptr<graphics::device> device_;
     s_ptr<graphics::desc_pool> desc_pool_;
@@ -84,9 +79,9 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     float rho_;
     float c_;
 
-    float x_len_, y_len_;
-    int x_grid_, y_grid_;
-    float dt_, dx_;
+    float z_len_, r_len_;
+    int z_grid_count_, r_grid_count_;
+    float dt_, dz_, dr_;
 
     int pml_count_;
 
@@ -110,7 +105,5 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     int listener_index_ = 0;
     // pointer for sound buffer
     float* sound_buffers_[3];
-
-    bool tone_hole_open_ = false;
 };
 } // namespace hnll
