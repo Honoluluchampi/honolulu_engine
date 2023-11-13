@@ -39,6 +39,7 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     // push constant
     int get_z_grid_count() const { return z_grid_count_; }
     int get_r_grid_count() const { return r_grid_count_; }
+    int get_whole_grid_count() const { return whole_grid_count_; }
     float get_z_len() const { return z_len_; }
     float get_r_len() const { return r_len_; }
     float get_v_fac() const { return v_fac_;  }
@@ -80,7 +81,7 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     float c_;
 
     float z_len_, r_len_;
-    int z_grid_count_, r_grid_count_;
+    int z_grid_count_, r_grid_count_, whole_grid_count_;
     float dt_, dz_, dr_;
 
     int pml_count_;

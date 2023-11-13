@@ -50,6 +50,7 @@ void fdtd_cylindrical_field::compute_constants()
 
   z_grid_count_ = std::ceil(z_len_ / dz_) + 1 + pml_count_ * 2;
   r_grid_count_ = std::ceil(r_len_ / dr_) + pml_count_;
+  whole_grid_count_ = z_grid_count_ * r_grid_count_;
 
   v_fac_ = dt_ / rho_;
   p_fac_ = dt_ * rho_ * c_ * c_;
@@ -91,8 +92,7 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
     frame_count_);
 
   // initial data
-  int grid_count = z_grid_count_ * r_grid_count_;
-  std::vector<particle> initial_grid(grid_count, {0.f, 0.f, 0.f, 0.f});
+  std::vector<particle> initial_grid(whole_grid_count_, {0.f, 0.f, 0.f, 0.f});
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
 

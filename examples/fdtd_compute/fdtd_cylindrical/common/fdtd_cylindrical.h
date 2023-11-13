@@ -12,19 +12,15 @@ struct fdtd_cylindrical_push {
   int r_grid_count;
   // domain's dimensions
   float z_len;
-  float max_radius;
+  float r_len;
   // physical constant
   float p_fac;
   float v_fac;
   // input
-  int active_grid_count;
   int listener_index;
   // pressure
   float input_pressure;
   int buffer_index;
-  // tone hole
-  int hole_open;
-  float dyn_b;
 };
 
 struct particle {

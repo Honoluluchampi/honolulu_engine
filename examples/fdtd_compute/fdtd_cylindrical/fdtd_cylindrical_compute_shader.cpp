@@ -20,8 +20,8 @@ fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compu
 
   pipeline_ = create_pipeline<fdtd_cylindrical_push>(
     utils::get_engine_root_path() +
-    "/examples/fdtd_compute/fdtd_cylindrical/shaders/spv/fdtd2_compute_active_grids.comp.spv",
-    { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
+    "/examples/fdtd_compute/fdtd_cylindrical/shaders/spv/fdtd_cylindrical_compute.comp.spv",
+    { vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
 void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& info)
@@ -29,22 +29,15 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
   if (target_ != nullptr && target_->is_ready()) {
     auto &command = info.command_buffer;
 
-    float local_dt = target_->get_dt();
-
     fdtd_cylindrical_push push;
-    push.x_grid = target_->get_x_grid();
-    push.y_grid = target_->get_y_grid();
-    push.x_len = target_->get_x_len();
-    push.y_len = target_->get_y_len();
-    push.v_fac = local_dt * target_->get_v_fac();
-    push.p_fac = local_dt * target_->get_p_fac();
+    push.z_grid_count = target_->get_z_grid_count();
+    push.r_grid_count = target_->get_r_grid_count();
+    push.z_len = target_->get_z_len();
+    push.r_len = target_->get_r_len();
+    push.v_fac = target_->get_v_fac();
+    push.p_fac = target_->get_p_fac();
     push.listener_index = target_->get_listener_index();
     push.input_pressure = target_->get_mouth_pressure();
-    push.active_grid_count = target_->get_active_ids_count();
-    push.hole_open = target_->get_tone_hole_is_open();
-
-    static float dynamic_b = 0.f;
-    float each = 1.f / 1280.f;
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -64,17 +57,13 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
         // record pressure update
         push.buffer_index = i;
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
-        // dynamic geometry
-        dynamic_b += push.hole_open ? each : -each;
-        dynamic_b = std::clamp(dynamic_b, 0.f, 1.f);
-        push.dyn_b = dynamic_b;
 
-        auto desc_sets = target_->get_frame_desc_sets(info.frame_index);
+        auto desc_sets = target_->get_frame_desc_sets();
         bind_desc_sets(command, desc_sets);
 
         dispatch_command(
           command,
-          (int(target_->get_active_ids_count()) + 63) / 64,
+          (target_->get_whole_grid_count()+ 63) / 64,
           1,
           1
         );
