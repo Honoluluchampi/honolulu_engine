@@ -8,16 +8,11 @@ namespace hnll {
 fdtd_cylindrical_field* fdtd_cylindrical_shading_system::target_ = nullptr;
 uint32_t fdtd_cylindrical_shading_system::target_id_ = -1;
 
-struct fdtd2_frag_push {
-  float width;
-  float height;
-  int x_grid;
-  int y_grid;
-};
-
 DEFAULT_SHADING_SYSTEM_CTOR_IMPL(fdtd_cylindrical_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
 fdtd_cylindrical_shading_system::~fdtd_cylindrical_shading_system()
 {}
+
+#include "common/fdtd_cylindrical.h"
 
 void fdtd_cylindrical_shading_system::setup()
 {
@@ -25,7 +20,7 @@ void fdtd_cylindrical_shading_system::setup()
   desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd_cylindrical_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
-  pipeline_layout_ = create_pipeline_layout<fdtd2_frag_push>(
+  pipeline_layout_ = create_pipeline_layout<fdtd_cylindrical_frag_push>(
     static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
     std::vector<VkDescriptorSetLayout>{
       vk_layout
@@ -50,20 +45,22 @@ void fdtd_cylindrical_shading_system::render(const utils::graphics_frame_info &f
     pipeline_->bind(command);
 
     auto window_size = game::gui_engine::get_viewport_size();
-    fdtd2_frag_push push;
-    push.width = window_size.x;
-    push.height = window_size.y;
-    push.x_grid = target_->get_x_grid();
-    push.y_grid = target_->get_y_grid();
+    fdtd_cylindrical_frag_push push {
+      .z_pixel_count = int(window_size.x),
+      .r_pixel_count = int(window_size.y),
+      .z_grid_count = target_->get_z_grid_count(),
+      .r_grid_count = target_->get_r_grid_count()
+    };
+
     vkCmdPushConstants(
       command,
       pipeline_layout_,
       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
       0,
-      sizeof(fdtd2_frag_push),
+      sizeof(fdtd_cylindrical_frag_push),
       &push);
 
-    auto desc_sets = target_->get_frame_desc_sets(0)[2];
+    auto desc_sets = target_->get_frame_desc_sets()[2];
     vkCmdBindDescriptorSets(
       command,
       VK_PIPELINE_BIND_POINT_GRAPHICS,

@@ -23,6 +23,14 @@ struct fdtd_cylindrical_push {
   int buffer_index;
 };
 
+struct fdtd_cylindrical_frag_push {
+  int z_pixel_count;
+  int r_pixel_count;
+  // grid count
+  int z_grid_count;
+  int r_grid_count;
+};
+
 struct particle {
   float p; // pressure
   float vz; // z element of velocity on the cylindrical coordinate
