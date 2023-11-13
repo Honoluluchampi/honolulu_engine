@@ -37,14 +37,18 @@ float calc_p(uint i, uint j)
   float state = prev0[g_id(i, j)].state;
   float pml = max(state, 0.f);
 
-  float r = DR * float(max(int(j), 1));
-  float rp2 = DR * (float(j) + 0.5f); // radius at r = j + 1/2
-  float rm2 = DR * (float(j) - 0.5f); // raduis at r = j - 1/2
+//  float r = DR * float(max(int(j), 1));
+  float r = DR * float(j + 0.5f);
+//  float rp2 = DR * (float(j) + 1.f); // radius at r = j + 1/2
+//  float rm2 = DR * float(j); // raduis at r = j - 1/2
+  float upper_vr = prev0[g_id(i, j)].vr;
+  float lower_vr = j == 0 ? 0 : prev0[g_id(i, j - 1)].vr;
+  float vr_center = (upper_vr + lower_vr) / 2.f;
 
   float z_term = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
-  float r_term = ((rp2 / r) * prev0[g_id(i, j)].vr - (rm2 / r) * prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
-//  float r_term = (prev0[g_id(i, j)].vr - prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
-  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term * float(j != 0));
+//  float r_term = ((rp2 / r) * upper_vr - (rm2 / r) * lower_vr) / DR;
+  float r_term = vr_center / r + (upper_vr - lower_vr) / DR;
+  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term);
   p /= (1.f + pml);
 
   return p;
@@ -68,25 +72,22 @@ void main() {
       float p = calc_p(i, j);
       curr[idx].p = p;
 
+      if (idx == push.input_index) {
+        curr[idx].p = push.debug;
+        p = push.debug;
+      }
+
       // re-calculate the current pressure to reduce the barrier synchronization
       // update vz
       if (i > 0) {
         float p_xm1 = calc_p(i - 1, j);
         curr[idx].vz = (prev0[idx].vz - push.v_fac * (p - p_xm1) / DZ) / (1 + pml);
-
-        if (idx == push.input_index) {
-          curr[idx].vz = push.debug;
-        }
       }
 
       // update y velo
       if (j < push.r_grid_count - 1) {
         float p_yp1 = calc_p(i, j + 1);
         curr[idx].vr = (prev0[idx].vr - push.v_fac * (p_yp1 - p) / DR) / (1 + pml);
-
-        if (idx == push.input_index) {
-          curr[idx].vr = push.debug;
-        }
       }
 
       if (idx == push.listener_index)
