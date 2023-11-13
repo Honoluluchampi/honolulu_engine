@@ -34,14 +34,14 @@ const float c_area = w * h;
 
 float calc_p(uint i, uint j)
 {
-  float r = DR * float(j);
+  float r = DR * float(max(int(j), 1));
   float rp2 = DR * (float(j) + 0.5f); // radius at r = j + 1/2
   float rm2 = DR * (float(j) - 0.5f); // raduis at r = j - 1/2
 
   float z_term = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
   float r_term = 1.f / r * (rp2 * prev0[g_id(i, j)].vr - rm2 * prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
 
-  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term);
+  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term * float(j != 0));
   p /= (1.f + pml);
 
   return p;
