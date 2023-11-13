@@ -2,7 +2,7 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../common/fdtd_cylindrical_config.h"
+#include "../common/fdtd_cylindrical.h"
 
 layout (
   local_size_x = fdtd_cylindrical_local_size_x,
@@ -34,6 +34,9 @@ const float c_area = w * h;
 
 float calc_p(uint i, uint j)
 {
+  float state = prev0[g_id(i, j)].state;
+  float pml = max(state, 0.f);
+
   float r = DR * float(max(int(j), 1));
   float rp2 = DR * (float(j) + 0.5f); // radius at r = j + 1/2
   float rm2 = DR * (float(j) - 0.5f); // raduis at r = j - 1/2
@@ -57,11 +60,10 @@ void main() {
   if (on_z && on_r) // inside domain
   {
     uint idx = g_id(i, j);
-    float state = prev0[idx].state;
+    float state = prev0[g_id(i, j)].state;
+    float pml = max(state, 0.f);
 
     if (state >= -1) {
-      float pml = max(state, 0.f);
-
       // update pressure
       float p = calc_p(i, j);
       curr[idx].p = p;
@@ -82,15 +84,15 @@ void main() {
       if (idx == push.listener_index)
         sound_buffer[push.buffer_index] = p;
     }
-    else if (state == -3) // exciter
-    {
-      float next_p = prev_p[g_id(i + 1, push.y_grid / 2)].values.z;
-      float dp = push.input_pressure - next_p;
-      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
-      if (dp <= 0.05 * dp_max)
-        u_bore = 0.f;
-      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-      curr_p[idx].values.x = u_bore * shelf / 0.000367;
-    }
+//    else if (state == -3) // exciter
+//    {
+//      float next_p = prev_p[g_id(i + 1, push.y_grid / 2)].values.z;
+//      float dp = push.input_pressure - next_p;
+//      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
+//      if (dp <= 0.05 * dp_max)
+//        u_bore = 0.f;
+//      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
+//      curr_p[idx].values.x = u_bore * shelf / 0.000367;
+//    }
   }
 }
