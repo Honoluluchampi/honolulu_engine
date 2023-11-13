@@ -150,8 +150,8 @@ DEFINE_ENGINE(fdtd_2d)
 
     void update_sound()
     {
-      static int frame_index = 1;
-      frame_index = frame_index == 0 ? 1 : 0;
+      static int frame_index = 0;
+      constexpr auto frame_count = utils::FRAMES_IN_FLIGHT;
 
       audio::engine::erase_finished_audio_on_queue(source_);
 
@@ -182,6 +182,8 @@ DEFINE_ENGINE(fdtd_2d)
           started_ = true;
         }
       }
+
+      frame_index = frame_index == frame_count - 1 ? 0 : frame_index + 1;
     }
 
     u_ptr<fdtd2_field> field_;
