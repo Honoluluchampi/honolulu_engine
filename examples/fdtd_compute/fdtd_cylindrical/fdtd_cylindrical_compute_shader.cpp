@@ -7,7 +7,7 @@
 namespace hnll {
 
 // shared with shaders
-#include "common/fdtd2_cylindrical.h"
+#include "common/fdtd_cylindrical.h"
 
 // static member
 fdtd_cylindrical_field* fdtd_cylindrical_compute_shader::target_ = nullptr;

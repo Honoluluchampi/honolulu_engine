@@ -2,22 +2,25 @@
 
 #extension GL_GOOGLE_include_directive : require
 
-#include "../common/fdtd2_config.h"
-#include "../common/fdtd_struct.h"
+#include "../common/fdtd_cylindrical_config.h"
 
-layout (local_size_x = fdtd2_local_size_x, local_size_y = fdtd2_local_size_y, local_size_z = 1) in;
+layout (
+  local_size_x = fdtd_cylindrical_local_size_x,
+  local_size_y = fdtd_cylindrical_local_size_y,
+  local_size_z = fdtd_cylindrical_local_size_z
+) in;
 
 // pressure
-layout(std430, set = 0, binding = 0) buffer CurrentP { particle curr_p[]; };
-layout(std430, set = 1, binding = 0) readonly buffer PreviousP { particle prev_p[]; };
-layout(std430, set = 2, binding = 0) readonly buffer PreviousP2 { particle prev_p2[]; };
+layout(std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
+layout(std430, set = 1, binding = 0) readonly buffer Prev0 { particle prev0[]; };
+layout(std430, set = 2, binding = 0) readonly buffer Prev1 { particle prev1[]; };
 layout(std430, set = 3, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
 
 // push constants
-layout(push_constant) uniform Push { fdtd2_push push; };
+layout(push_constant) uniform Push { fdtd_cylindrical_push push; };
 
 // grid id
-uint g_id(uint x, uint y) { return (x + 1) + (y + 1) * (push.x_grid + 1); }
+uint g_id(uint i, uint j) { return i + j * push.z_grid_count; }
 
 // exciter constants
 const float exc_grid_count = 5;
@@ -29,55 +32,51 @@ const float dx = 0.00383;
 const float dp_max = k * h;
 const float c_area = w * h;
 
-void main() {
-  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd2_local_size_x;
-  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd2_local_size_y;
+float calc_p(uint i, uint j)
+{
+  float r = DR * float(j);
+  float rp2 = DR * (float(j) + 0.5f); // radius at r = j + 1/2
+  float rm2 = DR * (float(j) - 0.5f); // raduis at r = j - 1/2
 
-  if (i < push.x_grid && j < push.y_grid) // inside domain
+  float z_term = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
+  float r_term = 1.f / r * (rp2 * prev0[g_id(i, j)].vr - rm2 * prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
+
+  float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term);
+  p /= (1.f + pml);
+
+  return p;
+}
+
+void main() {
+  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd_cylindrical_local_size_x;
+  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd_cylindrical_local_size_y;
+
+  bool on_z = i < push.z_grid_count - 1;
+  bool on_r = j < push.r_grid_count;
+
+  if (on_z && on_r) // inside domain
   {
     uint idx = g_id(i, j);
-    float state = prev_p[idx].values.w;
+    float state = prev0[idx].state;
+
     if (state >= -1) {
-      float pml = max(prev_p[idx].values.w, 0.f);
+      float pml = max(state, 0.f);
 
       // update pressure
-      float right_is_domain = float(prev_p[g_id(i + 1, j)].values.w >= -1);
-      float upper_is_domain = float(prev_p[g_id(i, j + 1)].values.w >= -1);
-
-      float p = (prev_p[g_id(i, j)].values.z - push.p_fac *
-      (prev_p[idx].values.x * right_is_domain - prev_p[g_id(i - 1, j)].values.x +
-      prev_p[idx].values.y * upper_is_domain - prev_p[g_id(i, j - 1)].values.y)
-      ) / (1 + pml);
-
-      curr_p[idx].values.z = p;
+      float p = calc_p(i, j);
+      curr[idx].p = p;
 
       // re-calculate the current pressure to reduce the barrier synchronization
-      // update x velo
-      if (i < push.x_grid - 1) {
-        float right_is_domain_x1 = float(prev_p[g_id(i + 2, j)].values.w >= -1);
-        float upper_is_domain_x1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= -1);
-
-        float p_x1 = (prev_p[g_id(i + 1, j)].values.z - push.p_fac *
-        (prev_p[g_id(i + 1, j)].values.x * right_is_domain_x1 - prev_p[idx].values.x +
-        prev_p[g_id(i + 1, j)].values.y * upper_is_domain_x1 - prev_p[g_id(i + 1, j - 1)].values.y)
-        ) / (1 + pml);
-
-        curr_p[idx].values.x =
-        (prev_p[idx].values.x - push.v_fac * (p_x1 - p)) / (1 + pml);
+      // update vz
+      if (i > 0) {
+        float p_xm1 = calc_p(i - 1, j);
+        curr[idx].vz = (prev0[idx].vz - push.v_fac * (p - p_xm1) / DZ) / (1 + pml);
       }
 
       // update y velo
-      if (j < push.y_grid - 1) {
-        float right_is_domain_y1 = float(prev_p[g_id(i + 1, j + 1)].values.w >= -1);
-        float upper_is_domain_y1 = float(prev_p[g_id(i, j + 2)].values.w >= -1);
-
-        float p_y1 = (prev_p[g_id(i, j + 1)].values.z - push.p_fac *
-        (prev_p[g_id(i, j + 1)].values.x * right_is_domain_y1 - prev_p[g_id(i - 1, j + 1)].values.x +
-        prev_p[g_id(i, j + 1)].values.y * upper_is_domain_y1 - prev_p[idx].values.y)
-        ) / (1 + pml);
-
-        curr_p[idx].values.y =
-        (prev_p[idx].values.y - push.v_fac * (p_y1 - p)) / (1 + pml);
+      if (j < push.r_grid_count - 1) {
+        float p_yp1 = calc_p(i, j + 1);
+        curr[idx].vr = (prev0[idx].vr - push.v_fac * (p_yp1 - p) / DR) / (1 + pml);
       }
 
       if (idx == push.listener_index)
