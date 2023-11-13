@@ -44,6 +44,7 @@ fdtd_cylindrical_field::~fdtd_cylindrical_field()
 
 void fdtd_cylindrical_field::compute_constants()
 {
+  // TODO : use DZ, DR
   dz_ = 3.83e-3;
   dr_ = 3.83e-3;
   dt_ = 7.81e-6;
@@ -95,6 +96,8 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
   std::vector<particle> initial_grid(whole_grid_count_, {0.f, 0.f, 0.f, 0.f});
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
+
+  initial_grid[30].p = 1000.f;
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {

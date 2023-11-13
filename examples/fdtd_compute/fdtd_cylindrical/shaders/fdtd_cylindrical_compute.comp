@@ -68,6 +68,11 @@ void main() {
       float p = calc_p(i, j);
       curr[idx].p = p;
 
+      if (idx == push.input_index) {
+        curr[idx].p = push.debug;
+        p = push.debug;
+      }
+
       // re-calculate the current pressure to reduce the barrier synchronization
       // update vz
       if (i > 0) {

@@ -3,8 +3,8 @@ const int fdtd_cylindrical_local_size_x = 16;
 const int fdtd_cylindrical_local_size_y = 16;
 const int fdtd_cylindrical_local_size_z = 1;
 
-const float DR = 0.1;
-const float DZ = 0.1;
+const float DR = 3.83e-3;
+const float DZ = 3.83e-3;
 
 struct fdtd_cylindrical_push {
   // grid count
@@ -19,8 +19,10 @@ struct fdtd_cylindrical_push {
   // input
   int listener_index;
   // pressure
-  float input_pressure;
+//  float input_pressure;
   int buffer_index;
+  int input_index;
+  float debug;
 };
 
 struct fdtd_cylindrical_frag_push {

@@ -37,7 +37,8 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
     push.v_fac = target_->get_v_fac();
     push.p_fac = target_->get_p_fac();
     push.listener_index = target_->get_listener_index();
-    push.input_pressure = target_->get_mouth_pressure();
+//    push.input_pressure = target_->get_mouth_pressure();
+    push.input_index = -1;
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -61,11 +62,10 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
         auto desc_sets = target_->get_frame_desc_sets();
         bind_desc_sets(command, desc_sets);
 
-        auto group_size = fdtd_cylindrical_local_size_x * fdtd_cylindrical_local_size_y * fdtd_cylindrical_local_size_z;
         dispatch_command(
           command,
-          (target_->get_whole_grid_count() + group_size - 1) / group_size,
-          1,
+          (target_->get_z_grid_count() + fdtd_cylindrical_local_size_x - 1) / fdtd_cylindrical_local_size_x,
+          (target_->get_r_grid_count() + fdtd_cylindrical_local_size_y - 1) / fdtd_cylindrical_local_size_y,
           1
         );
 
