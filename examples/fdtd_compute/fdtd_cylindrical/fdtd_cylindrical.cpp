@@ -20,14 +20,14 @@ constexpr char* ARDUINO = "/dev/ttyACM0";
 
 namespace hnll {
 
-SELECT_SHADING_SYSTEM(fdtd2_shading_system);
-SELECT_COMPUTE_SHADER(fdtd2_compute_shader);
-SELECT_ACTOR(fdtd2_field);
+SELECT_SHADING_SYSTEM(fdtd_cylindrical_shading_system);
+SELECT_COMPUTE_SHADER(fdtd_cylindrical_compute_shader);
+SELECT_ACTOR(fdtd_cylindrical_field);
 
-DEFINE_ENGINE(fdtd_2d)
+DEFINE_ENGINE(fdtd_cylindrical)
 {
   public:
-    ENGINE_CTOR(fdtd_2d)
+    ENGINE_CTOR(fdtd_cylindrical)
     {
       serial_ = serial_com::create(ARDUINO);
 
@@ -47,7 +47,7 @@ DEFINE_ENGINE(fdtd_2d)
         .update_per_frame = update_per_frame_
       };
 
-      field_ = fdtd2_field::create(info);
+      field_ = fdtd_cylindrical_field::create(info);
       field_->set_as_target(field_.get());
 
       audio::engine::start_hae_context();
@@ -98,7 +98,7 @@ DEFINE_ENGINE(fdtd_2d)
 
       if (ImGui::Button("restart")) {
         std::thread t([this] {
-          this->staging_field_ = fdtd2_field::create(
+          this->staging_field_ = fdtd_cylindrical_field::create(
             {
               this->x_len_,
               this->y_len_,
@@ -186,8 +186,8 @@ DEFINE_ENGINE(fdtd_2d)
       frame_index = frame_index == frame_count - 1 ? 0 : frame_index + 1;
     }
 
-    u_ptr<fdtd2_field> field_;
-    u_ptr<fdtd2_field> staging_field_;
+    u_ptr<fdtd_cylindrical_field> field_;
+    u_ptr<fdtd_cylindrical_field> staging_field_;
     bool wait_for_construction_ = false;
 
     float x_len_       = 0.6f;
@@ -213,7 +213,7 @@ DEFINE_ENGINE(fdtd_2d)
     u_ptr<serial_com> serial_;
 };
 
-bool fdtd_2d::button_pressed_ = false;
+bool fdtd_cylindrical::button_pressed_ = false;
 
 } // namespace hnll
 
@@ -222,7 +222,7 @@ int main() {
   hnll::utils::vulkan_config config;
   config.enable_validation_layers = false;
 
-  hnll::fdtd_2d engine("fdtd2d", config);
+  hnll::fdtd_cylindrical engine("fdtd2d", config);
 
   try { engine.run(); }
   catch (const std::exception& e) {

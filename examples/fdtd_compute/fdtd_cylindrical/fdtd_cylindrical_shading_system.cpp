@@ -5,8 +5,8 @@
 
 namespace hnll {
 
-fdtd2_field* fdtd2_shading_system::target_ = nullptr;
-uint32_t fdtd2_shading_system::target_id_ = -1;
+fdtd_cylindrical_field* fdtd_cylindrical_shading_system::target_ = nullptr;
+uint32_t fdtd_cylindrical_shading_system::target_id_ = -1;
 
 struct fdtd2_frag_push {
   float width;
@@ -15,14 +15,14 @@ struct fdtd2_frag_push {
   int y_grid;
 };
 
-DEFAULT_SHADING_SYSTEM_CTOR_IMPL(fdtd2_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
-fdtd2_shading_system::~fdtd2_shading_system()
+DEFAULT_SHADING_SYSTEM_CTOR_IMPL(fdtd_cylindrical_shading_system, game::dummy_renderable_comp<utils::shading_type::MESH>);
+fdtd_cylindrical_shading_system::~fdtd_cylindrical_shading_system()
 {}
 
-void fdtd2_shading_system::setup()
+void fdtd_cylindrical_shading_system::setup()
 {
   shading_type_ = utils::shading_type::MESH;
-  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd2_field::field_bindings);
+  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd_cylindrical_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_layout_ = create_pipeline_layout<fdtd2_frag_push>(
@@ -36,14 +36,14 @@ void fdtd2_shading_system::setup()
   pipeline_ = create_pipeline(
     pipeline_layout_,
     game::graphics_engine_core::get_default_render_pass(),
-    "/examples/fdtd_compute/fdtd_2d/shaders/spv/",
-    { "fdtd2_field.vert.spv", "fdtd2_field.frag.spv" },
+    "/examples/fdtd_compute/fdtd_cylindrical/shaders/spv/",
+    { "fdtd_cylindrical_field.vert.spv", "fdtd_cylindrical_field.frag.spv" },
     { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },
     pipeline_config_info
   );
 }
 
-void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
+void fdtd_cylindrical_shading_system::render(const utils::graphics_frame_info &frame_info)
 {
   if (target_ != nullptr) {
     auto command = frame_info.command_buffer;
@@ -76,15 +76,14 @@ void fdtd2_shading_system::render(const utils::graphics_frame_info &frame_info)
     );
 
     vkCmdDraw(command, 6, 1, 0, 0);
-
     target_->update_frame();
   }
 }
 
-void fdtd2_shading_system::set_target(fdtd2_field* target)
+void fdtd_cylindrical_shading_system::set_target(fdtd_cylindrical_field* target)
 { target_ = target; }
 
-void fdtd2_shading_system::remove_target(uint32_t target_id)
+void fdtd_cylindrical_shading_system::remove_target(uint32_t target_id)
 { if (target_id_ == target_id) target_ = nullptr; }
 
 } // namespace hnll

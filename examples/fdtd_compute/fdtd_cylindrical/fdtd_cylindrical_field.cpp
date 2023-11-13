@@ -10,18 +10,18 @@
 namespace hnll {
 
 // only binding of the pressure is accessed by fragment shader
-const std::vector<graphics::binding_info> fdtd2_field::field_bindings = {
+const std::vector<graphics::binding_info> fdtd_cylindrical_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
 };
 
-const std::vector<graphics::binding_info> fdtd2_field::texture_bindings = {
+const std::vector<graphics::binding_info> fdtd_cylindrical_field::texture_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}
 };
 
-u_ptr<fdtd2_field> fdtd2_field::create(const fdtd_info& info)
-{ return std::make_unique<fdtd2_field>(info); }
+u_ptr<fdtd_cylindrical_field> fdtd_cylindrical_field::create(const fdtd_info& info)
+{ return std::make_unique<fdtd_cylindrical_field>(info); }
 
-fdtd2_field::fdtd2_field(const fdtd_info& info)
+fdtd_cylindrical_field::fdtd_cylindrical_field(const fdtd_info& info)
   : device_(utils::singleton<graphics::device>::get_single_ptr())
 {
   static uint32_t id = 0;
@@ -40,13 +40,13 @@ fdtd2_field::fdtd2_field(const fdtd_info& info)
   is_ready_ = true;
 }
 
-fdtd2_field::~fdtd2_field()
+fdtd_cylindrical_field::~fdtd_cylindrical_field()
 {
-  fdtd2_compute_shader::remove_target(id_);
-  fdtd2_shading_system::remove_target(id_);
+  fdtd_cylindrical_compute_shader::remove_target(id_);
+  fdtd_cylindrical_shading_system::remove_target(id_);
 }
 
-void fdtd2_field::compute_constants()
+void fdtd_cylindrical_field::compute_constants()
 {
   dx_ = 3.83e-3;
   dt_ = 7.81e-6;
@@ -58,7 +58,7 @@ void fdtd2_field::compute_constants()
   p_fac_ = rho_ * c_ * c_ / dx_;
 }
 
-void fdtd2_field::set_pml(
+void fdtd_cylindrical_field::set_pml(
   std::vector<vec4>& grids,
   std::set<int>& active_ids,
   int x_min, int x_max, int y_min, int y_max)
@@ -81,7 +81,7 @@ void fdtd2_field::set_pml(
   }
 }
 
-void fdtd2_field::setup_desc_sets(const fdtd_info& info)
+void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
 {
   desc_pool_ = graphics::desc_pool::builder(*device_)
     .add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frame_count_ * 12)
@@ -187,7 +187,7 @@ void fdtd2_field::setup_desc_sets(const fdtd_info& info)
   desc_sets_->build();
 }
 
-void fdtd2_field::setup_textures(const fdtd_info& info)
+void fdtd_cylindrical_field::setup_textures(const fdtd_info& info)
 {
   // create desc sets
   desc_pool_ = graphics::desc_pool::builder(*device_)
@@ -243,7 +243,7 @@ void fdtd2_field::setup_textures(const fdtd_info& info)
   }
 }
 
-std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_index)
+std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets(int game_frame_index)
 {
   if (frame_index_ == 0) {
     return {
@@ -274,10 +274,10 @@ std::vector<VkDescriptorSet> fdtd2_field::get_frame_desc_sets(int game_frame_ind
   }
 }
 
-void fdtd2_field::set_as_target(fdtd2_field* target) const
+void fdtd_cylindrical_field::set_as_target(fdtd_cylindrical_field* target) const
 {
-  fdtd2_compute_shader::set_target(target);
-  fdtd2_shading_system::set_target(target);
+  fdtd_cylindrical_compute_shader::set_target(target);
+  fdtd_cylindrical_shading_system::set_target(target);
 }
 
 } // namespace hnll

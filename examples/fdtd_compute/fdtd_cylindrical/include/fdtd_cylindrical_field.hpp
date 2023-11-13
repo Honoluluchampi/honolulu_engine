@@ -21,12 +21,12 @@ struct fdtd_info {
   int   update_per_frame;
 };
 
-DEFINE_PURE_ACTOR(fdtd2_field)
+DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
 {
   public:
-    static u_ptr<fdtd2_field> create(const fdtd_info& info);
-    explicit fdtd2_field(const fdtd_info& info);
-    ~fdtd2_field();
+    static u_ptr<fdtd_cylindrical_field> create(const fdtd_info& info);
+    explicit fdtd_cylindrical_field(const fdtd_info& info);
+    ~fdtd_cylindrical_field();
 
     void update_frame() { frame_index_ = frame_index_ == frame_count_ - 1 ? 0 : frame_index_ + 1; }
 
@@ -57,7 +57,7 @@ DEFINE_PURE_ACTOR(fdtd2_field)
     // setter
     void add_duration() { duration_ += dt_ * update_per_frame_; }
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
-    void set_as_target(fdtd2_field* target) const;
+    void set_as_target(fdtd_cylindrical_field* target) const;
     void set_mouth_pressure(float mp) { mouth_pressure_ = mp; }
     void set_tone_hole_state(bool state) { tone_hole_open_ = state; }
 

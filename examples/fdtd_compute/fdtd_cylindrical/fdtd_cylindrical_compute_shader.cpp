@@ -10,20 +10,21 @@ namespace hnll {
 #include "common/fdtd2_config.h"
 
 // static member
-fdtd2_field* fdtd2_compute_shader::target_ = nullptr;
-uint32_t fdtd2_compute_shader::target_id_ = -1;
+fdtd_cylindrical_field* fdtd_cylindrical_compute_shader::target_ = nullptr;
+uint32_t fdtd_cylindrical_compute_shader::target_id_ = -1;
 
-fdtd2_compute_shader::fdtd2_compute_shader() : game::compute_shader<fdtd2_compute_shader>()
+fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compute_shader<fdtd_cylindrical_compute_shader>()
 {
-  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd2_field::field_bindings);
+  desc_layout_ = graphics::desc_layout::create_from_bindings(*device_, fdtd_cylindrical_field::field_bindings);
   auto vk_layout = desc_layout_->get_descriptor_set_layout();
 
   pipeline_ = create_pipeline<fdtd2_push>(
-    utils::get_engine_root_path() + "/examples/fdtd_compute/fdtd_2d/shaders/spv/fdtd2_compute_active_grids.comp.spv",
+    utils::get_engine_root_path() +
+    "/examples/fdtd_compute/fdtd_cylindrical/shaders/spv/fdtd2_compute_active_grids.comp.spv",
     { vk_layout, vk_layout, vk_layout, vk_layout, vk_layout });
 }
 
-void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
+void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& info)
 {
   if (target_ != nullptr && target_->is_ready()) {
     auto &command = info.command_buffer;
@@ -95,10 +96,10 @@ void fdtd2_compute_shader::render(const utils::compute_frame_info& info)
   }
 }
 
-void fdtd2_compute_shader::set_target(fdtd2_field* target)
+void fdtd_cylindrical_compute_shader::set_target(fdtd_cylindrical_field* target)
 { target_ = target; }
 
-void fdtd2_compute_shader::remove_target(uint32_t target_id)
+void fdtd_cylindrical_compute_shader::remove_target(uint32_t target_id)
 { if (target_id_ == target_id) target_ = nullptr; }
 
 } // namespace hnll
