@@ -5,7 +5,6 @@
 #include "include/fdtd_cylindrical_shading_system.hpp"
 #include <audio/engine.hpp>
 #include <audio/audio_data.hpp>
-#include "../serial.hpp"
 
 // std
 #include <thread>
@@ -15,8 +14,6 @@
 
 #define AUDIO_FRAME_RATE 128000
 #define DEFAULT_UPDATE_PER_FRAME 5130
-
-constexpr char* ARDUINO = "/dev/ttyACM0";
 
 namespace hnll {
 
@@ -29,8 +26,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
   public:
     ENGINE_CTOR(fdtd_cylindrical)
     {
-      serial_ = serial_com::create(ARDUINO);
-
       set_max_fps(30.f);
       auto game_fps = get_max_fps();
 
@@ -79,16 +74,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
 
-      // get input from arduino
-      if (serial_) {
-        auto data = serial_->read_data('/');
-        if (data[0] == '/' && data[4] == '/') {
-          int raw = atoi(data.substr(1, 3).c_str());
-          float a = 0.2f;
-          mouth_pressure_ = a * std::max((raw - 70) * 500, 0) + (1 - a) * mouth_pressure_;
-        }
-      }
-
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
       field_->set_mouth_pressure(mouth_pressure_);
@@ -97,16 +82,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
       update_sound();
 
       ImGui::End();
-
-      if (wait_for_construction_) {
-        if (staging_field_ != nullptr && staging_field_->is_ready()) {
-          auto tmp = std::move(field_);
-          field_ = std::move(staging_field_);
-          staging_field_ = std::move(tmp);
-          field_->set_as_target(field_.get());
-          wait_for_construction_ = false;
-        }
-      }
     }
 
   private:
@@ -167,7 +142,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
 
     u_ptr<fdtd_cylindrical_field> field_;
     u_ptr<fdtd_cylindrical_field> staging_field_;
-    bool wait_for_construction_ = false;
 
     float z_len_       = 0.6f;
     float r_len_       = 0.15f; // radius
@@ -187,9 +161,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
     int seg_frame_index = 0; // mod 3
     bool started_ = false;
     int queue_capacity_ = 3;
-
-    // arduino
-    u_ptr<serial_com> serial_;
 };
 
 bool fdtd_cylindrical::button_pressed_ = false;

@@ -22,10 +22,10 @@ void main()
   float y_mergin = (fix_ratio * push.r_pixel_count - push.r_grid_count) / (2 * fix_ratio);
 
   float i = (gl_FragCoord.x - x_mergin) * fix_ratio;
-  float j = abs((gl_FragCoord.y - push.r_pixel_count / 2 - y_mergin) * fix_ratio);
+  float j = abs((gl_FragCoord.y - y_mergin) * fix_ratio - push.r_grid_count / 2);
   uint idx = g_id(int(i), int(j));
 
-  bool out_of_area = i < 0 || i >= push.z_grid_count || j < 0 || j >= push.r_grid_count;
+  bool out_of_area = i < 0 || i >= push.z_grid_count || j >= push.r_grid_count;
   float p_val = curr[idx].p;
   p_val *= int(!out_of_area) / 400.f;
   out_color = vec4(p_val, 0, -p_val, 1);

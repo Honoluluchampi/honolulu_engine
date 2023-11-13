@@ -64,8 +64,8 @@ void fdtd_cylindrical_field::set_pml(
 {
   float pml_each = 0.5f / float(pml_count_);
 
-  for (int z = z_min; z <= z_max; z++) {
-    for (int r = 0; r <= r_max; r++) {
+  for (int z = z_min; z < z_max; z++) {
+    for (int r = 0; r < r_max; r++) {
       float pml_l = std::max(float(pml_count_ - (z - z_min)), 0.f) * pml_each;
       float pml_r = std::max(float(pml_count_ - (z_max - z)), 0.f) * pml_each;
       float pml_y = std::max(float(pml_count_ - (r_max - r)), 0.f) * pml_each;
@@ -88,7 +88,7 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
   desc_sets_ = graphics::desc_sets::create(
     *device_,
     desc_pool_,
-    {set_info, set_info, set_info, set_info}, // field and sound buffer
+    {set_info, set_info}, // field and sound buffer
     frame_count_);
 
   // initial data
@@ -137,7 +137,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
-      desc_sets_->get_vk_desc_sets(0)[2]
+      desc_sets_->get_vk_desc_sets(0)[1]
     };
   }
   else if (frame_index_ == 1){
@@ -145,7 +145,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
       desc_sets_->get_vk_desc_sets(2)[0],
-      desc_sets_->get_vk_desc_sets(1)[2]
+      desc_sets_->get_vk_desc_sets(1)[1]
     };
   }
   else {
@@ -153,7 +153,7 @@ std::vector<VkDescriptorSet> fdtd_cylindrical_field::get_frame_desc_sets()
       desc_sets_->get_vk_desc_sets(2)[0],
       desc_sets_->get_vk_desc_sets(1)[0],
       desc_sets_->get_vk_desc_sets(0)[0],
-      desc_sets_->get_vk_desc_sets(2)[2]
+      desc_sets_->get_vk_desc_sets(2)[1]
     };
   }
 }
