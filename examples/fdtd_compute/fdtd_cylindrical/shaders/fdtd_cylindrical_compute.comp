@@ -42,8 +42,8 @@ float calc_p(uint i, uint j)
   float rm2 = DR * (float(j) - 0.5f); // raduis at r = j - 1/2
 
   float z_term = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
-//  float r_term = 1.f / r * (rp2 * prev0[g_id(i, j)].vr - rm2 * prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
-  float r_term = (prev0[g_id(i, j)].vr - prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
+  float r_term = ((rp2 / r) * prev0[g_id(i, j)].vr - (rm2 / r) * prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
+//  float r_term = (prev0[g_id(i, j)].vr - prev0[g_id(i, max(int(j) - 1, 0))].vr) / DR;
   float p = prev0[g_id(i, j)].p - push.p_fac * (z_term + r_term * float(j != 0));
   p /= (1.f + pml);
 

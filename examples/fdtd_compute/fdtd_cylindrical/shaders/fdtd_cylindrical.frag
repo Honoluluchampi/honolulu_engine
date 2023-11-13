@@ -22,7 +22,7 @@ void main()
   float y_mergin = (fix_ratio * push.r_pixel_count - push.r_grid_count) / (2 * fix_ratio);
 
   float i = (gl_FragCoord.x - x_mergin) * fix_ratio;
-  float j = abs((gl_FragCoord.y - y_mergin) * fix_ratio - (push.r_grid_count - 2) / 2);
+  float j = abs((gl_FragCoord.y - y_mergin) * fix_ratio - (push.r_grid_count) / 2) + 0.5f;
   uint idx = g_id(int(i), int(j));
 
   bool out_of_area = i < 0 || i >= push.z_grid_count || j >= push.r_grid_count;
