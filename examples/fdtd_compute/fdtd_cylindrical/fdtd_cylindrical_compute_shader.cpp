@@ -61,9 +61,10 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
         auto desc_sets = target_->get_frame_desc_sets();
         bind_desc_sets(command, desc_sets);
 
+        auto group_size = fdtd_cylindrical_local_size_x * fdtd_cylindrical_local_size_y * fdtd_cylindrical_local_size_z;
         dispatch_command(
           command,
-          (target_->get_whole_grid_count()+ 63) / 64,
+          (target_->get_whole_grid_count() + group_size - 1) / group_size,
           1,
           1
         );
