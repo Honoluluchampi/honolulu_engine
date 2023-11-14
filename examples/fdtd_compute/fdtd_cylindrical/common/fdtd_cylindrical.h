@@ -19,12 +19,11 @@ struct fdtd_cylindrical_push {
   // physical constant
   float p_fac;
   float v_fac;
+  // pressure
+  float input_pressure;
   // input
   int listener_index;
-  // pressure
-//  float input_pressure;
   int buffer_index;
-  int input_index;
   float debug;
 };
 

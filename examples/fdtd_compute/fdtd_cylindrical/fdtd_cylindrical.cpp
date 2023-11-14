@@ -112,7 +112,11 @@ DEFINE_ENGINE(fdtd_cylindrical)
       float* raw_data = field_->get_sound_buffer();
       float raw_i = 0.f;
       while (raw_i < update_per_frame_) {
-        segment_.emplace_back(static_cast<ALshort>(raw_data[int(raw_i)] * amplify_));
+        segment_.emplace_back(static_cast<ALshort>(
+          std::clamp(raw_data[int(raw_i)] * amplify_,
+           float(std::numeric_limits<ALshort>::min()),
+           float(std::numeric_limits<ALshort>::max())
+          )));
         raw_i += 128000.f / 44100.f;
       }
 

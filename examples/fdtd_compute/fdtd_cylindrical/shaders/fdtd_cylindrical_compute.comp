@@ -42,13 +42,16 @@ float calc_p(uint i, uint j)
 //  float rp2 = DR * (float(j) + 1.f); // radius at r = j + 1/2
 //  float rm2 = DR * float(j); // raduis at r = j - 1/2
   // if the above grid is wall, vr should be 0
-  float upper_vr = prev0[g_id(i, j)].vr * float(prev0[g_id(i, j + 1)].state != -2);
+  float upper_state = prev0[g_id(i, j + 1)].state;
+  float upper_vr = prev0[g_id(i, j)].vr * float(upper_state != WALL && upper_state != EXCITER);
   float lower_vr = j == 0 ? 0 : prev0[g_id(i, j - 1)].vr;
   float vr_center = (upper_vr + lower_vr) / 2.f;
 
   float dvrdr = (upper_vr - lower_vr) / DR;
   // if the left grid is wall, vz should be 0
-  float dvzdz = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz * float(prev0[g_id(i - 1, j)].state != -2)) / DZ;
+  float right_state = prev0[g_id(i + 1, j)].state;
+  float left_state = prev0[g_id(i, j)].state;
+  float dvzdz = (prev0[g_id(i + 1, j)].vz * float(right_state != EXCITER) - prev0[g_id(i, j)].vz * float(left_state != WALL)) / DZ;
 //  float r_term = vr_center / r + (upper_vr - lower_vr) / DR;
   //  float r_term = ((rp2 / r) * upper_vr - (rm2 / r) * lower_vr) / DR;
   float p = prev0[g_id(i, j)].p - push.p_fac * (vr_center / r + dvrdr + dvzdz);
@@ -75,11 +78,6 @@ void main() {
       float p = calc_p(i, j);
       curr[idx].p = p;
 
-      if (idx == push.input_index) {
-        curr[idx].p = push.debug;
-        p = push.debug;
-      }
-
       // re-calculate the current pressure to reduce the barrier synchronization
       // update vz
       if (i > 0) {
@@ -96,15 +94,15 @@ void main() {
       if (idx == push.listener_index)
         sound_buffer[push.buffer_index] = p;
     }
-//    else if (state == -3) // exciter
-//    {
-//      float next_p = prev_p[g_id(i + 1, push.y_grid / 2)].values.z;
-//      float dp = push.input_pressure - next_p;
-//      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
-//      if (dp <= 0.05 * dp_max)
-//        u_bore = 0.f;
-//      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-//      curr_p[idx].values.x = u_bore * shelf / 0.000367;
-//    }
+    else if (state == EXCITER) // exciter
+    {
+      float next_p = prev0[g_id(i + 1, 0)].p;
+      float dp = push.input_pressure - next_p;
+      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
+      if (dp <= 0.05 * dp_max)
+        u_bore = 0.f;
+      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
+      curr[idx].vz = u_bore * shelf / 0.000367 * 14.f;
+    }
   }
 }
