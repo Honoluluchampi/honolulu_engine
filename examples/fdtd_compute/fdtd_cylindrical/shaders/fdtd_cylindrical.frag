@@ -32,8 +32,7 @@ void main()
 
   float state = curr[idx].state;
   // wall
-//  if (state == -2)
-  if (idx == 30) // DEBUG
+  if (state == -2)
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
   // exciter
 //  if (state == -1 || state == -3)

@@ -6,6 +6,8 @@ const int fdtd_cylindrical_local_size_z = 1;
 const float DR = 3.83e-3;
 const float DZ = 3.83e-3;
 
+const int WALL = -2;
+
 struct fdtd_cylindrical_push {
   // grid count
   int z_grid_count;

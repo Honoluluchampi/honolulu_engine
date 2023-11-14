@@ -99,6 +99,15 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
 
+  // set walls
+  for (int i = 0; i < z_grid_count_; i++) {
+    for (int j = 0; j < r_grid_count_; j++) {
+      if (i >= 15 && i <= 55 && j == 3) {
+        initial_grid[i + j * z_grid_count_].state = WALL;
+      }
+    }
+  }
+
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
 
