@@ -7,6 +7,7 @@ const float DR = 3.83e-3;
 const float DZ = 3.83e-3;
 
 const int WALL = -2;
+const int EXCITER = -3;
 
 struct fdtd_cylindrical_push {
   // grid count

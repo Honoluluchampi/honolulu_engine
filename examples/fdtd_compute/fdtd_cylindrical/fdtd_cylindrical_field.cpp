@@ -105,6 +105,9 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
       if (i >= 40 && i <= 110 && j == 3) {
         initial_grid[i + j * z_grid_count_].state = WALL;
       }
+      if (i == 40 && 0 <= j && j < 3) {
+        initial_grid[i + j * z_grid_count_].state = EXCITER;
+      }
     }
   }
 
