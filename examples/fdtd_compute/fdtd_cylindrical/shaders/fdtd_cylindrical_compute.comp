@@ -47,7 +47,8 @@ float calc_p(uint i, uint j)
   float vr_center = (upper_vr + lower_vr) / 2.f;
 
   float dvrdr = (upper_vr - lower_vr) / DR;
-  float dvzdz = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz) / DZ;
+  // if the left grid is wall, vz should be 0
+  float dvzdz = (prev0[g_id(i + 1, j)].vz - prev0[g_id(i, j)].vz * float(prev0[g_id(i - 1, j)].state != -2)) / DZ;
 //  float r_term = vr_center / r + (upper_vr - lower_vr) / DR;
   //  float r_term = ((rp2 / r) * upper_vr - (rm2 / r) * lower_vr) / DR;
   float p = prev0[g_id(i, j)].p - push.p_fac * (vr_center / r + dvrdr + dvzdz);

@@ -38,7 +38,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
         .r_len = r_len_,
         .sound_speed = sound_speed_,
         .rho = rho_,
-        .pml_count = 6,
+        .pml_count = 10,
         .update_per_frame = update_per_frame_
       };
 
