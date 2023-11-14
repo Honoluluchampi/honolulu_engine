@@ -36,6 +36,6 @@ void main()
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
   // exciter
 //  if (state == -1 || state == -3)
-  if (idx == 50) // listener
+  if (idx == push.listener_index) // listener
     out_color = vec4(0.f, 1.f, 0.f, 1.f);
 }

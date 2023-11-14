@@ -33,6 +33,9 @@ struct fdtd_cylindrical_frag_push {
   // grid count
   int z_grid_count;
   int r_grid_count;
+
+  int listener_index;
+  int dummy;
 };
 
 struct particle {

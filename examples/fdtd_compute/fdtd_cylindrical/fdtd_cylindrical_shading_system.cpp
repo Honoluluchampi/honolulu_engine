@@ -49,7 +49,9 @@ void fdtd_cylindrical_shading_system::render(const utils::graphics_frame_info &f
       .z_pixel_count = int(window_size.x),
       .r_pixel_count = int(window_size.y),
       .z_grid_count = target_->get_z_grid_count(),
-      .r_grid_count = target_->get_r_grid_count()
+      .r_grid_count = target_->get_r_grid_count(),
+      .listener_index = target_->get_listener_index(),
+      .dummy = 0
     };
 
     vkCmdPushConstants(
