@@ -33,7 +33,7 @@ fdtd_cylindrical_field::fdtd_cylindrical_field(const fdtd_info& info)
   compute_constants();
   setup_desc_sets(info);
 
-  listener_index_ = 125;
+  listener_index_ = 130;
 
   is_ready_ = true;
 }
@@ -102,10 +102,10 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
   // set walls
   for (int i = 0; i < z_grid_count_; i++) {
     for (int j = 0; j < r_grid_count_; j++) {
-      if (i >= 40 && i <= 110 && j == 3) {
+      if (i >= 35 && i <= 115 && j == 3) {
         initial_grid[i + j * z_grid_count_].state = WALL;
       }
-      if (i == 40 && 0 <= j && j < 3) {
+      if (i == 35 && 0 <= j && j < 3) {
         initial_grid[i + j * z_grid_count_].state = EXCITER;
       }
     }

@@ -27,7 +27,7 @@ void main()
 
   bool out_of_area = i < 0 || i >= push.z_grid_count || j >= push.r_grid_count;
   float p_val = curr[idx].p;
-  p_val *= float(!out_of_area) / 400.f;
+  p_val *= float(!out_of_area) / 100.f;
   out_color = vec4(p_val, 0, -p_val, 1);
 
   float state = curr[idx].state;

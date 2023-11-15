@@ -71,7 +71,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
       ImGui::SliderFloat("z length", &z_len_, 0.1f, 0.8f);
       ImGui::SliderFloat("max radius", &r_len_, 0.1f, 0.4f);
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
-      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 5000.f);
+      ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 3800.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
 
       field_->add_duration();
@@ -147,7 +147,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
     float sound_speed_ = 340.f;
     float rho_         = 1.1f;
     int   update_per_frame_;
-    float mouth_pressure_ = 4000.f;
+    float mouth_pressure_ = 3800.f;
     float amplify_ = 100.f;
 
     // GUI

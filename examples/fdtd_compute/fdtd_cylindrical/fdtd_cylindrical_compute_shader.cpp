@@ -27,8 +27,6 @@ fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compu
 void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& info)
 {
   if (target_ != nullptr && target_->is_ready()) {
-    target_->update_sound_frame();
-
     auto &command = info.command_buffer;
 
     fdtd_cylindrical_push push;
@@ -84,6 +82,8 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
         target_->update_frame();
       }
     }
+
+    target_->update_sound_frame();
   }
 }
 
