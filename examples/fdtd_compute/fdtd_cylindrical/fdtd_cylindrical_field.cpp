@@ -181,6 +181,7 @@ void fdtd_cylindrical_field::set_bore_shape(
   const std::function<float(float)>& func,
   float max_length)
 {
+  int last_radius = 0;
   for (int i = 0; (i < z_grid_count_ - pml_count_ - 1 - MOUTH_PIECE_X_GRID_ID) && (float(i) * DZ < max_length); i++) {
     auto radius = static_cast<int>(func(float(i) * DZ) / DR);
     initial_grid[i + MOUTH_PIECE_X_GRID_ID + (radius) * z_grid_count_].state = WALL;
@@ -192,6 +193,16 @@ void fdtd_cylindrical_field::set_bore_shape(
       }
       exciter_grid_count_ = (radius - 1) * 2;
     }
+
+    else {
+      auto tmp_radius = radius;
+      int sign = radius > last_radius ? -1 : 1;
+      while (tmp_radius != last_radius) {
+        tmp_radius += sign;
+        initial_grid[i + MOUTH_PIECE_X_GRID_ID + (tmp_radius) * z_grid_count_].state = WALL;
+      }
+    }
+    last_radius = radius;
   }
 }
 
