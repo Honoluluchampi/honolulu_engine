@@ -12,8 +12,8 @@
 // lib
 #include "imgui/imgui.h"
 
-#define AUDIO_FRAME_RATE 128000
-#define DEFAULT_UPDATE_PER_FRAME 5130
+constexpr int AUDIO_FRAME_RATE = 128000;
+constexpr int DEFAULT_UPDATE_PER_FRAME = 4268;
 
 namespace hnll {
 

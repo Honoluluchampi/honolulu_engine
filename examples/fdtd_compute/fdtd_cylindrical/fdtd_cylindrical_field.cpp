@@ -9,6 +9,8 @@
 
 namespace hnll {
 
+constexpr int MOUTH_PIECE_X_GRID_ID = 30;
+
 // only binding of the pressure is accessed by fragment shader
 const std::vector<graphics::binding_info> fdtd_cylindrical_field::field_bindings = {
   {VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }
@@ -99,17 +101,7 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
 
-  // set walls
-  for (int i = 0; i < z_grid_count_; i++) {
-    for (int j = 0; j < r_grid_count_; j++) {
-      if (i >= 35 && i <= 115 && j == 3) {
-        initial_grid[i + j * z_grid_count_].state = WALL;
-      }
-      if (i == 35 && 0 <= j && j < 3) {
-        initial_grid[i + j * z_grid_count_].state = EXCITER;
-      }
-    }
-  }
+  set_bore_shape(initial_grid, [](float x) { return 0.013 + 0.001f * (std::exp(65.f * std::max(x - 0.25f, 0.f)) - 1.f); }, 0.3);
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
@@ -177,6 +169,30 @@ void fdtd_cylindrical_field::set_as_target(fdtd_cylindrical_field* target) const
 {
   fdtd_cylindrical_compute_shader::set_target(target);
   fdtd_cylindrical_shading_system::set_target(target);
+}
+
+std::vector<double> fdtd_cylindrical_field::compute_input_impedance() const
+{
+
+}
+
+void fdtd_cylindrical_field::set_bore_shape(
+  std::vector<particle>& initial_grid,
+  const std::function<float(float)>& func,
+  float max_length)
+{
+  for (int i = 0; (i < z_grid_count_ - pml_count_ - 1 - MOUTH_PIECE_X_GRID_ID) && (float(i) * DZ < max_length); i++) {
+    auto radius = static_cast<int>(func(float(i) * DZ) / DR);
+    initial_grid[i + MOUTH_PIECE_X_GRID_ID + (radius) * z_grid_count_].state = WALL;
+
+    // mouthpiece
+    if (i == 0) {
+      for (int j = 0; j < radius; j++) {
+        initial_grid[MOUTH_PIECE_X_GRID_ID + j * z_grid_count_].state = EXCITER;
+      }
+      exciter_grid_count_ = (radius - 1) * 2;
+    }
+  }
 }
 
 } // namespace hnll

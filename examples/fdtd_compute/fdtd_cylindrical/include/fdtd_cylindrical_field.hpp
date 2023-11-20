@@ -64,6 +64,15 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
 
     static const std::vector<graphics::binding_info> field_bindings;
 
+    // for debug
+    std::vector<double> compute_input_impedance() const;
+
+    // float func(float x)
+    void set_bore_shape(
+      std::vector<particle>& initial_grid,
+      const std::function<float(float)>& func,
+      float max_length);
+
   private:
     void compute_constants();
     void setup_desc_sets(const fdtd_info& info);
@@ -95,7 +104,7 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     int frame_count_ = 3;
     int frame_index_ = 0;
 
-    size_t active_ids_count_;
+    size_t exciter_grid_count_ = 0;
 
     uint32_t field_id_;
 
