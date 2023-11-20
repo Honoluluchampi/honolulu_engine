@@ -32,6 +32,13 @@ const float dx = 0.00383;
 const float dp_max = k * h;
 const float c_area = w * h;
 
+// u bore filter
+const float ubf_a0 = 0.160863;
+const float ubf_a1 = 0.321726;
+const float ubf_a2 = 0.160863;
+const float ubf_b1 = -0.590436;
+const float ubf_b2 = 0.233886;
+
 float calc_p(uint i, uint j)
 {
   float state = prev0[g_id(i, j)].state;
@@ -102,7 +109,15 @@ void main() {
       if (dp <= 0.05 * dp_max)
         u_bore = 0.f;
       float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-      curr[idx].vz = u_bore * shelf / 0.000367 * 14.f;
+
+      // low-pass filter uses redandunt memory(vr) to store input value
+      curr[idx].vr = u_bore * shelf / 0.000367 * 14.f;
+      curr[idx].vz =
+      ubf_a0 * curr[idx].vr
+      + ubf_a1 * prev0[idx].vr
+      + ubf_a2 * prev1[idx].vr
+      - ubf_b1 * prev0[idx].vz
+      - ubf_b2 * prev1[idx].vz;
     }
   }
 }
