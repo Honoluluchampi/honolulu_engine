@@ -27,10 +27,16 @@ const float exc_grid_count = 5;
 const float w = 0.012;
 const float h = 0.0006;
 const float k = 8000000;
-const float rho = 1.1;
+const float rho = 1.176;
 const float dx = 0.00383;
 const float dp_max = k * h;
 const float c_area = w * h;
+// const. for wall loss filter
+const float gamma = 1.4017;
+const float mu = 1.846e-5;
+const float prandtl = 0.7073;
+const float l_v = sqrt(mu / rho);
+const float l_t = sqrt(mu / rho / prandtl);
 
 // u bore filter
 const float ubf_a0 = 0.160863;
@@ -108,26 +114,26 @@ void main() {
     }
 
     // visco thermal loss
-    else if (state == WALL) {
-      // update right vz
-      float p_xm1 = calc_p(i - 1, j);
-      curr[idx].vz =
-          wall_a0 * p_xm1
-        + wall_a1 * prev0[g_id(i - 1, j)].p
-        + wall_a2 * prev1[g_id(i - 1, j)].p
-        + wall_b0 * prev0[idx].vz
-        + wall_b1 * prev1[idx].vz;
-
-      // update left vz
-      float p_xp1 = calc_p(i + 1, j);
-      uint idxp = idx + 1;
-      curr[idxp].vz =
-          wall_a0 * p_xp1
-        + wall_a1 * prev0[idxp].p
-        + wall_a2 * prev1[idxp].p
-        + wall_b0 * prev0[idxp].vz
-        + wall_b1 * prev1[idxp].vz;
-    }
+//    else if (state == WALL) {
+//      // update right vz
+//      float p_xm1 = calc_p(i - 1, j);
+//      curr[idx].vz =
+//          wall_a0 * p_xm1
+//        + wall_a1 * prev0[g_id(i - 1, j)].p
+//        + wall_a2 * prev1[g_id(i - 1, j)].p
+//        + wall_b0 * prev0[idx].vz
+//        + wall_b1 * prev1[idx].vz;
+//
+//      // update left vz
+//      float p_xp1 = calc_p(i + 1, j);
+//      uint idxp = idx + 1;
+//      curr[idxp].vz =
+//          wall_a0 * p_xp1
+//        + wall_a1 * prev0[idxp].p
+//        + wall_a2 * prev1[idxp].p
+//        + wall_b0 * prev0[idxp].vz
+//        + wall_b1 * prev1[idxp].vz;
+//    }
 
     else if (state == EXCITER) // exciter
     {
