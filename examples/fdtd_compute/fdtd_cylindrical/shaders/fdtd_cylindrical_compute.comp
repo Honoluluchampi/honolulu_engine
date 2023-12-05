@@ -1,0 +1,181 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : require
+
+#include "../common/fdtd_cylindrical.h"
+
+layout (
+  local_size_x = fdtd_cylindrical_local_size_x,
+  local_size_y = fdtd_cylindrical_local_size_y,
+  local_size_z = fdtd_cylindrical_local_size_z
+) in;
+
+// pressure
+layout(std430, set = 0, binding = 0) buffer Curr { particle curr[]; };
+layout(std430, set = 1, binding = 0) readonly buffer Prev0 { particle prev0[]; };
+layout(std430, set = 2, binding = 0) readonly buffer Prev1 { particle prev1[]; };
+layout(std430, set = 3, binding = 0) writeonly buffer SoundBuf { float sound_buffer[]; };
+
+// push constants
+layout(push_constant) uniform Push { fdtd_cylindrical_push push; };
+
+// grid id
+uint g_id(uint i, uint j) { return i + j * push.z_grid_count; }
+
+// exciter constants
+const float exc_grid_count = 5;
+const float w = 0.012;
+const float h = 0.0006;
+const float k = 8000000;
+const float rho = 1.176;
+const float c = 340.0;
+const float dx = 0.00383;
+const float dp_max = k * h;
+const float c_area = w * h;
+// const. for wall loss filter
+const float gamma = 1.4017;
+const float mu = 1.846e-5;
+const float prandtl = 0.7073;
+const float l_v = sqrt(mu / rho);
+const float l_t = sqrt(mu / rho / prandtl);
+
+// u bore filter
+const float ubf_a0 = 0.160863;
+const float ubf_a1 = 0.321726;
+const float ubf_a2 = 0.160863;
+const float ubf_b1 = -0.590436;
+const float ubf_b2 = 0.233886;
+
+// lossy wall filter constants
+const float wall_a0 = 495.9;
+const float wall_a1 = -857.0;
+const float wall_a2 = 362.8;
+const float wall_b0 = -1.35;
+const float wall_b1 = 0.40;
+
+float calc_p(uint i, uint j)
+{
+  float state = prev0[g_id(i, j)].state;
+  float pml = max(state, 0.f);
+
+  float r = DR * float(j + 0.5f);
+  // if the above grid is wall, vr should be 0
+  float upper_state = prev0[g_id(i, j + 1)].state;
+  float upper_vr = prev0[g_id(i, j)].vr * float(upper_state != WALL && upper_state != EXCITER);
+  float lower_vr = j == 0 ? 0 : prev0[g_id(i, j - 1)].vr;
+  float vr_center = (upper_vr + lower_vr) / 2.f;
+
+  float dvrdr = (upper_vr - lower_vr) / DR;
+  // if the left grid is wall, vz should be 0
+  float right_state = prev0[g_id(i + 1, j)].state;
+  float left_state = prev0[g_id(i, j)].state;
+  float dvzdz = (prev0[g_id(i + 1, j)].vz * float(right_state != EXCITER) - prev0[g_id(i, j)].vz * float(left_state != WALL)) / DZ;
+  float p = prev0[g_id(i, j)].p - push.p_fac * (vr_center / r + dvrdr + dvzdz);
+  p /= (1.f + pml);
+
+  return p;
+}
+
+void main() {
+  uint i = gl_LocalInvocationID.x + gl_WorkGroupID.x * fdtd_cylindrical_local_size_x;
+  uint j = gl_LocalInvocationID.y + gl_WorkGroupID.y * fdtd_cylindrical_local_size_y;
+
+  bool on_z = i < push.z_grid_count - 1;
+  bool on_r = j < push.r_grid_count;
+
+  if (on_z && on_r) // inside domain
+  {
+    uint idx = g_id(i, j);
+    float state = prev0[g_id(i, j)].state;
+    float pml = max(state, 0.f);
+
+    if (state >= -1) {
+      // update pressure
+      float p = calc_p(i, j);
+      curr[idx].p = p;
+
+      bool left_is_wall = curr[g_id(i - 1, j)].state == WALL;
+      bool above_is_wall = curr[g_id(i, j + 1)].state == WALL;
+
+      // re-calculate the current pressure to reduce the barrier synchronization
+      // update vz
+      if (i > 0 && !left_is_wall) {
+        float p_xm1 = calc_p(i - 1, j);
+        curr[idx].vz = (prev0[idx].vz - push.v_fac * (p - p_xm1) / DZ) / (1 + pml);
+      }
+
+      // update vr
+      if (j < push.r_grid_count - 1 && !above_is_wall) {
+        float p_yp1 = calc_p(i, j + 1);
+        curr[idx].vr = (prev0[idx].vr - push.v_fac * (p_yp1 - p) / DR) / (1 + pml);
+      }
+
+      if (idx == push.listener_index)
+        sound_buffer[push.buffer_index] = p;
+    }
+
+    // visco thermal loss
+    else if (state == WALL) {
+      // left
+//      float left_vz = prev0[idx].vz;
+//      float left_vr = prev0[idx - 1].vr;
+//      float left_sin2 = 1 - pow(-left_vz / length(vec2(left_vz, left_vr)), 2.0);
+//      float left_L = -(l_v * left_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float left_p = calc_p(i - 1, j);
+//      curr[idx].vz =
+//        left_L * (wall_a0 * left_p + wall_a1 * prev0[idx - 1].p + wall_a2 * prev1[idx - 1].p)
+//        + wall_b0 * prev0[idx].vz + wall_b1 * prev1[idx].vz;
+//
+//      // right
+//      float right_vz = prev0[idx + 1].vz;
+//      float right_vr = prev0[idx + 1].vr;
+//      float right_sin2 = 1 - pow(right_vz / length(vec2(right_vz, right_vr)), 2.0);
+//      float right_L = -(l_v * right_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float right_p = calc_p(i + 1, j);
+//      curr[idx + 1].vz =
+//        right_L * (wall_a0 * right_p + wall_a1 * prev0[idx + 1].p + wall_a2 * prev1[idx + 1].p)
+//        + wall_b0 * prev0[idx + 1].vz + wall_b1 * prev1[idx + 1].vz;
+
+      // upper
+//      uint upper_idx = g_id(i, j + 1);
+//      float upper_vz = prev0[upper_idx].vz;
+//      float upper_vr = prev0[idx].vr;
+//      float upper_sin2 = 1 - pow(-upper_vr / length(vec2(upper_vz, upper_vr)), 2.0);
+//      float upper_L = -(l_v * upper_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float upper_p = calc_p(i, j + 1);
+//      curr[idx].vr =
+//        upper_L * (wall_a0 * upper_p + wall_a1 * prev0[upper_idx].p + wall_a2 * prev1[upper_idx].p)
+//        + wall_b0 * prev0[idx].vr + wall_b1 * prev1[idx].vr;
+
+      // lower
+      uint lower_idx = g_id(i, j - 1);
+      float lower_vz = prev0[lower_idx].vz;
+      float lower_vr = prev0[lower_idx].vr;
+      float lower_sin2 = 1 - pow(lower_vr / length(vec2(lower_vz, lower_vr)), 2.0);
+      float lower_L = -(l_v + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+      float lower_p = calc_p(i, j - 1);
+      curr[lower_idx].vr =
+        lower_L * (wall_a0 * lower_p + wall_a1 * prev0[lower_idx].p + wall_a2 * prev1[lower_idx].p)
+        + wall_b0 * prev0[lower_idx].vr + wall_b1 * prev1[lower_idx].vr;
+    }
+
+    else if (state == EXCITER) // exciter
+    {
+      float next_p = prev0[g_id(i + 1, 0)].p;
+      float dp = push.input_pressure - next_p;
+      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
+      if (dp <= 0.05 * dp_max)
+        u_bore = 0.f;
+      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
+
+      // low-pass filter uses redandunt memory(vr) to store input value
+      curr[idx].vr = u_bore * shelf / 0.000367 * 14.f;
+      curr[idx].vz =
+      ubf_a0 * curr[idx].vr
+      + ubf_a1 * prev0[idx].vr
+      + ubf_a2 * prev1[idx].vr
+      - ubf_b1 * prev0[idx].vz
+      - ubf_b2 * prev1[idx].vz;
+    }
+  }
+}
