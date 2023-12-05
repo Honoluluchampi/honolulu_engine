@@ -28,6 +28,7 @@ const float w = 0.012;
 const float h = 0.0006;
 const float k = 8000000;
 const float rho = 1.176;
+const float c = 340.0;
 const float dx = 0.00383;
 const float dp_max = k * h;
 const float c_area = w * h;
@@ -114,26 +115,49 @@ void main() {
     }
 
     // visco thermal loss
-//    else if (state == WALL) {
-//      // update right vz
-//      float p_xm1 = calc_p(i - 1, j);
+    else if (state == WALL) {
+      // left
+//      float left_vz = prev0[idx].vz;
+//      float left_vr = prev0[idx - 1].vr;
+//      float left_sin2 = 1 - pow(-left_vz / length(vec2(left_vz, left_vr)), 2.0);
+//      float left_L = -(l_v * left_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float left_p = calc_p(i - 1, j);
 //      curr[idx].vz =
-//          wall_a0 * p_xm1
-//        + wall_a1 * prev0[g_id(i - 1, j)].p
-//        + wall_a2 * prev1[g_id(i - 1, j)].p
-//        + wall_b0 * prev0[idx].vz
-//        + wall_b1 * prev1[idx].vz;
+//        left_L * (wall_a0 * left_p + wall_a1 * prev0[idx - 1].p + wall_a2 * prev1[idx - 1].p)
+//        + wall_b0 * prev0[idx].vz + wall_b1 * prev1[idx].vz;
 //
-//      // update left vz
-//      float p_xp1 = calc_p(i + 1, j);
-//      uint idxp = idx + 1;
-//      curr[idxp].vz =
-//          wall_a0 * p_xp1
-//        + wall_a1 * prev0[idxp].p
-//        + wall_a2 * prev1[idxp].p
-//        + wall_b0 * prev0[idxp].vz
-//        + wall_b1 * prev1[idxp].vz;
-//    }
+//      // right
+//      float right_vz = prev0[idx + 1].vz;
+//      float right_vr = prev0[idx + 1].vr;
+//      float right_sin2 = 1 - pow(right_vz / length(vec2(right_vz, right_vr)), 2.0);
+//      float right_L = -(l_v * right_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float right_p = calc_p(i + 1, j);
+//      curr[idx + 1].vz =
+//        right_L * (wall_a0 * right_p + wall_a1 * prev0[idx + 1].p + wall_a2 * prev1[idx + 1].p)
+//        + wall_b0 * prev0[idx + 1].vz + wall_b1 * prev1[idx + 1].vz;
+
+      // upper
+//      uint upper_idx = g_id(i, j + 1);
+//      float upper_vz = prev0[upper_idx].vz;
+//      float upper_vr = prev0[idx].vr;
+//      float upper_sin2 = 1 - pow(-upper_vr / length(vec2(upper_vz, upper_vr)), 2.0);
+//      float upper_L = -(l_v * upper_sin2 + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+//      float upper_p = calc_p(i, j + 1);
+//      curr[idx].vr =
+//        upper_L * (wall_a0 * upper_p + wall_a1 * prev0[upper_idx].p + wall_a2 * prev1[upper_idx].p)
+//        + wall_b0 * prev0[idx].vr + wall_b1 * prev1[idx].vr;
+
+      // lower
+      uint lower_idx = g_id(i, j - 1);
+      float lower_vz = prev0[lower_idx].vz;
+      float lower_vr = prev0[lower_idx].vr;
+      float lower_sin2 = 1 - pow(lower_vr / length(vec2(lower_vz, lower_vr)), 2.0);
+      float lower_L = -(l_v + l_t * (gamma - 1)) / (rho * c * c * sqrt(2.0));
+      float lower_p = calc_p(i, j - 1);
+      curr[lower_idx].vr =
+        lower_L * (wall_a0 * lower_p + wall_a1 * prev0[lower_idx].p + wall_a2 * prev1[lower_idx].p)
+        + wall_b0 * prev0[lower_idx].vr + wall_b1 * prev1[lower_idx].vr;
+    }
 
     else if (state == EXCITER) // exciter
     {

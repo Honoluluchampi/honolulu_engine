@@ -32,7 +32,7 @@ void main()
 
   float state = curr[idx].state;
   // wall
-  if (state == -2)
+  if (state == WALL)
     out_color = vec4(1.f, 1.f, 1.f, 1.f);
   // exciter
   if (idx == push.listener_index || curr[idx].state == EXCITER) // listener
