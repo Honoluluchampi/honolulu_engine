@@ -45,6 +45,9 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     float get_v_fac() const { return v_fac_;  }
     float get_p_fac() const { return p_fac_; }
     float get_mouth_pressure() const { return mouth_pressure_; }
+    // returns -1 if fcm is off
+    float get_fcm_freq() const { return fcm_on_ ? fcm_freq_ : -1; }
+    int get_fcm_source_grid_id() const { return fcm_on_ ? fcm_source_grid_id_ : -1; }
 
     int   get_pml_count() const { return pml_count_; }
     float get_dt()        const { return dt_; }
@@ -61,6 +64,11 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     void set_update_per_frame(int rep) { update_per_frame_ = rep; }
     void set_as_target(fdtd_cylindrical_field* target) const;
     void set_mouth_pressure(float mp) { mouth_pressure_ = mp; }
+
+    // frequency characteristic measurement
+    void start_fcm() { fcm_on_ = true; }
+    void end_fcm() { fcm_on_ = false; }
+    void set_fcm_freq(float freq) { fcm_freq_ = freq; }
 
     static const std::vector<graphics::binding_info> field_bindings;
 
@@ -116,5 +124,10 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
     // pointer for sound buffer
     float* sound_buffers_[3];
     int sound_frame_index_ = 0;
+
+    // fcm : frequency characteristic measurement
+    bool fcm_on_ = false;
+    float fcm_freq_ = 0;
+    int fcm_source_grid_id_ = 0;
 };
 } // namespace hnll

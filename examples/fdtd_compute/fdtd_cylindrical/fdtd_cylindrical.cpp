@@ -45,6 +45,10 @@ DEFINE_ENGINE(fdtd_cylindrical)
       field_ = fdtd_cylindrical_field::create(info);
       field_->set_as_target(field_.get());
 
+      // tmp
+      field_->set_fcm_freq(400);
+      field_->start_fcm();
+
       audio::engine::start_hae_context();
       source_ = audio::engine::get_available_source_id();
 

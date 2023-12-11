@@ -2,6 +2,7 @@
 #include <graphics/desc_set.hpp>
 #include "include/fdtd_cylindrical_field.hpp"
 #include "include/fdtd_cylindrical_compute_shader.hpp"
+#include "include/sine_oscillator.hpp"
 #include <utils/singleton.hpp>
 
 namespace hnll {
@@ -26,6 +27,8 @@ fdtd_cylindrical_compute_shader::fdtd_cylindrical_compute_shader() : game::compu
 
 void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& info)
 {
+  static sine_oscillator so;
+
   if (target_ != nullptr && target_->is_ready()) {
     auto &command = info.command_buffer;
 
@@ -38,6 +41,10 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
     push.p_fac = target_->get_p_fac();
     push.listener_index = target_->get_listener_index();
     push.input_pressure = target_->get_mouth_pressure();
+    push.fcm_source_grid_id = target_->get_fcm_source_grid_id();
+
+    bool fcm_on = push.fcm_source_grid_id != -1;
+    so.set_freq(target_->get_fcm_freq());
 
     // barrier for pressure, velocity update synchronization
     VkMemoryBarrier barrier = {
@@ -56,6 +63,10 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
       for (int i = 0; i < upf; i++) {
         // record pressure update
         push.buffer_index = i;
+        if (fcm_on) {
+          push.input_pressure = 100000 * so.tick(DT);
+        }
+
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
 
         auto desc_sets = target_->get_frame_desc_sets();

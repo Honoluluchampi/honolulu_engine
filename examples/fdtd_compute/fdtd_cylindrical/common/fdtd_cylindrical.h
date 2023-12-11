@@ -5,6 +5,7 @@ const int fdtd_cylindrical_local_size_z = 1;
 
 const float DR = 3.83e-3;
 const float DZ = 3.83e-3;
+const float DT = 7.81e-6;
 
 const int WALL = -2;
 const int EXCITER = -3;
@@ -24,7 +25,7 @@ struct fdtd_cylindrical_push {
   // input
   int listener_index;
   int buffer_index;
-  float debug;
+  int fcm_source_grid_id;
 };
 
 struct fdtd_cylindrical_frag_push {
