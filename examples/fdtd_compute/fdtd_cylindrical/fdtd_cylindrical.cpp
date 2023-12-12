@@ -46,7 +46,6 @@ DEFINE_ENGINE(fdtd_cylindrical)
       field_->set_as_target(field_.get());
 
       // tmp
-      field_->set_fcm_freq(400);
       field_->start_fcm();
 
       audio::engine::start_hae_context();
@@ -77,10 +76,12 @@ DEFINE_ENGINE(fdtd_cylindrical)
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 3800.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
+      ImGui::SliderFloat("fcm freq : %f", &fcm_freq_, 20.f, 800.f);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
       field_->set_mouth_pressure(mouth_pressure_);
+      field_->set_fcm_freq(fcm_freq_);
 
       update_gui();
       update_sound();
@@ -153,6 +154,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
     int   update_per_frame_;
     float mouth_pressure_ = 3800.f;
     float amplify_ = 100.f;
+    float fcm_freq_ = 400.f;
 
     // GUI
     static bool button_pressed_;

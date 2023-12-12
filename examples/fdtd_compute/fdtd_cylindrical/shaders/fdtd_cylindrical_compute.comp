@@ -73,6 +73,10 @@ float calc_p(uint i, uint j)
   float p = prev0[g_id(i, j)].p - push.p_fac * (vr_center / r + dvrdr + dvzdz);
   p /= (1.f + pml);
 
+  if (g_id(i, j) == push.fcm_source_grid_id) {
+    p = push.input_pressure;
+  }
+
   return p;
 }
 
@@ -91,10 +95,6 @@ void main() {
     if (state >= -1) {
       // update pressure
       float p = calc_p(i, j);
-
-      if (idx == push.fcm_source_grid_id) {
-        p = push.input_pressure;
-      }
 
       curr[idx].p = p;
 
@@ -163,22 +163,22 @@ void main() {
 //        + wall_b0 * prev0[lower_idx].vr + wall_b1 * prev1[lower_idx].vr;
     }
 
-//    else if (state == EXCITER) { // exciter
-//      float next_p = prev0[g_id(i + 1, 0)].p;
-//      float dp = push.input_pressure - next_p;
-//      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
-//      if (dp <= 0.05 * dp_max)
-//        u_bore = 0.f;
-//      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
-//
-//      // low-pass filter uses redandunt memory(vr) to store input value
-//      curr[idx].vr = u_bore * shelf / 0.000367 * 14.f;
-//      curr[idx].vz =
-//      ubf_a0 * curr[idx].vr
-//      + ubf_a1 * prev0[idx].vr
-//      + ubf_a2 * prev1[idx].vr
-//      - ubf_b1 * prev0[idx].vz
-//      - ubf_b2 * prev1[idx].vz;
-//    }
+    else if (state == EXCITER) { // exciter
+      float next_p = prev0[g_id(i + 1, 0)].p;
+      float dp = push.input_pressure - next_p;
+      float u_bore = c_area * (1 - dp / dp_max) * sqrt(2.f * dp / rho);
+      if (dp <= 0.05 * dp_max)
+        u_bore = 0.f;
+      float shelf = 0.5 + 0.5 * tanh(4.f * (-1.f + (dp_max - dp) / (0.01 * dp_max)));
+
+      // low-pass filter uses redandunt memory(vr) to store input value
+      curr[idx].vr = u_bore * shelf / 0.000367 * 14.f;
+      curr[idx].vz =
+      ubf_a0 * curr[idx].vr
+      + ubf_a1 * prev0[idx].vr
+      + ubf_a2 * prev1[idx].vr
+      - ubf_b1 * prev0[idx].vz
+      - ubf_b2 * prev1[idx].vz;
+    }
   }
 }

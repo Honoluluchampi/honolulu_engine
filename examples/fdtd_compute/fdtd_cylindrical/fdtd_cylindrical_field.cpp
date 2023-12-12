@@ -189,7 +189,7 @@ void fdtd_cylindrical_field::set_bore_shape(
     // mouthpiece
     if (i == 0) {
       for (int j = 0; j < radius; j++) {
-        initial_grid[MOUTH_PIECE_X_GRID_ID + j * z_grid_count_].state = EXCITER;
+//        initial_grid[MOUTH_PIECE_X_GRID_ID + j * z_grid_count_].state = WALL;EXCITER;
       }
       exciter_grid_count_ = (radius - 1) * 2;
     }
