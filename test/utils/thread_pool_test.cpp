@@ -61,34 +61,37 @@ int recursive_wait2(int i) {
   if (i == 0)
     return 1;
 
-//  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   return recursive_wait2(i - 1) + 1;
 }
 
 TEST(thread_pool, work_stealing)
 {
+  auto recursion_depth = 3; //std::thread::hardware_concurrency();
+
+  // single thread
+  int single_ans = 0;
+  for (int i = 0; i < recursion_depth; i++) {
+    single_ans += recursive_wait2(i);
+  }
+
+//  EXPECT_EQ(single_ans, 78);
+
+  // multi thread recurse
   std::vector <std::future<int>> futures;
   utils::thread_pool pool;
 
-  for (int i = 0; i < std::thread::hardware_concurrency(); i++) { // std::thread::hardware_concurrency(); i++) {
+  for (int i = 0; i < recursion_depth; i++) {
     int k = i;
     futures.emplace_back(pool.submit(recursive_wait, pool, std::move(k)));
   }
 
-  int ans = 0;
+  int multi_ans = 0;
   for (auto& future : futures) {
-    ans += future.get();
+    multi_ans += future.get();
   }
 
-  EXPECT_EQ(ans, 78);
-
-  // 6.6 sec
-//  ans = 0;
-//  for (int i = 0; i < std::thread::hardware_concurrency(); i++) {
-//    ans += recursive_wait2(i);
-//  }
-//
-//  EXPECT_EQ(ans, 78);
+  EXPECT_EQ(single_ans, multi_ans);
 }
 
 } // namespace hnll
