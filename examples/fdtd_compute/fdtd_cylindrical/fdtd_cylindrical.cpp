@@ -76,7 +76,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 3800.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
-      ImGui::SliderFloat("fcm freq : %f", &fcm_freq_, 20.f, 800.f);
+      ImGui::SliderFloat("fcm freq : %f", &fcm_freq_, 20.f, 1000.f);
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);

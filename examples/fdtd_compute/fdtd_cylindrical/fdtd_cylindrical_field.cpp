@@ -101,7 +101,9 @@ void fdtd_cylindrical_field::setup_desc_sets(const fdtd_info& info)
 
   set_pml(initial_grid, 0, z_grid_count_, r_grid_count_);
 
-  set_bore_shape(initial_grid, [](float x) { return 0.013 + 0.001f * (std::exp(65.f * std::max(x - 0.25f, 0.f)) - 1.f); }, 0.3);
+  set_bore_shape(initial_grid, [](float x) { return 0.013;
+    //+ 0.001f * (std::exp(65.f * std::max(x - 0.25f, 0.f)) - 1.f);
+    }, 0.2);
 
   // assign buffer
   for (int i = 0; i < frame_count_; i++) {
@@ -189,7 +191,7 @@ void fdtd_cylindrical_field::set_bore_shape(
     // mouthpiece
     if (i == 0) {
       for (int j = 0; j < radius; j++) {
-//        initial_grid[MOUTH_PIECE_X_GRID_ID + j * z_grid_count_].state = WALL;EXCITER;
+//        initial_grid[MOUTH_PIECE_X_GRID_ID + j * z_grid_count_].state = EXCITER;
       }
       exciter_grid_count_ = (radius - 1) * 2;
     }

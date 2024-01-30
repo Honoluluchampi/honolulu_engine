@@ -64,7 +64,7 @@ void fdtd_cylindrical_compute_shader::render(const utils::compute_frame_info& in
         // record pressure update
         push.buffer_index = i;
         if (fcm_on) {
-          push.input_pressure = 10000 * so.tick(DT);
+          push.input_pressure = 1000 * so.tick(DT);
         }
 
         bind_push(command, VK_SHADER_STAGE_COMPUTE_BIT, push);
