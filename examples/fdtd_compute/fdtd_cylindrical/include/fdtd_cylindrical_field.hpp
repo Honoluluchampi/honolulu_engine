@@ -19,6 +19,7 @@ struct fdtd_info {
   float rho;
   int   pml_count;
   int   update_per_frame;
+  bool  fcm_on;
 };
 
 struct particle;
@@ -67,7 +68,6 @@ DEFINE_PURE_ACTOR(fdtd_cylindrical_field)
 
     // frequency characteristic measurement
     void start_fcm() { fcm_on_ = true; }
-    void end_fcm() { fcm_on_ = false; }
     void set_fcm_freq(float freq) { fcm_freq_ = freq; }
 
     static const std::vector<graphics::binding_info> field_bindings;

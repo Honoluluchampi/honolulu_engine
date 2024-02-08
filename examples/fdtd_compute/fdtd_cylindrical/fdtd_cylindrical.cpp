@@ -39,14 +39,12 @@ DEFINE_ENGINE(fdtd_cylindrical)
         .sound_speed = sound_speed_,
         .rho = rho_,
         .pml_count = 10,
-        .update_per_frame = update_per_frame_
+        .update_per_frame = update_per_frame_,
+        .fcm_on = true
       };
 
       field_ = fdtd_cylindrical_field::create(info);
       field_->set_as_target(field_.get());
-
-      // tmp
-      field_->start_fcm();
 
       audio::engine::start_hae_context();
       source_ = audio::engine::get_available_source_id();
