@@ -40,7 +40,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
         .rho = rho_,
         .pml_count = 10,
         .update_per_frame = update_per_frame_,
-        .fcm_on = true
+        .fcm_on = false
       };
 
       field_ = fdtd_cylindrical_field::create(info);

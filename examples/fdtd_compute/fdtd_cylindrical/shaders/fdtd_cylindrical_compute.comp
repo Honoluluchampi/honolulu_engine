@@ -24,9 +24,9 @@ uint g_id(uint i, uint j) { return i + j * push.z_grid_count; }
 
 // exciter constants
 const float exc_grid_count = 5;
-const float w = 0.012;
+const float w = 0.009;
 const float h = 0.0006;
-const float k = 8000000;
+const float k = 8400000;
 const float rho = 1.176;
 const float c = 340.0;
 const float dx = 0.00383;
