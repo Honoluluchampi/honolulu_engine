@@ -209,7 +209,7 @@ void fdtd_cylindrical_field::set_bore_shape(
   }
 
   // for fcm source
-  fcm_source_grid_id_ = MOUTH_PIECE_X_GRID_ID + 1;
+  fcm_source_grid_id_ = MOUTH_PIECE_X_GRID_ID - 8;
 }
 
 } // namespace hnll
