@@ -12,10 +12,12 @@
 // lib
 #include "imgui/imgui.h"
 
+namespace hnll {
+
 constexpr int AUDIO_FRAME_RATE = 128000;
 constexpr int DEFAULT_UPDATE_PER_FRAME = 4268;
-
-namespace hnll {
+constexpr float FCM_MAX_FREQ = 10000.f;
+constexpr float FCM_MIN_FREQ = 100.f;
 
 SELECT_SHADING_SYSTEM(fdtd_cylindrical_shading_system);
 SELECT_COMPUTE_SHADER(fdtd_cylindrical_compute_shader);
@@ -40,7 +42,7 @@ DEFINE_ENGINE(fdtd_cylindrical)
         .rho = rho_,
         .pml_count = 10,
         .update_per_frame = update_per_frame_,
-        .fcm_on = false
+        .fcm_on = true
       };
 
       field_ = fdtd_cylindrical_field::create(info);
@@ -74,7 +76,17 @@ DEFINE_ENGINE(fdtd_cylindrical)
       ImGui::SliderInt("update per frame : %d", &update_per_frame_, 3, DEFAULT_UPDATE_PER_FRAME);
       ImGui::SliderFloat("input pressure : %f", &mouth_pressure_, 0.f, 3800.f);
       ImGui::SliderFloat("amplify : %f", &amplify_, 0.f, 300.f);
-      ImGui::SliderFloat("fcm freq : %f", &fcm_freq_, 20.f, 1000.f);
+
+      // fcm
+      if (!during_fcm_) {
+        if (ImGui::Button("start fcm")) {
+          field_->start_fcm();
+          during_fcm_ = true;
+          fcm_freq_ = FCM_MIN_FREQ;
+          fcm_sampling_freqs_ = std::vector<float>(0);
+          fcm_spls_ = std::vector<float>(0);
+        }
+      }
 
       field_->add_duration();
       field_->set_update_per_frame(update_per_frame_);
@@ -112,6 +124,18 @@ DEFINE_ENGINE(fdtd_cylindrical)
       if (audio::engine::get_audio_count_on_queue(source_) > queue_capacity_)
         return;
 
+      // fcm
+      if (during_fcm_) {
+        fcm_sampling_freqs_.emplace_back(fcm_freq_);
+        fcm_freq_ *= 1.01;
+        field_->set_fcm_freq(fcm_freq_);
+        if (fcm_freq_ >= FCM_MAX_FREQ) {
+          field_->stop_fcm();
+          during_fcm_ = false;
+        }
+      }
+
+      // audio output
       float* raw_data = field_->get_sound_buffer();
       float raw_i = 0.f;
       while (raw_i < update_per_frame_) {
@@ -152,7 +176,12 @@ DEFINE_ENGINE(fdtd_cylindrical)
     int   update_per_frame_;
     float mouth_pressure_ = 3800.f;
     float amplify_ = 100.f;
-    float fcm_freq_ = 400.f;
+
+    // fcm
+    bool  during_fcm_ = false;
+    float fcm_freq_ = 0.f;
+    std::vector<float> fcm_sampling_freqs_;
+    std::vector<float> fcm_spls_;
 
     // GUI
     static bool button_pressed_;

@@ -32,6 +32,7 @@ const float c = 340.0;
 const float dx = 0.00383;
 const float dp_max = k * h;
 const float c_area = w * h;
+
 // const. for wall loss filter
 const float gamma = 1.4017;
 const float mu = 1.846e-5;
